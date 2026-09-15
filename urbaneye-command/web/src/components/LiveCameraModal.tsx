@@ -20,6 +20,7 @@ import {
   Info,
   ShieldCheck,
   ImageIcon,
+  Upload,
 } from 'lucide-react';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { deduplicationService } from '../services/deduplicationService';
@@ -971,25 +972,25 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
           />
 
           {/* Manual capture and photo upload buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => captureAndTransmit()}
               disabled={isCapturing}
-              className="w-full py-2.5 px-3 rounded-xl bg-[#1E7F73] hover:bg-[#186a60] text-white font-extrabold flex items-center justify-center space-x-1.5 shadow-lg transition active:scale-95 disabled:opacity-50 min-h-[44px]"
+              className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 active:bg-teal-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-teal-950/40 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
-              <Camera className="w-4 h-4 text-amber-300" />
-              <span className="truncate">{isCapturing ? 'Ingesting Photo...' : '📸 Take & Ingest Photo'}</span>
+              <Camera className="w-4 h-4 text-white shrink-0" />
+              <span className="truncate">{isCapturing ? 'Ingesting Photo...' : 'Take & Ingest Photo'}</span>
             </button>
 
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isCapturing}
-              className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-teal-300 font-extrabold flex items-center justify-center space-x-1.5 transition active:scale-95 disabled:opacity-50 min-h-[44px]"
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 active:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
-              <ImageIcon className="w-4 h-4 text-teal-400" />
-              <span className="truncate">📁 Upload Photo from Device</span>
+              <Upload className="w-4 h-4 text-teal-400 shrink-0" />
+              <span className="truncate">Upload Photo from Device</span>
             </button>
           </div>
 
