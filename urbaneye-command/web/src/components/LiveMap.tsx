@@ -235,11 +235,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     trafficLayer.clearLayers();
     polylines.clear();
 
-    const cityTag = centerLat > 30
-      ? (centerLon > 75.6 ? 'kapurthala' : 'jalandhar')
-      : centerLat > 18
-      ? 'mumbai'
-      : 'bangalore';
+    const getCityTagFromCoords = (lat: number, lon: number): string => {
+      if (lat > 30) {
+        if (lon >= 75.62 || lat < 31.28) return 'kapurthala';
+        return 'jalandhar';
+      }
+      if (lat > 18 && lat < 21) return 'mumbai';
+      return 'bangalore';
+    };
+
+    const cityTag = getCityTagFromCoords(centerLat, centerLon);
 
     // Initial fetch of congestion state for the active city
     getCongestionState(cityTag).then(({ segments, dataSource }) => {
@@ -248,13 +253,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       segments.forEach((seg) => {
         if (!seg.coordinates || seg.coordinates.length < 2) return;
         const latLngs = seg.coordinates.map(([lat, lng]: [number, number]) => L.latLng(lat, lng));
-        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 6 : seg.roadClass === 'secondary' ? 5 : 4;
+        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 5 : seg.roadClass === 'secondary' ? 4 : 3;
         const polyline = L.polyline(latLngs, {
           color: seg.color || '#16a34a',
           weight,
-          opacity: 0.88,
+          opacity: 0.9,
           lineJoin: 'round',
           lineCap: 'round',
+          smoothFactor: 1.0,
         });
         if (seg.name || seg.level) {
           const levelLabel = (seg.level || 'FREE_FLOW').replace('_', ' ');

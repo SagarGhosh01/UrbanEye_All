@@ -24,8 +24,16 @@ export async function getCongestionState(city: string = 'bangalore'): Promise<Co
     const res = await fetch(`${API_BASE}/congestion-state?city=${city}`);
     if (!res.ok) return { segments: [], dataSource: 'NONE' };
     const data = await res.json();
+    let segments = data.congestion || [];
+    if (segments.length === 0 && city !== 'all') {
+      const fallbackRes = await fetch(`${API_BASE}/congestion-state?city=all`);
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        segments = fallbackData.congestion || [];
+      }
+    }
     return {
-      segments: data.congestion || [],
+      segments,
       dataSource: (data.dataSource as CongestionSource) || 'NONE',
     };
   } catch {
