@@ -89,6 +89,14 @@ model BusDeviceSession {
   expiresAt     DateTime
   pairedAt      DateTime?
   lastHeartbeat DateTime    @default(now())
+  // Last known position of the vehicle. Updated by an explicit heartbeat when the
+  // client sends one, and opportunistically from every ingested detection — which
+  // already carries a GPS fix, so buses appear on the map without new client work.
+  lastLatitude  Float?
+  lastLongitude Float?
+  lastSpeedKmh  Float?
+  lastHeadingDeg Float?
+  lastSeenAt    DateTime?
 
   @@index([pin, status])
 }

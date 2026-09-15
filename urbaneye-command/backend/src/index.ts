@@ -8,6 +8,7 @@ import fs from 'fs';
 import { initSocketIO } from './realtime/socket.js';
 import { authRouter } from './auth/auth.router.js';
 import { pairingRouter } from './pairing/pairing.router.js';
+import { fleetRouter } from './pairing/fleet.js';
 import { eventsRouter } from './events/events.router.js';
 import { geographyRouter } from './geography/geography.router.js';
 import { trafficRouter } from './traffic/traffic.router.js';
@@ -51,6 +52,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRouter);
+app.use('/api/pairing', fleetRouter);
 app.use('/api/pairing', pairingRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/detections', eventsRouter);

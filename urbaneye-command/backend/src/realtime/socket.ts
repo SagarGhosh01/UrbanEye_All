@@ -104,6 +104,28 @@ export function emitNewRoadEvent(event: any): void {
   io.to('national:live').emit('event:new', event);
 }
 
+/** A bus has just paired and joined the fleet. Puts a new marker on the map. */
+export function emitBusPaired(bus: any): void {
+  if (!io) return;
+  io.emit('bus:paired', bus);
+  if (bus.districtId) io.to(`district:${bus.districtId}`).emit('bus:paired', bus);
+  io.to('national:live').emit('bus:paired', bus);
+}
+
+/** A bus reported a new position. Moves its marker. */
+export function emitBusPosition(bus: any): void {
+  if (!io) return;
+  io.emit('bus:position', bus);
+  if (bus.districtId) io.to(`district:${bus.districtId}`).emit('bus:position', bus);
+  io.to('national:live').emit('bus:position', bus);
+}
+
+/** A bus was unpaired or went stale. Removes its marker. */
+export function emitBusOffline(sessionId: string): void {
+  if (!io) return;
+  io.emit('bus:offline', { sessionId });
+}
+
 export function emitRoadEventUpdated(event: any): void {
   if (!io) return;
   io.emit('event:updated', event);

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '../prisma.js';
+import { recordBusPosition } from '../pairing/fleet.js';
 import { requireAuth, AuthenticatedRequest, enforceDistrictScope } from '../middleware/auth.middleware.js';
 import { emitNewRoadEvent, emitRoadEventUpdated, emitRoadEventDeleted, getIO } from '../realtime/socket.js';
 import { IN_MEMORY_SESSIONS } from '../pairing/pairing.router.js';
@@ -603,6 +604,8 @@ export async function handleIngestEvent(req: Request, res: Response): Promise<vo
 
       emitRoadEventUpdated(duplicateEvent);
       emitNewRoadEvent(duplicateEvent);
+      // The detection carried a GPS fix, so it also tells us where the bus is.
+      void recordBusPosition(session.id, numLat, numLon, speed, heading);
 
       res.status(200).json({
         success: true,
@@ -680,6 +683,7 @@ export async function handleIngestEvent(req: Request, res: Response): Promise<vo
     }
 
     emitNewRoadEvent(newEventObj);
+    void recordBusPosition(session.id, numLat, numLon, speed, heading);
 
     res.status(201).json({
       success: true,

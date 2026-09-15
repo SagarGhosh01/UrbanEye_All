@@ -94,3 +94,14 @@ input:-webkit-autofill:focus {
   caret-color: #e2e8f0;
   transition: background-color 9999s ease-in-out 0s;
 }
+
+
+/* Live bus marker halo. Motion is suppressed for users who ask for reduced motion. */
+@keyframes urbaneyePulse {
+  0%   { transform: scale(0.85); opacity: 0.85; }
+  70%  { transform: scale(1.8);  opacity: 0;    }
+  100% { transform: scale(1.8);  opacity: 0;    }
+}
+@media (prefers-reduced-motion: reduce) {
+  .urbaneye-bus-marker span { animation: none !important; }
+}

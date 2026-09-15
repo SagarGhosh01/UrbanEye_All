@@ -7,6 +7,7 @@ import { getPotholeCostDetails } from '../utils/potholeEstimates';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
+import { getFleet, subscribeToFleet, BusPosition } from '../services/fleetService';
 
 interface LiveMapProps {
   events: RoadEvent[];
@@ -49,6 +50,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const incidentsLayerRef = useRef<L.LayerGroup | null>(null);
   const vruLayerRef = useRef<L.LayerGroup | null>(null);
   const trafficLayerRef = useRef<L.LayerGroup | null>(null);
+  const busLayerRef = useRef<L.LayerGroup | null>(null);
+  const busMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const trafficPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const pulseCircleRef = useRef<L.CircleMarker | null>(null);
 
@@ -66,6 +69,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   // Provenance of the congestion overlay. Surfaced on the map, because an overlay
   // animating over real OSM geometry is indistinguishable from measured traffic.
   const [congestionSource, setCongestionSource] = useState<CongestionSource>('NONE');
+  const [liveBusCount, setLiveBusCount] = useState(0);
 
   // Initialize Map
   useEffect(() => {
@@ -101,6 +105,10 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       const trafficLayer = L.layerGroup().addTo(map);
       trafficLayerRef.current = trafficLayer;
 
+      // Live bus positions — above defects, so a moving vehicle is never hidden
+      const busLayer = L.layerGroup().addTo(map);
+      busLayerRef.current = busLayer;
+
       mapInstanceRef.current = map;
     }
 
@@ -128,6 +136,85 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+    };
+  }, []);
+
+  // ─── Live Bus Fleet Layer ──────────────────────────────────────────────────
+  // A bus appears as soon as it reports a position — which every detection carries,
+  // so this works with any build of the mobile app. Markers are reused and moved
+  // rather than recreated, so a bus slides along the road instead of blinking.
+  useEffect(() => {
+    if (!mapInstanceRef.current || !busLayerRef.current) return;
+    const busLayer = busLayerRef.current;
+    const markers = busMarkersRef.current;
+
+    const busIcon = (bus: BusPosition) => {
+      const colour = bus.isLive ? '#1E7F73' : '#64748b';
+      const pulse = bus.isLive
+        ? '<span style="position:absolute;inset:-6px;border-radius:9999px;background:' + colour + '33;animation:urbaneyePulse 2s ease-out infinite"></span>'
+        : '';
+      const heading = typeof bus.headingDeg === 'number'
+        ? '<span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(' + bus.headingDeg + 'deg);color:' + colour + ';font-size:10px;line-height:1">&#9650;</span>'
+        : '';
+      return L.divIcon({
+        className: 'urbaneye-bus-marker',
+        html:
+          '<div style="position:relative;display:flex;align-items:center;justify-content:center;width:26px;height:26px">' +
+          pulse + heading +
+          '<div style="position:relative;width:24px;height:24px;border-radius:9999px;background:' + colour +
+          ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:13px">&#128653;</div>' +
+          '</div>',
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      });
+    };
+
+    const popupFor = (bus: BusPosition) => {
+      const speed = typeof bus.speedKmh === 'number' ? Math.round(bus.speedKmh) + ' km/h' : 'speed unknown';
+      const seen = new Date(bus.lastSeenAt).toLocaleTimeString();
+      return (
+        '<div style="font-family:ui-sans-serif,system-ui;min-width:170px">' +
+        '<div style="font-weight:800;margin-bottom:2px">' + bus.busLabel + '</div>' +
+        (bus.routeTag ? '<div style="font-size:11px;color:#64748b">' + bus.routeTag + '</div>' : '') +
+        '<div style="font-size:11px;margin-top:6px">' + speed + '</div>' +
+        '<div style="font-size:11px;color:#64748b">last report ' + seen + '</div>' +
+        '<div style="font-size:11px;color:' + (bus.isLive ? '#1E7F73' : '#64748b') + ';font-weight:700;margin-top:4px">' +
+        (bus.isLive ? 'LIVE' : 'STALE') + '</div></div>'
+      );
+    };
+
+    const upsert = (bus: BusPosition) => {
+      const existing = markers.get(bus.sessionId);
+      if (existing) {
+        existing.setLatLng([bus.latitude, bus.longitude]);
+        existing.setIcon(busIcon(bus));
+        existing.setPopupContent(popupFor(bus));
+      } else {
+        const marker = L.marker([bus.latitude, bus.longitude], { icon: busIcon(bus), zIndexOffset: 1200 })
+          .bindPopup(popupFor(bus))
+          .addTo(busLayer);
+        markers.set(bus.sessionId, marker);
+      }
+      setLiveBusCount(markers.size);
+    };
+
+    getFleet().then(({ buses }) => buses.forEach(upsert));
+
+    const unsub = subscribeToFleet(upsert, (sessionId) => {
+      const marker = markers.get(sessionId);
+      if (marker) {
+        busLayer.removeLayer(marker);
+        markers.delete(sessionId);
+        setLiveBusCount(markers.size);
+      }
+    });
+
+    // Buses go quiet between routes; refresh so stale markers grey out.
+    const poll = setInterval(() => getFleet().then(({ buses }) => buses.forEach(upsert)), 30000);
+
+    return () => {
+      unsub();
+      clearInterval(poll);
     };
   }, []);
 
@@ -527,6 +614,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               </div>
             </div>
 
+            {liveBusCount > 0 && (
+              <div className="mb-2 flex items-center gap-2 rounded-md border border-[#1E7F73]/40 bg-[#1E7F73]/15 px-2.5 py-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-300">Fleet</span>
+                <span className="text-[10px] text-teal-100/90">
+                  {liveBusCount} bus{liveBusCount === 1 ? '' : 'es'} reporting position
+                </span>
+              </div>
+            )}
             {congestionSource === 'SCRIPTED_DEMO' && (
               <div className="mb-2 flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/15 px-2.5 py-1.5">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Simulated</span>

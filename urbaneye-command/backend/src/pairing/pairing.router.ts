@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../prisma.js';
 import { requireAuth, AuthenticatedRequest, enforceDistrictScope } from '../middleware/auth.middleware.js';
-import { emitPairingConfirmed, getIO } from '../realtime/socket.js';
+import { emitPairingConfirmed, emitBusPaired, getIO } from '../realtime/socket.js';
 
 export const pairingRouter = Router();
 
@@ -237,6 +237,22 @@ pairingRouter.post(
 
       // Broadcast real-time confirmation to mobile device over WebSocket room
       emitPairingConfirmed(session);
+
+      // Announce the new bus to the dashboards so a marker can appear immediately.
+      // Position is unknown until the bus reports, so the map shows it as pending
+      // rather than guessing a location.
+      emitBusPaired({
+        sessionId: session.id,
+        busLabel: session.busLabel,
+        routeTag: session.routeTag,
+        districtId: session.districtId,
+        latitude: null,
+        longitude: null,
+        speedKmh: null,
+        headingDeg: null,
+        lastSeenAt: new Date().toISOString(),
+        isLive: false,
+      });
 
       res.json({
         success: true,
