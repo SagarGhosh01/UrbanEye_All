@@ -19,8 +19,19 @@ import { modelsRouter } from './models/models.router.js';
 import { detectRouter } from './models/detect.js';
 import { gpsRouter } from './gps/gps.router.js';
 import { startDemoPlayer } from './traffic/demo-player.js';
+import { apiRateLimiter, authRateLimiter, ingestionRateLimiter } from './middleware/rateLimiter.js';
+import { globalErrorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
+
+// Process Level Security & Crash Guards
+process.on('uncaughtException', (err) => {
+  console.error(`[CRITICAL] Uncaught Exception: ${err.message}`, err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Promise Rejection at:', promise, 'reason:', reason);
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -32,6 +43,11 @@ initSocketIO(server);
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Rate Limiters
+app.use('/api/', apiRateLimiter);
+app.use('/api/auth/login', authRateLimiter);
+app.use('/api/events', ingestionRateLimiter);
 
 // URL Normalizer: Strip duplicate slashes (e.g. //api/pairing/request -> /api/pairing/request)
 app.use((req, res, next) => {
@@ -99,6 +115,9 @@ if (clientDistPath) {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 }
+
+// Global Enterprise Error Handler Middleware
+app.use(globalErrorHandler);
 
 // Render Free Tier Anti-Sleep Keep-Alive Heartbeat
 function startRenderKeepAlive() {
