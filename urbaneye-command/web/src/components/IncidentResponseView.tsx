@@ -42,6 +42,9 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
     setHotlistPlates((prev) => prev.filter((p) => p !== plate));
   };
 
+  const [plateSearchQuery, setPlateSearchQuery] = useState('');
+  const [quickFilter, setQuickFilter] = useState<'ALL' | 'WATCHLIST' | 'SPEEDING' | 'ACCIDENT'>('ALL');
+
   useEffect(() => {
     loadData();
   }, [districtId, filterCategory, filterStatus]);
@@ -71,6 +74,28 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
     }
     loadData();
   };
+
+  const filteredIncidents = incidents.filter((inc) => {
+    // Plate Search Filter
+    if (plateSearchQuery) {
+      const q = plateSearchQuery.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const p = (inc.plateText || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const v = (inc.vehicleType || '').toUpperCase();
+      const bus = (inc.busLabel || '').toUpperCase();
+      if (!p.includes(q) && !v.includes(q) && !bus.includes(q)) return false;
+    }
+
+    // Quick Filter Tabs
+    if (quickFilter === 'WATCHLIST') {
+      const isHot = inc.plateText && hotlistPlates.some((hp) => hp.replace(/[^A-Z0-9]/g, '').includes(inc.plateText!.replace(/[^A-Z0-9]/g, '')) || inc.plateText!.replace(/[^A-Z0-9]/g, '').includes(hp.replace(/[^A-Z0-9]/g, '')));
+      if (!isHot) return false;
+    } else if (quickFilter === 'SPEEDING') {
+      if (inc.speedKmh <= 80) return false;
+    } else if (quickFilter === 'ACCIDENT') {
+      if (inc.category !== 'ACCIDENT' && inc.category !== 'HIT_AND_RUN') return false;
+    }
+    return true;
+  });
 
   const getCategoryBadge = (category: IncidentCategory) => {
     switch (category) {
@@ -106,9 +131,9 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400">INCIDENTS TODAY</div>
+            <div className="text-xs font-semibold text-slate-400">VEHICLE EVENTS TODAY</div>
             <div className="text-2xl font-bold text-white mt-1">{summary.totalIncidentsToday}</div>
-            <div className="text-[11px] text-red-400 mt-0.5 font-medium">Critical Event Mesh</div>
+            <div className="text-[11px] text-red-400 mt-0.5 font-medium">Critical ANPR Telemetry</div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center border border-red-500/30">
             <ShieldAlert className="w-5 h-5" />
@@ -128,7 +153,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
         <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400">ANPR PLATE RECOGNITION</div>
+            <div className="text-xs font-semibold text-slate-400">ANPR RECOGNITION RATE</div>
             <div className="text-2xl font-bold text-teal-400 mt-1">{summary.plateDetectionRatePercent}%</div>
             <div className="text-[11px] text-teal-300/80 mt-0.5 font-medium">Optical Plate Extraction</div>
           </div>
@@ -149,17 +174,17 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
         </div>
       </div>
 
-      {/* Main Grid: Incident Log & Tracked Vehicle Search */}
+      {/* Main Grid: Vehicle Tracker Log & Wanted Watchlist */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Incident Response Feed */}
+        {/* Vehicle Tracker Feed */}
         <div className="lg:col-span-2 p-5 rounded-2xl bg-[#10233D] border border-slate-800 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-                Incident & ANPR Alert Feed
+                <Car className="w-5 h-5 text-teal-400" />
+                Vehicle Tracker & ANPR Intelligence Feed
               </h3>
-              <p className="text-xs text-slate-400">Real-time edge camera accident detection & dangerous vehicle telemetry</p>
+              <p className="text-xs text-slate-400">Live ANPR plate recognition, speed tracking & wanted vehicle detection</p>
             </div>
             
             <div className="flex items-center gap-2">
@@ -189,14 +214,74 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
             </div>
           </div>
 
+          {/* ANPR Plate Search Bar & Quick Filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Lookup Plate Number (e.g. KA-01-AB-1234)..."
+                value={plateSearchQuery}
+                onChange={(e) => setPlateSearchQuery(e.target.value)}
+                className="w-full bg-slate-900 border border-teal-500/40 text-xs font-mono text-white rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              {plateSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setPlateSearchQuery('')}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+              <button
+                type="button"
+                onClick={() => setQuickFilter('ALL')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                  quickFilter === 'ALL'
+                    ? 'bg-teal-500 text-slate-950 shadow-md'
+                    : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                All Vehicles
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickFilter('WATCHLIST')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                  quickFilter === 'WATCHLIST'
+                    ? 'bg-red-500 text-white shadow-md'
+                    : 'bg-slate-900 text-red-300 hover:bg-slate-800'
+                }`}
+              >
+                🚨 Watchlist
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickFilter('SPEEDING')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                  quickFilter === 'SPEEDING'
+                    ? 'bg-amber-500 text-slate-950 shadow-md'
+                    : 'bg-slate-900 text-amber-300 hover:bg-slate-800'
+                }`}
+              >
+                ⚡ Speeding (&gt;80km/h)
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-3">
-            {incidents.length === 0 ? (
+            {filteredIncidents.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs bg-slate-900/50 rounded-xl border border-slate-800">
-                No incidents found matching the selected filters.
+                No vehicles or ANPR records found matching the selected search query &amp; filters.
               </div>
             ) : (
-              incidents.map((inc) => {
+              filteredIncidents.map((inc) => {
                 const isHotlistMatch = inc.plateText && hotlistPlates.some((p) => p.replace(/[^A-Z0-9]/g, '').includes(inc.plateText!.replace(/[^A-Z0-9]/g, '')) || inc.plateText!.replace(/[^A-Z0-9]/g, '').includes(p.replace(/[^A-Z0-9]/g, '')));
+                const isSpeeding = inc.speedKmh > 80;
                 return (
                   <div
                     key={inc.id}
@@ -229,6 +314,11 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                       <div className="flex items-center gap-2 flex-wrap">
                         {getCategoryBadge(inc.category)}
                         {getStatusBadge(inc.status)}
+                        {isSpeeding && (
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                            ⚡ SPEEDING ({inc.speedKmh} km/h)
+                          </span>
+                        )}
                         <span className="text-xs font-mono text-slate-400">ID: {inc.id}</span>
                       </div>
 
@@ -241,7 +331,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                         className="px-3 py-1 text-xs font-semibold rounded-lg bg-[#1E7F73] hover:bg-[#186a60] text-white flex items-center gap-1 transition"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        Inspect Evidence
+                        Inspect Telemetry
                       </button>
                     </div>
 
