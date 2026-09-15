@@ -29,15 +29,11 @@ export function resolveImageSrc(imageSnippet: string | null | undefined): string
         const apiOrigin = envApi.replace(/\/api\/?$/, '');
         return `${apiOrigin}${str}`;
       }
-      if (typeof window !== 'undefined') {
-        const host = window.location.hostname || 'localhost';
-        const protocol = window.location.protocol || 'http:';
-        // If web app is running on Vite dev port (e.g., 3000), backend uploads are served on port 5000
-        if (window.location.port === '3000') {
-          return `${protocol}//${host}:5000${str}`;
-        }
-        return `${protocol}//${window.location.host}${str}`;
-      }
+      // Otherwise keep the path relative. In dev the Vite proxy forwards /uploads to
+      // whichever port the backend is on; in production the backend serves the built
+      // app and the uploads from the same origin. Hardcoding a port here breaks the
+      // moment the backend runs anywhere else — on macOS the AirPlay Receiver holds
+      // 5000, so a pinned :5000 resolves to AirPlay and every image 403s.
     } catch {
       // fallback to relative path
     }
