@@ -23,6 +23,13 @@ export const StateOverviewView: React.FC<StateOverviewViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [districts, setDistricts] = useState<DistrictSummaryItem[]>([]);
   const [summary, setSummary] = useState<HierarchySummary | null>(null);
+  const [stateFleet, setStateFleet] = useState<any[]>([]);
+
+  const [mapLayers, setMapLayers] = useState({
+    densityHeatmap: true,
+    liveFleet: true,
+    districtHealth: true,
+  });
 
   // Mobile Segmented View Switcher: 'map' vs 'districts'
   const [mobileTab, setMobileTab] = useState<'map' | 'districts'>('districts');
@@ -30,13 +37,19 @@ export const StateOverviewView: React.FC<StateOverviewViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const densityLayerRef = useRef<L.LayerGroup | null>(null);
+  const fleetLayerRef = useRef<L.LayerGroup | null>(null);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await api.getStateSummary(state.id);
-      setDistricts(res.districts);
-      setSummary(res.summary);
+      const [resSummary, resFleet] = await Promise.all([
+        api.getStateSummary(state.id),
+        api.getLiveFleet({ stateId: state.id }),
+      ]);
+      setDistricts(resSummary.districts);
+      setSummary(resSummary.summary);
+      setStateFleet(resFleet.fleet || []);
     } catch (err) {
       console.error('Failed to load state summary:', err);
     } finally {
@@ -64,8 +77,16 @@ export const StateOverviewView: React.FC<StateOverviewViewProps> = ({
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(map);
+
+      const densityLayer = L.layerGroup().addTo(map);
+      densityLayerRef.current = densityLayer;
+
+      const fleetLayer = L.layerGroup().addTo(map);
+      fleetLayerRef.current = fleetLayer;
+
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
+
       mapInstanceRef.current = map;
     } else {
       mapInstanceRef.current.setView([state.centerLat, state.centerLon], 8);
@@ -97,10 +118,74 @@ export const StateOverviewView: React.FC<StateOverviewViewProps> = ({
     }
   }, [mobileTab]);
 
+  // ─── State Vehicle Density Heatmap & Fleet Pings Render ─────────────────────
+  useEffect(() => {
+    if (!mapInstanceRef.current || !densityLayerRef.current || !fleetLayerRef.current) return;
+    const densityLayer = densityLayerRef.current;
+    const fleetLayer = fleetLayerRef.current;
+
+    densityLayer.clearLayers();
+    fleetLayer.clearLayers();
+
+    // 1. Density Heatmap Halos over Districts & Active Bus Clusters
+    if (mapLayers.densityHeatmap) {
+      districts.forEach((d) => {
+        const busCount = d.activeBusesCount || 1;
+        const color = d.roadHealthScore >= 80 ? '#22c55e' : d.roadHealthScore >= 60 ? '#f97316' : '#ef4444';
+        const halo = L.circleMarker([d.centerLat, d.centerLon], {
+          radius: 35 + busCount * 12,
+          fillColor: color,
+          fillOpacity: 0.22,
+          stroke: false,
+          interactive: true,
+        });
+
+        halo.bindTooltip(`
+          <div style="font-family:sans-serif;font-size:11px;padding:3px;">
+            <strong style="color:#0f172a;font-size:12px;">${d.name} (${d.code})</strong><br/>
+            <span>Active Patrol Fleet: <strong>${d.activeBusesCount} Buses</strong></span><br/>
+            <span>Road Health Index: <strong>${d.roadHealthScore}/100</strong></span>
+          </div>
+        `, { sticky: true });
+
+        halo.addTo(densityLayer);
+      });
+    }
+
+    // 2. Live Bus Fleet GPS Markers
+    if (mapLayers.liveFleet && stateFleet.length > 0) {
+      stateFleet.forEach((bus) => {
+        const busIcon = L.divIcon({
+          className: 'custom-state-bus-marker',
+          html: `
+            <div style="background:#1E7F73;color:white;border-radius:6px;padding:2px 5px;font-weight:700;font-size:9px;border:1.5px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5);display:flex;align-items:center;gap:3px;white-space:nowrap;">
+              <span>🚌</span><span>${bus.busLabel}</span>
+            </div>`,
+          iconSize: [65, 20],
+          iconAnchor: [32, 10],
+        });
+
+        const m = L.marker([bus.latitude, bus.longitude], { icon: busIcon });
+        m.bindTooltip(`
+          <div style="font-family:sans-serif;font-size:11px;padding:3px;">
+            <strong style="color:#10233D;">${bus.busLabel}</strong><br/>
+            Route: <strong>${bus.routeTag || 'State Highway'}</strong><br/>
+            Speed: <strong>${bus.speedKmh} km/h</strong>
+          </div>
+        `);
+        m.addTo(fleetLayer);
+      });
+    }
+  }, [districts, stateFleet, mapLayers]);
+
+  // Render District Health Markers
   useEffect(() => {
     if (!mapInstanceRef.current || !markersLayerRef.current || districts.length === 0) return;
     const layer = markersLayerRef.current;
     layer.clearLayers();
+
+    if (!mapLayers.districtHealth) return;
+
     districts.forEach((dist) => {
       const getHealthColor = (s: number) => (s >= 80 ? '#1E7F73' : s >= 60 ? '#d97706' : '#dc2626');
       const healthColor = getHealthColor(dist.roadHealthScore);
@@ -149,9 +234,17 @@ export const StateOverviewView: React.FC<StateOverviewViewProps> = ({
             });
       }, 50);
       marker.bindPopup(popupDiv);
+      marker.on('click', () => onSelectDistrict({
+        id: dist.id,
+        code: dist.code,
+        name: dist.name,
+        stateId: state.id,
+        centerLat: dist.centerLat,
+        centerLon: dist.centerLon,
+      }));
       marker.addTo(layer);
     });
-  }, [districts, state.id, onSelectDistrict]);
+  }, [districts, state.id, onSelectDistrict, mapLayers.districtHealth]);
 
   /* ── Dark tokens ── */
   const card = 'bg-slate-800 border-slate-700';
@@ -309,6 +402,43 @@ export const StateOverviewView: React.FC<StateOverviewViewProps> = ({
         </div>
         <div className="h-[360px] sm:h-[440px] w-full relative">
           <div ref={mapContainerRef} className="w-full h-full" />
+
+          {/* Top-Right Map Layers Toggle Switcher */}
+          <div className="absolute top-3 right-3 sm:right-4 z-[500] bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-2.5 shadow-xl text-xs space-y-1.5 text-slate-200">
+            <div className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-1">
+              State Map Layers
+            </div>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={mapLayers.densityHeatmap}
+                onChange={(e) => setMapLayers({ ...mapLayers, densityHeatmap: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🔥 Vehicle Density Heatmap</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={mapLayers.liveFleet}
+                onChange={(e) => setMapLayers({ ...mapLayers, liveFleet: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🚌 Live Bus Fleet GPS Pings</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={mapLayers.districtHealth}
+                onChange={(e) => setMapLayers({ ...mapLayers, districtHealth: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🏛️ District Health Markers</span>
+            </label>
+          </div>
         </div>
       </div>
 
