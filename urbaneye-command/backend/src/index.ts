@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { initSocketIO, getConnectedClientsCount } from './realtime/socket.js';
-import { prisma } from './prisma.js';
+import { prisma, ensureDatabaseInitialized } from './prisma.js';
 import { authRouter } from './auth/auth.router.js';
 import { pairingRouter } from './pairing/pairing.router.js';
 import { eventsRouter } from './events/events.router.js';
@@ -184,18 +184,21 @@ function startRenderKeepAlive() {
 }
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🛡️  UrbanEye Command Backend listening on port ${PORT}`);
-  console.log(`📡 WebSocket / Socket.IO live intelligence streaming active`);
-  console.log(`🔗 REST API endpoints mounted at /api/*`);
-  console.log(`====================================================`);
-  startRenderKeepAlive();
+(async () => {
+  await ensureDatabaseInitialized();
+  server.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🛡️  UrbanEye Command Backend listening on port ${PORT}`);
+    console.log(`📡 WebSocket / Socket.IO live intelligence streaming active`);
+    console.log(`🔗 REST API endpoints mounted at /api/*`);
+    console.log(`====================================================`);
+    startRenderKeepAlive();
 
-  // Auto-start demo mode if DEMO_MODE env var is set
-  const demoMode = process.env.DEMO_MODE;
-  if (demoMode) {
-    console.log(`🎬 DEMO_MODE=${demoMode} detected — auto-starting demo player in 3s...`);
-    setTimeout(() => startDemoPlayer(), 3000);
-  }
-});
+    // Auto-start demo mode if DEMO_MODE env var is set
+    const demoMode = process.env.DEMO_MODE;
+    if (demoMode) {
+      console.log(`🎬 DEMO_MODE=${demoMode} detected — auto-starting demo player in 3s...`);
+      setTimeout(() => startDemoPlayer(), 3000);
+    }
+  });
+})();
