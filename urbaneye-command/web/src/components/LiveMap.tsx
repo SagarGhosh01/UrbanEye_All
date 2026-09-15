@@ -71,8 +71,11 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
   const [visibleRoadClasses, setVisibleRoadClasses] = useState<string[]>(['trunk', 'motorway']);
 
-  // Collapsible legend state
+  // Collapsible UI states for mobile ergonomics & uncluttered map
   const [legendOpen, setLegendOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [placesOpen, setPlacesOpen] = useState(false);
+  const [activePlaceName, setActivePlaceName] = useState('Kapurthala');
   // Provenance of the congestion overlay. Surfaced on the map, because an overlay
   // animating over real OSM geometry is indistinguishable from measured traffic.
   const [congestionSource, setCongestionSource] = useState<CongestionSource>('NONE');
@@ -95,6 +98,12 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         else if (z <= 9) setVisibleRoadClasses(['trunk', 'motorway', 'primary']);
         else if (z <= 11) setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary']);
         else setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+      });
+
+      // Dismiss open dropdown menus when user clicks anywhere on the map
+      map.on('click', () => {
+        setPlacesOpen(false);
+        setLayersOpen(false);
       });
 
       // Bottom-right zoom control: thumb-safe for one-handed mobile use & prevents blocking header
@@ -591,142 +600,263 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Top Left Quick Navigation Switcher */}
-      <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 flex flex-wrap items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-white/10 p-1 rounded-xl shadow-xl max-w-[calc(100vw-180px)]">
-        <button
-          type="button"
-          onClick={() => {
-            if (mapInstanceRef.current) {
-              setVisibleRoadClasses(['trunk', 'motorway']);
-              mapInstanceRef.current.flyTo([22.5, 82.0], 5, { animate: true, duration: 1.2 });
-            }
-          }}
-          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition"
-        >
-          🇮🇳 India View
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (mapInstanceRef.current) {
-              setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
-              mapInstanceRef.current.flyTo([12.9716, 77.5946], 13, { animate: true, duration: 1.2 });
-            }
-          }}
-          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600/80 hover:bg-indigo-500 text-white transition flex items-center gap-1"
-        >
-          <span>🏙️</span>
-          <span>Bengaluru City</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (mapInstanceRef.current) {
-              setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
-              mapInstanceRef.current.flyTo([19.0760, 72.8777], 13, { animate: true, duration: 1.2 });
-            }
-          }}
-          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white transition flex items-center gap-1"
-        >
-          <span>🌊</span>
-          <span>Mumbai City</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (mapInstanceRef.current) {
-              setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
-              mapInstanceRef.current.flyTo([31.3800, 75.3800], 14, { animate: true, duration: 1.2 });
-            }
-          }}
-          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white transition flex items-center gap-1"
-        >
-          <span>📍</span>
-          <span>Kapurthala</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (mapInstanceRef.current) {
-              setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
-              mapInstanceRef.current.flyTo([31.1471, 75.3412], 9, { animate: true, duration: 1.2 });
-            }
-          }}
-          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white transition flex items-center gap-1"
-        >
-          <span>🌾</span>
-          <span>Punjab State</span>
-        </button>
+      <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30">
+        {/* Desktop: Horizontal Chip Row (sm:flex) */}
+        <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-white/10 p-1 rounded-xl shadow-xl">
+          <button
+            type="button"
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                setVisibleRoadClasses(['trunk', 'motorway']);
+                mapInstanceRef.current.flyTo([22.5, 82.0], 5, { animate: true, duration: 1.2 });
+              }
+              setActivePlaceName('India View');
+            }}
+            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition"
+          >
+            🇮🇳 India View
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                mapInstanceRef.current.flyTo([12.9716, 77.5946], 13, { animate: true, duration: 1.2 });
+              }
+              setActivePlaceName('Bengaluru');
+            }}
+            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600/80 hover:bg-indigo-500 text-white transition flex items-center gap-1"
+          >
+            <span>🏙️</span>
+            <span>Bengaluru City</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                mapInstanceRef.current.flyTo([19.0760, 72.8777], 13, { animate: true, duration: 1.2 });
+              }
+              setActivePlaceName('Mumbai');
+            }}
+            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white transition flex items-center gap-1"
+          >
+            <span>🌊</span>
+            <span>Mumbai City</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                mapInstanceRef.current.flyTo([31.3800, 75.3800], 14, { animate: true, duration: 1.2 });
+              }
+              setActivePlaceName('Kapurthala');
+            }}
+            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white transition flex items-center gap-1"
+          >
+            <span>📍</span>
+            <span>Kapurthala</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                mapInstanceRef.current.flyTo([31.1471, 75.3412], 9, { animate: true, duration: 1.2 });
+              }
+              setActivePlaceName('Punjab');
+            }}
+            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white transition flex items-center gap-1"
+          >
+            <span>🌾</span>
+            <span>Punjab State</span>
+          </button>
+        </div>
+
+        {/* Mobile: Compact Dropdown Pill (sm:hidden) */}
+        <div className="sm:hidden relative">
+          <button
+            type="button"
+            onClick={() => {
+              setPlacesOpen(!placesOpen);
+              setLayersOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur-md border border-white/15 shadow-xl transition"
+          >
+            <span>📍</span>
+            <span>{activePlaceName}</span>
+            {placesOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+          </button>
+
+          {placesOpen && (
+            <div className="absolute left-0 top-full mt-1.5 z-40 bg-slate-900/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 min-w-[155px]">
+              <button
+                type="button"
+                onClick={() => {
+                  if (mapInstanceRef.current) {
+                    setVisibleRoadClasses(['trunk', 'motorway']);
+                    mapInstanceRef.current.flyTo([22.5, 82.0], 5, { animate: true, duration: 1.2 });
+                  }
+                  setActivePlaceName('India View');
+                  setPlacesOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition"
+              >
+                🇮🇳 India View
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (mapInstanceRef.current) {
+                    setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                    mapInstanceRef.current.flyTo([12.9716, 77.5946], 13, { animate: true, duration: 1.2 });
+                  }
+                  setActivePlaceName('Bengaluru');
+                  setPlacesOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-indigo-600/80 hover:bg-indigo-500 text-white transition flex items-center gap-1.5"
+              >
+                <span>🏙️</span>
+                <span>Bengaluru City</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (mapInstanceRef.current) {
+                    setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                    mapInstanceRef.current.flyTo([19.0760, 72.8777], 13, { animate: true, duration: 1.2 });
+                  }
+                  setActivePlaceName('Mumbai');
+                  setPlacesOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white transition flex items-center gap-1.5"
+              >
+                <span>🌊</span>
+                <span>Mumbai City</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (mapInstanceRef.current) {
+                    setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                    mapInstanceRef.current.flyTo([31.3800, 75.3800], 14, { animate: true, duration: 1.2 });
+                  }
+                  setActivePlaceName('Kapurthala');
+                  setPlacesOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white transition flex items-center gap-1.5"
+              >
+                <span>📍</span>
+                <span>Kapurthala</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (mapInstanceRef.current) {
+                    setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+                    mapInstanceRef.current.flyTo([31.1471, 75.3412], 9, { animate: true, duration: 1.2 });
+                  }
+                  setActivePlaceName('Punjab');
+                  setPlacesOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white transition flex items-center gap-1.5"
+              >
+                <span>🌾</span>
+                <span>Punjab State</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Top Right GIS Layer Controls Toggle Panel */}
-      <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-30 max-w-[calc(100vw-32px)]">
-        <div className="bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl shadow-xl p-2 sm:p-2.5 text-xs text-white space-y-1 sm:space-y-1.5 max-w-[170px] sm:min-w-[180px]">
+      {/* Top Right GIS Layer Controls: Collapsible Pill Button & Dropdown */}
+      <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-30">
+        <button
+          type="button"
+          onClick={() => {
+            setLayersOpen(!layersOpen);
+            setPlacesOpen(false);
+          }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur-md border border-white/15 shadow-xl transition"
+          title="Toggle GIS Layers"
+        >
+          <Layers className="w-3.5 h-3.5 text-teal-400" />
+          <span className="text-[11px]">Layers</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-teal-500/25 text-teal-300 font-mono">
+            {Object.values(layers).filter(Boolean).length}
+          </span>
+          {layersOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+        </button>
 
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/10 pb-1 flex items-center justify-between">
-            <span>GIS Map Layers</span>
-            <Layers className="w-3 h-3 text-teal-400" />
+        {layersOpen && (
+          <div className="absolute right-0 top-full mt-1.5 z-40 bg-slate-900/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl p-2.5 text-xs text-white space-y-1.5 min-w-[175px]">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/10 pb-1 flex items-center justify-between">
+              <span>GIS Map Layers</span>
+              <Layers className="w-3 h-3 text-teal-400" />
+            </div>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200 hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={layers.defects}
+                onChange={(e) => setLayers({ ...layers, defects: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🛠️ Road Defects</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200 hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={layers.traffic}
+                onChange={(e) => setLayers({ ...layers, traffic: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🚗 Traffic Flow</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200 hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={layers.incidents}
+                onChange={(e) => setLayers({ ...layers, incidents: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🚨 Vehicle Tracker</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200 hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={layers.vruSafety}
+                onChange={(e) => setLayers({ ...layers, vruSafety: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🚶 VRU Safety Risk</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200 hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={layers.heatmap}
+                onChange={(e) => setLayers({ ...layers, heatmap: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>📢 Citizen Reports</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200 hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={layers.predictive}
+                onChange={(e) => setLayers({ ...layers, predictive: e.target.checked })}
+                className="rounded text-teal-500 focus:ring-0"
+              />
+              <span>🔮 Predictive Risk</span>
+            </label>
           </div>
-
-          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
-            <input
-              type="checkbox"
-              checked={layers.defects}
-              onChange={(e) => setLayers({ ...layers, defects: e.target.checked })}
-              className="rounded text-teal-500 focus:ring-0"
-            />
-            <span>🛠️ Road Defects</span>
-          </label>
-
-          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
-            <input
-              type="checkbox"
-              checked={layers.traffic}
-              onChange={(e) => setLayers({ ...layers, traffic: e.target.checked })}
-              className="rounded text-teal-500 focus:ring-0"
-            />
-            <span>🚗 Traffic Flow</span>
-          </label>
-
-          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
-            <input
-              type="checkbox"
-              checked={layers.incidents}
-              onChange={(e) => setLayers({ ...layers, incidents: e.target.checked })}
-              className="rounded text-teal-500 focus:ring-0"
-            />
-            <span>🚨 Vehicle Tracker</span>
-          </label>
-
-          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
-            <input
-              type="checkbox"
-              checked={layers.vruSafety}
-              onChange={(e) => setLayers({ ...layers, vruSafety: e.target.checked })}
-              className="rounded text-teal-500 focus:ring-0"
-            />
-            <span>🚶 VRU Safety Risk</span>
-          </label>
-
-          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
-            <input
-              type="checkbox"
-              checked={layers.heatmap}
-              onChange={(e) => setLayers({ ...layers, heatmap: e.target.checked })}
-              className="rounded text-teal-500 focus:ring-0"
-            />
-            <span>📢 Citizen Reports</span>
-          </label>
-
-          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
-            <input
-              type="checkbox"
-              checked={layers.predictive}
-              onChange={(e) => setLayers({ ...layers, predictive: e.target.checked })}
-              className="rounded text-teal-500 focus:ring-0"
-            />
-            <span>🔮 Predictive Risk</span>
-          </label>
-        </div>
+        )}
       </div>
 
       {/* Map Status Legend Overlay: Collapsible on Mobile, Permanent on Desktop */}
