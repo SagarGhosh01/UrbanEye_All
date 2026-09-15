@@ -67,8 +67,12 @@ export function loadEdgeModel(): Promise<ort.InferenceSession> {
 }
 
 /**
- * Only the lower part of the frame is road surface. Mirrors SanityFilter.kt, which
- * rejects candidates above the road plane so signage and sky cannot be read as defects.
+ * Rejects candidates above the road plane.
+ *
+ * This only holds for a windshield-mounted camera, where the road occupies the lower
+ * frame. A citizen holding a phone points it down at the defect, or at a photo on a
+ * screen, and the defect lands anywhere — so the caller opts in rather than this being
+ * applied unconditionally.
  */
 function isOnRoadSurface(yCentre: number): boolean {
   return yCentre >= 0.35;
@@ -131,7 +135,12 @@ function frameToTensor(source: CanvasImageSource): ort.Tensor {
   return new ort.Tensor('float32', chw, [1, 3, INPUT_SIZE, INPUT_SIZE]);
 }
 
-export function decodeOutput(raw: Float32Array, dims: readonly number[], confidenceThreshold: number): EdgeDetection[] {
+export function decodeOutput(
+  raw: Float32Array,
+  dims: readonly number[],
+  confidenceThreshold: number,
+  enforceRoadPlane = false
+): EdgeDetection[] {
   const rows = 4 + NUM_CLASSES;
   // [1, 11, anchors] vs [1, anchors, 11]
   const transposed = dims[1] === rows;
@@ -157,7 +166,7 @@ export function decodeOutput(raw: Float32Array, dims: readonly number[], confide
     const cy = at(1, anchor) / INPUT_SIZE;
     const w = at(2, anchor) / INPUT_SIZE;
     const h = at(3, anchor) / INPUT_SIZE;
-    if (!isOnRoadSurface(cy)) continue;
+    if (enforceRoadPlane && !isOnRoadSurface(cy)) continue;
 
     const x = Math.max(0, Math.min(0.98, cx - w / 2));
     const y = Math.max(0, Math.min(0.98, cy - h / 2));
@@ -187,12 +196,51 @@ export function decodeOutput(raw: Float32Array, dims: readonly number[], confide
  */
 export async function detectFrame(
   source: CanvasImageSource,
-  confidenceThreshold = 0.25
+  // Matches the Android detector's threshold. Road defects are low-contrast and the
+  // temporal tracker upstream is what suppresses noise, so a low bar here is correct.
+  confidenceThreshold = 0.12,
+  enforceRoadPlane = false
 ): Promise<EdgeDetection[]> {
   const session = await loadEdgeModel();
   const tensor = frameToTensor(source);
   const feeds: Record<string, ort.Tensor> = { [session.inputNames[0]]: tensor };
   const results = await session.run(feeds);
   const output = results[session.outputNames[0]];
-  return decodeOutput(output.data as Float32Array, output.dims, confidenceThreshold);
+  return decodeOutput(output.data as Float32Array, output.dims, confidenceThreshold, enforceRoadPlane);
+}
+
+/**
+ * Server-side inference on the identical model, used when the browser cannot run it.
+ *
+ * WASM delivery fails on some locked-down machines and offline venues. Rather than let
+ * that take the whole feature down, we fall back to the server: same weights, same
+ * decode, same thresholds — only the execution location changes.
+ */
+export async function detectViaServer(
+  imageBase64: string,
+  confidenceThreshold = 0.12
+): Promise<EdgeDetection[]> {
+  const res = await fetch('/api/models/detect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageBase64, threshold: confidenceThreshold }),
+  });
+  if (!res.ok) throw new Error(`Server detection failed (${res.status})`);
+  const data = await res.json();
+  return (data.detections ?? []) as EdgeDetection[];
+}
+
+/** Browser inference, falling back to the server if the WASM runtime is unavailable. */
+export async function detectFrameResilient(
+  source: CanvasImageSource,
+  imageBase64: string | null,
+  confidenceThreshold = 0.12
+): Promise<EdgeDetection[]> {
+  try {
+    return await detectFrame(source, confidenceThreshold);
+  } catch (browserErr) {
+    if (!imageBase64) throw browserErr;
+    console.warn('Browser inference unavailable, using server:', browserErr);
+    return await detectViaServer(imageBase64, confidenceThreshold);
+  }
 }

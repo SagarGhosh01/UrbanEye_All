@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { detectFrame, loadEdgeModel } from '../services/edgeDetector';
+import { detectFrame, detectViaServer, detectFrameResilient, loadEdgeModel } from '../services/edgeDetector';
 import {
   Camera,
   X,
@@ -273,7 +273,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
     inferenceBusyRef.current = true;
 
     try {
-      const detections = await detectFrame(video, 0.25);
+      const detections = await detectFrame(video, 0.12);
       setModelReady(true);
       setModelError(null);
 
@@ -405,6 +405,21 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
    * Gives the detector something to classify: an uploaded still if one was supplied,
    * otherwise the live video element. Returns null when neither is available.
    */
+  /** Grabs a JPEG still of the current video frame, for server-side fallback. */
+  const captureStillFromVideo = (): string | null => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return null;
+    try {
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth;
+      c.height = video.videoHeight;
+      c.getContext('2d')!.drawImage(video, 0, 0);
+      return c.toDataURL('image/jpeg', 0.85);
+    } catch {
+      return null;
+    }
+  };
+
   const sourceForClassification = async (overrideImage?: string): Promise<CanvasImageSource | null> => {
     if (overrideImage) {
       return await new Promise<CanvasImageSource | null>((resolve) => {
@@ -436,7 +451,14 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
     if (typeToIngest === null || confToIngest === null) {
       try {
         const frameSource = await sourceForClassification(overrideImage);
-        const found = frameSource ? await detectFrame(frameSource, 0.25) : [];
+        // For an uploaded still we already hold the bytes, so the server can classify it
+        // if the browser runtime is unavailable. For a live frame we grab one first.
+        const bytesForFallback = overrideImage ?? captureStillFromVideo();
+        const found = frameSource
+          ? await detectFrameResilient(frameSource, bytesForFallback, 0.12)
+          : bytesForFallback
+          ? await detectViaServer(bytesForFallback, 0.12)
+          : [];
         if (found.length === 0) {
           setLastTransmitted('No road defect found in this frame — nothing was sent.');
           speakAlert('No road defect detected. Nothing was sent.');
@@ -960,20 +982,10 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             className="hidden"
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setAutoDetectLoop(!autoDetectLoop)}
-              className={`w-full py-2.5 px-3 rounded-xl border font-extrabold flex items-center justify-center space-x-1.5 transition min-h-[44px] ${
-                autoDetectLoop
-                  ? 'bg-amber-500/20 border-amber-400 text-amber-300 animate-pulse'
-                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              <Activity className="w-4 h-4 text-amber-400" />
-              <span className="truncate">{autoDetectLoop ? 'Stop Auto AI Scan' : 'Start Auto AI Scan'}</span>
-            </button>
-
+          {/* Two actions: classify the current frame, or classify a photo. The auto-scan
+              toggle was removed — continuous scanning belongs on the bus-mounted device,
+              where the camera actually faces the road. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => captureAndTransmit()}

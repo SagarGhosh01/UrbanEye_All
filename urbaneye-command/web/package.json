@@ -7,7 +7,7 @@
     "dev": "npm run copy:ort && vite",
     "build": "npm run copy:ort && tsc && vite build",
     "preview": "vite preview",
-    "copy:ort": "mkdir -p public/ort && cp node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs public/ort/"
+    "copy:ort": "mkdir -p public/ort && cp node_modules/onnxruntime-web/dist/*.wasm public/ort/"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.14",
