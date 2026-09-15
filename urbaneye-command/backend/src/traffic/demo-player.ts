@@ -12,7 +12,7 @@
  *   2. Backend receives 'demo:start' socket event (on-demand from frontend)
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../prisma.js';
 import {
   BANGALORE_CORRIDORS,
   getCurrentPhase,
@@ -28,8 +28,6 @@ import {
   type SegmentCongestion,
 } from './congestion.router.js';
 import { getIO } from '../realtime/socket.js';
-
-const prisma = new PrismaClient();
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let demoInterval: ReturnType<typeof setInterval> | null = null;
