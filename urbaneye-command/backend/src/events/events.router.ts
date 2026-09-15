@@ -18,8 +18,8 @@ export function saveBase64ImageToDisk(base64Data: string, subfolder: string = 'c
   try {
     if (!base64Data) return base64Data;
 
-    // If it's already a static URL or web URL, return as is
-    if (base64Data.startsWith('/') || base64Data.startsWith('http://') || base64Data.startsWith('https://')) {
+    // If it's already a saved static URL (/uploads/...) or external HTTP URL, return as is
+    if (base64Data.startsWith('/uploads/') || base64Data.startsWith('http://') || base64Data.startsWith('https://')) {
       return base64Data;
     }
 

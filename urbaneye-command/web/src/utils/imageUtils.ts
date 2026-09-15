@@ -21,10 +21,9 @@ export function resolveImageSrc(imageSnippet: string | null | undefined): string
     return str;
   }
 
-  // Bare base64 payloads, before the path check below. A base64 JPEG begins "/9j/"
-  // and a PNG "iVBORw0" — the JPEG case starts with a slash, so without this it gets
-  // treated as a server path and 404s. The Android client posts snippets this way.
-  if (/^\/9j\/|^iVBORw0|^R0lGOD|^UklGR/.test(str)) {
+  // Bare base64 payloads: A base64 JPEG begins "/9j/", PNG "iVBORw0", GIF "R0lGOD", WEBP "UklGR".
+  // CRITICAL: MUST be checked BEFORE checking str.startsWith('/') because JPEG base64 starts with "/9j/"!
+  if (/^\/9j\/|^iVBORw0|^R0lGOD|^UklGR/.test(str) || (!str.startsWith('/uploads/') && str.length > 100)) {
     const mime = str.startsWith('iVBORw0') ? 'image/png'
       : str.startsWith('R0lGOD') ? 'image/gif'
       : str.startsWith('UklGR') ? 'image/webp'
@@ -33,18 +32,13 @@ export function resolveImageSrc(imageSnippet: string | null | undefined): string
   }
 
   // Relative path resolution (e.g., /uploads/citizen-reports/...) for cross-origin production deploys
-  if (str.startsWith('/')) {
+  if (str.startsWith('/uploads/') || str.startsWith('/')) {
     try {
       const envApi = (((import.meta as any).env?.VITE_API_URL) as string) || '';
       if (envApi) {
         const apiOrigin = envApi.replace(/\/api\/?$/, '');
         return `${apiOrigin}${str}`;
       }
-      // Otherwise keep the path relative. In dev the Vite proxy forwards /uploads to
-      // whichever port the backend is on; in production the backend serves the built
-      // app and the uploads from the same origin. Hardcoding a port here breaks the
-      // moment the backend runs anywhere else — on macOS the AirPlay Receiver holds
-      // 5000, so a pinned :5000 resolves to AirPlay and every image 403s.
     } catch {
       // fallback to relative path
     }
