@@ -102,24 +102,24 @@ export const DefectTable: React.FC<DefectTableProps> = ({
     if (isDark) {
       switch (status) {
         case 'NEW':
-          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-900/50 text-red-300 border border-red-700">NEW ALERT</span>;
+          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-900/50 text-red-300 border border-red-700 whitespace-nowrap shrink-0">NEW ALERT</span>;
         case 'REVIEWED':
-          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">REVIEWED</span>;
+          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600 whitespace-nowrap shrink-0">REVIEWED</span>;
         case 'ASSIGNED_FOR_REPAIR':
-          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-900/50 text-amber-300 border border-amber-700">ASSIGNED REPAIR</span>;
+          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-900/50 text-amber-300 border border-amber-700 whitespace-nowrap shrink-0">ASSIGNED REPAIR</span>;
         case 'RESOLVED':
-          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-900/50 text-emerald-300 border border-emerald-700">RESOLVED</span>;
+          return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-900/50 text-emerald-300 border border-emerald-700 whitespace-nowrap shrink-0">RESOLVED</span>;
       }
     }
     switch (status) {
       case 'NEW':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 border border-red-200">NEW ALERT</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 border border-red-200 whitespace-nowrap shrink-0">NEW ALERT</span>;
       case 'REVIEWED':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">REVIEWED</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap shrink-0">REVIEWED</span>;
       case 'ASSIGNED_FOR_REPAIR':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">ASSIGNED REPAIR</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap shrink-0">ASSIGNED REPAIR</span>;
       case 'RESOLVED':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">RESOLVED</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap shrink-0">RESOLVED</span>;
     }
   };
 
@@ -132,7 +132,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
     // If defect is resolved, show resolution badge
     if (event.status === 'RESOLVED') {
       return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${isDark ? 'bg-emerald-900/50 text-emerald-300 border-emerald-700' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border whitespace-nowrap shrink-0 ${isDark ? 'bg-emerald-900/50 text-emerald-300 border-emerald-700' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
           ✓ RESOLVED ON TIME
         </span>
       );
@@ -144,7 +144,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
       return (
         <span
           title={`SLA Breached by ${sla.overdueHours} hours. PWD Escalation Active.`}
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-black border animate-pulse ${
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-black border animate-pulse whitespace-nowrap shrink-0 ${
             isDark ? 'bg-red-900/60 text-red-200 border-red-500' : 'bg-red-100 text-red-800 border-red-300'
           }`}
         >
@@ -157,7 +157,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
       return (
         <span
           title={`SLA target: ${sla.slaHoursTotal}h. Less than 4h remaining.`}
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border whitespace-nowrap shrink-0 ${
             isDark ? 'bg-amber-900/50 text-amber-200 border-amber-600' : 'bg-amber-100 text-amber-800 border-amber-300'
           }`}
         >
@@ -169,7 +169,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
     return (
       <span
         title={`SLA target: ${sla.slaHoursTotal} hours for ${event.severity ?? 'HIGH'} severity`}
-        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border whitespace-nowrap shrink-0 ${
           isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
         }`}
       >
@@ -190,7 +190,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
     const bgAlpha = isDark ? '22' : '18'; // ~13% opacity hex suffix
     return (
       <span
-        className="font-semibold px-2 py-0.5 rounded text-xs"
+        className="font-semibold px-2 py-0.5 rounded text-xs whitespace-nowrap shrink-0 inline-block"
         style={{
           color: hex,
           backgroundColor: `${hex}${bgAlpha}`,
@@ -324,15 +324,15 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                 isDark ? 'bg-slate-900/60 border-slate-700 hover:bg-slate-750' : 'bg-white border-slate-200 hover:bg-slate-50'
               }`}
             >
-              {/* Card Top: Thumbnail + Type Badge + Status Pill */}
-              <div className="flex items-start space-x-3 mb-2.5">
+              {/* Card Top: Thumbnail + Defect Info + Status & SLA */}
+              <div className="flex items-start gap-2.5 mb-2.5">
                 {event.imageSnippet ? (
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
                       setPreviewImage(event.imageSnippet || null);
                     }}
-                    className="w-16 h-14 rounded-lg overflow-hidden border border-slate-600 bg-slate-800 shrink-0 relative group"
+                    className="w-16 h-16 rounded-lg overflow-hidden border border-slate-600 bg-slate-800 shrink-0 relative group cursor-pointer"
                   >
                     <img
                       src={resolveImageSrc(event.imageSnippet)}
@@ -342,49 +342,50 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                       }}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-70">
-                      <Eye className="w-3.5 h-3.5 text-white" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                      <Eye className="w-4 h-4 text-white" />
                     </div>
                   </div>
                 ) : (
-                  <div className={`w-16 h-14 rounded-lg border border-dashed flex items-center justify-center shrink-0 ${thumbBg}`}>
+                  <div className={`w-16 h-16 rounded-lg border border-dashed flex items-center justify-center shrink-0 ${thumbBg}`}>
                     <ImageIcon className="w-5 h-5" />
                   </div>
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-1 mb-1">
-                    <div className="flex flex-col">
-                      <div>{getTypeBadge(event.type)}</div>
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                      {getTypeBadge(event.type)}
                       {event.registrationNumber && (
-                        <div className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950/60 text-red-300 border border-red-700/60 shadow-sm mt-1 w-fit">
+                        <div className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950/60 text-red-300 border border-red-700/60 shadow-sm whitespace-nowrap shrink-0">
                           🚗 {event.registrationNumber}
                         </div>
                       )}
-                      <span className={`text-[10px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {Math.round(event.confidence * 100)}% on-device AI conf
-                      </span>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-1 flex-wrap shrink-0">
                       {getStatusBadge(event.status)}
                       {getAgeBadge(event)}
                     </div>
+                  </div>
+
+                  <div className="text-[10px] font-bold text-slate-400 mb-1">
+                    {Math.round(event.confidence * 100)}% on-device AI conf
                   </div>
 
                   {/* Pothole Cavity Diameter & Repair Price Pill */}
                   {(() => {
                     const details = getPotholeCostDetails(event);
                     return (
-                      <div className="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-700/50 text-xs">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="font-mono font-extrabold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30 text-[11px]">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-700/50 text-xs">
+                        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                          <span className="font-mono font-extrabold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30 text-[10px] whitespace-nowrap shrink-0">
                             {details.formattedDiameter}
                           </span>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${details.severityColor}`}>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap shrink-0 ${details.severityColor}`}>
                             {details.severity}
                           </span>
                         </div>
-                        <div className="text-right flex items-center space-x-1">
+                        <div className="text-right flex items-center space-x-1 whitespace-nowrap shrink-0 ml-auto">
                           <span className="text-[10px] text-slate-400">Fix Est:</span>
                           <span className="font-black text-emerald-400 text-xs">{details.formattedCost}</span>
                         </div>
