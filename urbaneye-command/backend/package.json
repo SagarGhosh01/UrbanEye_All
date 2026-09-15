@@ -1,6 +1,7 @@
 {
   "name": "urbaneye-command-backend",
   "version": "1.0.0",
+  "license": "MIT",
   "description": "UrbanEye Command Backend - Ingestion, PIN-Pairing & Real-time Scoped Intelligence",
   "main": "src/index.ts",
   "scripts": {

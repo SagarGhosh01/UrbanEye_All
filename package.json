@@ -1,6 +1,7 @@
 {
   "name": "urbaneye-app",
   "version": "1.0.0",
+  "license": "MIT",
   "description": "UrbanEye - Real-time Edge AI Road Defect Intelligence Platform",
   "scripts": {
     "install:all": "npm install --include=dev --prefix urbaneye-command/web && npm install --include=dev --prefix urbaneye-command/backend",
