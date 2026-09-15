@@ -9,6 +9,8 @@ dev.db
 dev.db-journal
 
 # Build outputs & Uploads
+# ONNX Runtime wasm is copied from node_modules by `npm run copy:ort`, not source.
+urbaneye-command/web/public/ort/
 dist/
 build/
 urbaneye-command/backend/dist/
@@ -36,6 +38,10 @@ urbaneye-mobile/app/build/
 urbaneye-mobile/build/
 local.properties
 .cxx/
+
+# Python build artifacts
+__pycache__/
+*.pyc
 
 # IDE & OS caches
 .idea/

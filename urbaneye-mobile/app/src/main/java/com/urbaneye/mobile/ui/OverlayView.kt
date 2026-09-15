@@ -88,6 +88,10 @@ class OverlayView @JvmOverloads constructor(
                 isIncident                 -> Pair(Color.rgb(220,  38,  38), "🚨 INCIDENT")   // #dc2626 Alert Crimson (Exclusively Reserved)
                 detection.type == "POTHOLE"-> Pair(Color.rgb(249, 115,  22), "⚠️ POTHOLE")    // #f97316 Signal Orange
                 detection.type.contains("CRACK") -> Pair(Color.rgb(234, 179,   8), "⚠️ CRACK") // #eab308 Balanced Amber
+                // Road-marking wear: model classes D43 and D44 respectively.
+                detection.type == "FADED_ZEBRA_CROSSING" -> Pair(Color.rgb(  5, 150, 105), "🚸 MARKING")  // #059669 Emerald
+                detection.type == "FADED_LANE_MARKING" -> Pair(Color.rgb(  8, 145, 178), "🛣️ LANE WEAR") // #0891b2 Cyan
+                detection.type == "UTILITY_COVER" -> Pair(Color.rgb(146,  64,  14), "⚠️ COVER")  // #92400e Ochre
                 detection.type == "SURFACE_DAMAGE" -> Pair(Color.rgb(148, 163, 184), "⚡ WEAR")// #94a3b8 Slate-adjacent
                 detection.type == "WATERLOGGING" -> Pair(Color.rgb(  2, 132, 199), "💧 WATERLOG")// #0284c7 Blue
                 detection.type == "VEHICLE_FLOW" -> Pair(Color.rgb(139,  92, 246), "🚗 DENSITY") // #8b5cf6 Purple

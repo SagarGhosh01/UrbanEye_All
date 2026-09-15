@@ -5,132 +5,80 @@ import fs from 'fs';
 
 export const modelsRouter = Router();
 
+/**
+ * The bundled edge model, described as it actually is.
+ *
+ * Read straight off the .onnx metadata: Ultralytics YOLOv8, opset 12, FP32, 320x320,
+ * seven RDD classes. Earlier revisions of this file advertised a "YOLO26-seg" model at
+ * opset 14, INT8-quantised, with ten classes — none of which matched the shipped file.
+ */
+export const EDGE_MODEL = {
+  id: 'urbaneye-road-defect-v1',
+  name: 'UrbanEye Road Defect Detector',
+  architecture: 'YOLOv8n (Ultralytics)',
+  format: 'ONNX, opset 12, FP32, static shapes, NMS applied client-side',
+  baseDataset: 'RDD2022-derived road damage dataset',
+  inputShape: [1, 3, 320, 320],
+  /** Index order matches the model export exactly. Do not reorder. */
+  classes: [
+    'LONGITUDINAL_CRACK',   // D00
+    'TRANSVERSE_CRACK',     // D10
+    'ALLIGATOR_CRACK',      // D20
+    'POTHOLE',              // D40
+    'FADED_ZEBRA_CROSSING', // D43
+    'FADED_LANE_MARKING',   // D44
+    'UTILITY_COVER',        // D50
+  ],
+  placement: 'Edge — Android APK and browser (WebAssembly)',
+};
+
+const MODEL_CANDIDATES = [
+  path.resolve(process.cwd(), '../../urbaneye-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
+  path.resolve(process.cwd(), '../urbaneye-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
+  path.resolve(process.cwd(), 'urbaneye-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
+];
+
+export function resolveModelPath(): string | null {
+  return MODEL_CANDIDATES.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
+
 // GET /api/models/info
 modelsRouter.get('/info', (req, res) => {
-  const onnxPath = path.resolve(process.cwd(), '../urbaneye-mobile/app/src/main/assets/models/road_defect_detector.onnx');
-  const hasOnnx = fs.existsSync(onnxPath);
+  const modelPath = resolveModelPath();
+  const sizeBytes = modelPath ? fs.statSync(modelPath).size : null;
 
   res.json({
     status: 'SUCCESS',
-    pipelineArchitecture: 'Multi-Model Perception Pipeline (Edge + Server)',
+    pipelineArchitecture: 'Single-stage edge detector, NMS and temporal filtering on the client',
     models: [
       {
-        id: 'urbaneye-yolo26-road-seg',
-        name: 'YOLO26-seg UrbanEye Custom Road Defect Model',
-        baseDataset: 'RDD2022 (India + 5 Countries) + Indian Transit Bus Camera Dataset',
-        format: 'ONNX Runtime Mobile (opset 14 / INT8 quantized)',
-        placement: 'Edge (Android APK)',
-        inputShape: [1, 3, 320, 320],
-        classes: [
-          'POTHOLE',
-          'LONGITUDINAL_CRACK',
-          'TRANSVERSE_CRACK',
-          'ALLIGATOR_CRACK',
-          'SURFACE_DAMAGE',
-          'WATERLOGGING',
-          'ROAD_EDGE_DAMAGE',
-          'DEBRIS',
-          'OPEN_MANHOLE',
-          'OTHER_HAZARD',
-        ],
-        status: hasOnnx ? 'DEPLOYED_ON_DEVICE' : 'ACTIVE_TRAINING_PIPELINE',
-        onnxPath: hasOnnx ? onnxPath : null,
-      },
-      {
-        id: 'urbaneye-yolo26-assets-seg',
-        name: 'YOLO26-seg / CeyMo Road Asset & Infrastructure Model',
-        format: 'ONNX Runtime Mobile',
-        placement: 'Edge (Android APK)',
-        inputShape: [1, 3, 320, 320],
-        classes: [
-          'MISSING_DIVIDER',
-          'DAMAGED_SIGNBOARD',
-          'MISSING_ZEBRA_CROSSING',
-          'FADED_ZEBRA_CROSSING',
-          'BARRIERS',
-          'ROAD_ASSETS',
-          'MISSING_LANE_MARKING',
-        ],
-        status: 'DEPLOYED_ON_DEVICE',
-      },
-      {
-        id: 'urbaneye-yolo26-traffic-signs',
-        name: 'YOLO26 Traffic Signs Detector',
-        format: 'ONNX Runtime Mobile',
-        placement: 'Edge (Android APK)',
-        classes: ['TRAFFIC_SIGN', 'SPEED_LIMIT_SIGN', 'SCHOOL_ZONE_SIGN', 'STOP_SIGN'],
-        status: 'DEPLOYED_ON_DEVICE',
-      },
-      {
-        id: 'urbaneye-yolo26-bot-sort-vehicles',
-        name: 'YOLO26 + BoT-SORT Vehicle Tracking & Density Engine',
-        format: 'ONNX + BoT-SORT Camera Motion Compensation',
-        placement: 'Edge / Server',
-        classes: ['CAR', 'BUS', 'TRUCK', 'MOTORCYCLE', 'AUTO'],
-        features: ['Persistent Vehicle ReID', 'Virtual Line ROI Counting', 'Traffic Density & Speed Estimation'],
-        status: 'ACTIVE_TELEMETRY',
-      },
-      {
-        id: 'urbaneye-yolo26-pose-pedestrians',
-        name: 'YOLO26-pose VRU & School-Zone Safety Model',
-        format: 'ONNX Pose Estimation + Geofencing Rules',
-        placement: 'Edge / Backend',
-        classes: ['PEDESTRIAN', 'SCHOOL_CHILDREN_CROSSING'],
-        features: ['Near-Miss Risk Scoring', 'School Zone Speed & Density Safeguards'],
-        status: 'ACTIVE_MONITORING',
-      },
-      {
-        id: 'urbaneye-bot-sort-unsafedriving',
-        name: 'BoT-SORT + VideoMAE Temporal Incident Engine',
-        format: 'PyTorch / TensorRT Video Action Recognition',
-        placement: 'Server / Edge',
-        classes: ['RASH_DRIVING', 'HIT_AND_RUN', 'ACCIDENT', 'DANGEROUS_DRIVING', 'VEHICLE_ANOMALY'],
-        features: ['Overspeeding', 'Sudden Lane Changes', 'Wrong-Way Driving', 'Dangerous Proximity'],
-        status: 'ACTIVE_PIPELINE',
-      },
-      {
-        id: 'urbaneye-anpr-paddleocr',
-        name: 'ANPR License Plate Extractor (YOLO + PaddleOCR)',
-        format: 'ONNX Plate Detector + Light OCR Engine',
-        placement: 'Edge / Server',
-        features: ['Registration Number Extraction', 'Confidence Scoring', 'Timestamp & GPS Verification'],
-        status: 'ACTIVE_ANPR',
-      },
-      {
-        id: 'urbaneye-predictive-timeseries',
-        name: 'Predictive Risk & Congestion Forecast Model',
-        format: 'XGBoost / LightGBM Time-Series Engine',
-        placement: 'Backend Server',
-        features: ['15m/30m/60m Congestion Forecast', 'Recurring Hotspot Prioritization', 'AI Work Order Recommendations'],
-        status: 'ACTIVE_PREDICTIVE',
-      },
-      {
-        id: 'urbaneye-gps-telemetry-ekf',
-        name: 'World Top GPS Telemetry & Map-Matching Model (EKF + OSM Nominatim + OSRM)',
-        format: 'Extended Kalman Filter + OpenStreetMap Nominatim / OSRM API',
-        placement: 'Edge / Server Pipeline',
-        features: [
-          'Real-time Snap-to-Road Map Matching',
-          'High-Precision Reverse Geocoding (Street, Highway, District)',
-          'Extended Kalman Filter Noise Reduction & Speed Vector Estimation',
-          'WGS84 Ellipsoidal Geodesy & Haversine Proximity Indexing',
-        ],
-        status: 'ACTIVE_GPS_TELEMETRY',
+        ...EDGE_MODEL,
+        classCount: EDGE_MODEL.classes.length,
+        sizeBytes,
+        status: modelPath ? 'DEPLOYED' : 'MODEL_FILE_MISSING',
       },
     ],
-    trainingPipeline: {
-      script: 'scripts/train_road_defects.py',
-      datasets: ['RDD2022 (RoadDamageDetector)', 'UrbanEye Indian Transit Bus Dataset', 'CeyMo Road Markings'],
-      framework: 'Ultralytics PyTorch / ONNX Export (opset 14)',
-      device: 'CPU / CUDA / TensorRT',
-      batchSize: 16,
-      imageSize: 320,
-    },
     timestamp: new Date().toISOString(),
   });
 });
 
-// POST /api/models/infer - Defect detection & geometry calculation
+/**
+ * GET /api/models/road-defect.onnx
+ *
+ * Serves the model weights to the browser detector so the dashboard runs the very same
+ * network as the phone, rather than a lookalike heuristic. One file on disk, two runtimes.
+ */
+modelsRouter.get('/road-defect.onnx', (req, res) => {
+  const modelPath = resolveModelPath();
+  if (!modelPath) {
+    res.status(404).json({ status: 'ERROR', message: 'Edge model file not found on the server.' });
+    return;
+  }
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  fs.createReadStream(modelPath).pipe(res);
+});
+
 modelsRouter.post('/infer', (req, res) => {
   const { imageSnippet, confidenceThreshold = 0.40 } = req.body;
 

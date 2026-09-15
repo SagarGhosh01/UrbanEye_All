@@ -10,12 +10,13 @@ interface SafetyIntelligenceViewProps {
 
 export const SafetyIntelligenceView: React.FC<SafetyIntelligenceViewProps> = ({ districtId, onSelectOnMap }) => {
   const [zones, setZones] = useState<SafetyRiskZone[]>([]);
+  // Starts empty. Populated only from what the fleet has actually observed.
   const [stats, setStats] = useState<VRUSafetyStats>({
-    overallVruSafetyScore: 78,
-    activeSchoolZonesMonitored: 8,
-    nearMissCount24h: 10,
-    highRiskCrossingsCount: 3,
-    vulnerablePedestriansTracked: 450,
+    overallVruSafetyScore: null,
+    activeSchoolZonesMonitored: 0,
+    highRiskCrossingsCount: 0,
+    vulnerablePedestriansTracked: 0,
+    segmentsObserved: 0,
   });
   const [interveningId, setInterveningId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export const SafetyIntelligenceView: React.FC<SafetyIntelligenceViewProps> = ({ 
         <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
           <div>
             <div className="text-xs font-semibold text-slate-400">VRU SAFETY SCORE</div>
-            <div className="text-2xl font-bold text-teal-400 mt-1">{stats.overallVruSafetyScore} / 100</div>
+            <div className="text-2xl font-bold text-teal-400 mt-1">{stats.overallVruSafetyScore === null ? '—' : `${stats.overallVruSafetyScore} / 100`}</div>
             <div className="text-[11px] text-teal-300/80 mt-0.5 font-medium">Vulnerable Pedestrian Safety</div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
@@ -94,9 +95,9 @@ export const SafetyIntelligenceView: React.FC<SafetyIntelligenceViewProps> = ({ 
 
         <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400">NEAR-MISS EVENTS (24H)</div>
-            <div className="text-2xl font-bold text-amber-400 mt-1">{stats.nearMissCount24h}</div>
-            <div className="text-[11px] text-amber-300/80 mt-0.5 font-medium">AI Edge Conflict Detections</div>
+            <div className="text-xs font-semibold text-slate-400">SEGMENTS OBSERVED (24H)</div>
+            <div className="text-2xl font-bold text-amber-400 mt-1">{stats.segmentsObserved ?? 0}</div>
+            <div className="text-[11px] text-amber-300/80 mt-0.5 font-medium">Road stretches covered by the fleet</div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
             <AlertTriangle className="w-5 h-5" />
