@@ -56,6 +56,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const trafficPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const pulseCircleRef = useRef<L.CircleMarker | null>(null);
+  const canvasRendererRef = useRef<L.Canvas | null>(null);
 
   // Layer toggle state
   const [layers, setLayers] = useState({
@@ -543,6 +544,34 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   return (
     <div className="relative w-full h-full min-h-[360px] sm:min-h-[460px] bg-slate-100 rounded-lg shadow-sm border border-slate-200 overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Top Left Quick Navigation Switcher */}
+      <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-white/10 p-1 rounded-xl shadow-xl">
+        <button
+          type="button"
+          onClick={() => {
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.flyTo([22.5, 82.0], 5, { animate: true, duration: 1.2 });
+            }
+          }}
+          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition"
+        >
+          🇮🇳 India View
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (mapInstanceRef.current) {
+              setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+              mapInstanceRef.current.flyTo([centerLat, centerLon], 12, { animate: true, duration: 1.2 });
+            }
+          }}
+          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-teal-600/80 hover:bg-teal-500 text-white transition flex items-center gap-1"
+        >
+          <span>📍</span>
+          <span>Kapurthala All Roads</span>
+        </button>
+      </div>
 
       {/* Top Right GIS Layer Controls Toggle Panel */}
       <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-30 max-w-[calc(100vw-32px)]">
