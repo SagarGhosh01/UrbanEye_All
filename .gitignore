@@ -20,6 +20,8 @@ urbaneye-command/backend/uploads/*
 Road Defect.v1i.yolov8/
 ml_dataset_unified/
 runs/
+anpr-training/dataset/
+anpr-training/runs/
 *.pt
 yolov8n.pt
 

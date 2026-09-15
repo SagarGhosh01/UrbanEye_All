@@ -1,0 +1,9 @@
+# Synthetic Indian License Plate Dataset Configuration
+path: C:\Users\sarka\OneDrive\Documents\Codes\UrbanEye01\anpr-training\dataset
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names:
+  0: license_plate

@@ -1,0 +1,22 @@
+# ==============================================================================
+# YOLOv8 Dataset Configuration: Indian License Plate Detector
+# ==============================================================================
+# This configuration defines the train/val/test splits and class definitions
+# for training a single-class license plate bounding box detector.
+#
+# NOTE: Update 'path' to the directory containing your downloaded dataset.
+# If dataset is downloaded directly inside anpr-training/ (e.g. ./dataset),
+# the relative paths below will resolve automatically.
+# ==============================================================================
+
+path: ./dataset       # Dataset root directory (relative to where training is run, or absolute path)
+train: images/train   # Train images (relative to 'path')
+val: images/val       # Validation images (relative to 'path')
+test: images/test     # Test images (optional, relative to 'path')
+
+# Number of classes
+nc: 1
+
+# Class names mapping (0-indexed)
+names:
+  0: license_plate

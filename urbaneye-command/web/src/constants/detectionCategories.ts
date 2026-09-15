@@ -35,25 +35,32 @@ export interface DetectionCategory {
  */
 export const DETECTION_CATEGORIES: DetectionCategory[] = [
   {
+    code: 'ANPR_INCIDENT',
+    displayName: 'ANPR / Vehicle Incident',
+    phase: 1,
+    hex: '#dc2626',   // Alert Crimson (strictly reserved for emergency incidents)
+    priority: 1,
+  },
+  {
     code: 'HIT_AND_RUN',
     displayName: 'Hit & Run Incident',
     phase: 1,
-    hex: '#881337',   // Rose-900 / Dark Red
-    priority: 1,
+    hex: '#991b1b',   // Red-800
+    priority: 2,
   },
   {
     code: 'RASH_DRIVING',
     displayName: 'Rash / Dangerous Driving',
     phase: 1,
     hex: '#b91c1c',   // Red-700
-    priority: 2,
+    priority: 3,
   },
   {
     code: 'TRAFFIC_BOTTLENECK',
     displayName: 'Traffic Bottleneck',
     phase: 1,
-    hex: '#dc2626',   // Red-600
-    priority: 3,
+    hex: '#ea580c',   // Orange-600 (shifted from #dc2626 to reserve red for incidents)
+    priority: 4,
   },
   {
     code: 'SCHOOL_CHILDREN_CROSSING',

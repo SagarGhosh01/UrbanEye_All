@@ -80,34 +80,36 @@ class OverlayView @JvmOverloads constructor(
                 box.bottom * viewHeight
             )
 
-            // Distinct neon color coding matching UrbanEye web platform theme
-            val (colorHex, severityLabel) = when (detection.type) {
-                "POTHOLE"                  -> Pair(Color.rgb(249, 115,  22), "🚨 CRITICAL") // #f97316 Neon Orange
-                "ROAD_CRACK",
-                "ALLIGATOR_CRACK",
-                "LONGITUDINAL_CRACK",
-                "TRANSVERSE_CRACK"         -> Pair(Color.rgb(234, 179,   8), "⚠️ HIGH")     // #eab308 Amber Yellow
-                "SURFACE_DAMAGE"           -> Pair(Color.rgb(192, 132, 252), "⚡ MEDIUM")   // #c084fc Purple Accent
-                "WATERLOGGING"             -> Pair(Color.rgb( 56, 189, 248), "💧 WATERLOG")  // #38bdf8 Sky Blue
-                "ROAD_EDGE_DAMAGE"         -> Pair(Color.rgb(244,  63,  94), "⚠️ EDGE DAMAGE")// #f43f5e Rose Red
-                "MISSING_DIVIDER"          -> Pair(Color.rgb(  6, 182, 212), "🚧 HAZARD")    // #06b6d4 Cyan
-                "RASH_DRIVING",
-                "HIT_AND_RUN"              -> Pair(Color.rgb(225,  29,  72), "🚨 INCIDENT")  // #e11d48 Crimson Red
+            // Distinct color coding: #dc2626 Alert Crimson is strictly reserved for incidents/ANPR
+            val isIncident = detection.type == "ANPR_INCIDENT" || detection.category == "ANPR_INCIDENT" ||
+                    detection.type == "HIT_AND_RUN" || detection.type == "RASH_DRIVING" || detection.category == "INCIDENT"
+
+            val (colorHex, severityLabel) = when {
+                isIncident                 -> Pair(Color.rgb(220,  38,  38), "🚨 INCIDENT")   // #dc2626 Alert Crimson (Exclusively Reserved)
+                detection.type == "POTHOLE"-> Pair(Color.rgb(249, 115,  22), "⚠️ POTHOLE")    // #f97316 Signal Orange
+                detection.type.contains("CRACK") -> Pair(Color.rgb(234, 179,   8), "⚠️ CRACK") // #eab308 Balanced Amber
+                detection.type == "SURFACE_DAMAGE" -> Pair(Color.rgb(148, 163, 184), "⚡ WEAR")// #94a3b8 Slate-adjacent
+                detection.type == "WATERLOGGING" -> Pair(Color.rgb(  2, 132, 199), "💧 WATERLOG")// #0284c7 Blue
+                detection.type == "VEHICLE_FLOW" -> Pair(Color.rgb(139,  92, 246), "🚗 DENSITY") // #8b5cf6 Purple
+                detection.type == "ROAD_EDGE_DAMAGE" -> Pair(Color.rgb(234,  88,  12), "⚠️ EDGE") // #ea580c Tangerine
+                detection.type == "MISSING_DIVIDER" -> Pair(Color.rgb( 13, 148, 136), "🚧 HAZARD")// #0d9488 Signal Teal
                 else                       -> Pair(Color.rgb( 94, 234, 212), "ℹ️ DEFECT")    // #5eead4 Mint Teal
             }
 
-            // 1. Light translucent glow fill inside target defect area
-            fillGlowPaint.color = Color.argb(35, Color.red(colorHex), Color.green(colorHex), Color.blue(colorHex))
+            // 1. Light translucent glow fill inside target area
+            val fillAlpha = if (isIncident) 55 else 35
+            fillGlowPaint.color = Color.argb(fillAlpha, Color.red(colorHex), Color.green(colorHex), Color.blue(colorHex))
             canvas.drawRoundRect(screenRect, 10f, 10f, fillGlowPaint)
 
-            // 2. Translucent full bounding box path
-            boxPaint.color = Color.argb(140, Color.red(colorHex), Color.green(colorHex), Color.blue(colorHex))
+            // 2. Full bounding box path (bolder for ANPR incidents)
+            boxPaint.color = Color.argb(if (isIncident) 220 else 140, Color.red(colorHex), Color.green(colorHex), Color.blue(colorHex))
+            boxPaint.strokeWidth = if (isIncident) 8f else 6f
             canvas.drawRoundRect(screenRect, 10f, 10f, boxPaint)
 
             // 3. Futuristic HUD corner brackets (┌ ┐ └ ┘)
             cornerPaint.color = colorHex
-            val cLen = (screenRect.width() * 0.22f).coerceIn(24f, 60f)
-            val cLenY = (screenRect.height() * 0.22f).coerceIn(24f, 60f)
+            val cLen = (screenRect.width() * 0.25f).coerceIn(24f, 65f)
+            val cLenY = (screenRect.height() * 0.25f).coerceIn(24f, 65f)
 
             // Top-Left (┌)
             canvas.drawLine(screenRect.left, screenRect.top, screenRect.left + cLen, screenRect.top, cornerPaint)
@@ -132,12 +134,16 @@ class OverlayView @JvmOverloads constructor(
             canvas.drawLine(cx - 12f, cy, cx + 12f, cy, reticlePaint)
             canvas.drawLine(cx, cy - 12f, cx, cy + 12f, reticlePaint)
 
-            // 5. Label Header Pill
-            val typeTitle = detection.type.replace("_", " ")
+            // 5. Label Header Pill (displays recognized license plate boldly if present)
             val confPct = (detection.confidence * 100).toInt()
-            val diamStr = if (detection.estimatedDiameterCm != null) " • Ø ${detection.estimatedDiameterCm} cm" else ""
-            val costStr = if (detection.estimatedRepairCost != null) " • ₹${detection.estimatedRepairCost}" else ""
-            val fullLabel = "$typeTitle $confPct%$diamStr$costStr"
+            val fullLabel = if (detection.registrationNumber != null) {
+                "🚨 ANPR: ${detection.registrationNumber} ($confPct%)"
+            } else {
+                val typeTitle = detection.type.replace("_", " ")
+                val diamStr = if (detection.estimatedDiameterCm != null) " • Ø ${detection.estimatedDiameterCm} cm" else ""
+                val costStr = if (detection.estimatedRepairCost != null) " • ₹${detection.estimatedRepairCost}" else ""
+                "$typeTitle $confPct%$diamStr$costStr"
+            }
 
             val textWidth = textPaint.measureText(fullLabel)
             val textHeight = 48f
@@ -152,7 +158,7 @@ class OverlayView @JvmOverloads constructor(
 
             // Draw pill background & border
             canvas.drawRoundRect(labelRect, 8f, 8f, textBgPaint)
-            cornerPaint.color = Color.argb(200, Color.red(colorHex), Color.green(colorHex), Color.blue(colorHex))
+            cornerPaint.color = Color.argb(220, Color.red(colorHex), Color.green(colorHex), Color.blue(colorHex))
             canvas.drawRoundRect(labelRect, 8f, 8f, cornerPaint)
 
             // Draw primary defect title & telemetry text

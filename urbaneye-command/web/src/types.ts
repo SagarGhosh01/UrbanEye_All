@@ -3,6 +3,7 @@ export type Role = 'NATIONAL_ADMIN' | 'STATE_ADMIN' | 'DISTRICT_HEAD' | 'CITIZEN
 export type EventStatus = 'NEW' | 'REVIEWED' | 'ASSIGNED_FOR_REPAIR' | 'RESOLVED';
 
 export type DefectType = 
+  | 'ANPR_INCIDENT'
   | 'POTHOLE' 
   | 'LONGITUDINAL_CRACK' 
   | 'TRANSVERSE_CRACK' 
@@ -116,6 +117,10 @@ export interface RoadEvent {
   deteriorationPct?: number | null;
   hazardSubCategory?: string | null;
   estimatedRepairCost?: number | null;
+  registrationNumber?: string | null;
+  plateConfidence?: number | null;
+  ocrConfidence?: number | null;
+  vehicleType?: string | null;
   status: EventStatus;
   reviewedByUserId?: string | null;
   reviewedByUser?: {

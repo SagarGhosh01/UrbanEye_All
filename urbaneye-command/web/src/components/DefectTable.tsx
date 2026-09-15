@@ -174,6 +174,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
               style={{ backgroundColor: '#1e293b', color: '#e2e8f0', borderColor: '#334155' }}
             >
               <option value="ALL">All Defect Types</option>
+              <option value="ANPR_INCIDENT">🚨 ANPR Incidents</option>
               <option value="POTHOLE">Potholes</option>
               <option value="ROAD_CRACK">Road Cracks</option>
               <option value="SURFACE_DAMAGE">Surface Wear</option>
@@ -261,6 +262,11 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                   <div className="flex items-start justify-between gap-1 mb-1">
                     <div className="flex flex-col">
                       <div>{getTypeBadge(event.type)}</div>
+                      {event.registrationNumber && (
+                        <div className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950/60 text-red-300 border border-red-700/60 shadow-sm mt-1 w-fit">
+                          🚗 {event.registrationNumber}
+                        </div>
+                      )}
                       <span className={`text-[10px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                         {Math.round(event.confidence * 100)}% on-device AI conf
                       </span>
@@ -468,6 +474,11 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                   <td className="py-2 px-3">
                     <div className="flex flex-col space-y-1">
                       <div>{getTypeBadge(event.type)}</div>
+                      {event.registrationNumber && (
+                        <div className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-red-950/60 text-red-300 border border-red-700/60 shadow-sm">
+                          🚗 {event.registrationNumber}
+                        </div>
+                      )}
                       <div className={`text-[11px] font-medium ${cellSub}`}>
                         Conf: <strong className={isDark ? 'text-slate-300' : 'text-slate-700'}>{Math.round(event.confidence * 100)}%</strong>
                       </div>

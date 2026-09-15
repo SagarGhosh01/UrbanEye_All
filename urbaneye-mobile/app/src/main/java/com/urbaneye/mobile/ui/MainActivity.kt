@@ -18,6 +18,7 @@ import com.urbaneye.mobile.databinding.ActivityMainBinding
 import com.urbaneye.mobile.detection.DetectionResult
 import com.urbaneye.mobile.detection.FrameThrottler
 import com.urbaneye.mobile.detection.OnnxRoadDefectDetector
+import com.urbaneye.mobile.detection.OnnxPlateDetector
 import com.urbaneye.mobile.detection.PluggableDetector
 import com.urbaneye.mobile.detection.TemporalDetectionTracker
 import com.urbaneye.mobile.location.LocationTracker
@@ -35,8 +36,11 @@ class MainActivity : AppCompatActivity() {
     private val tag = "UrbanEyeMainActivity"
     private lateinit var binding: ActivityMainBinding
 
-    // Engines
-    private lateinit var detector: PluggableDetector
+    // Dual Edge-AI Inference Engines (Both active simultaneously)
+    private lateinit var roadDetector: OnnxRoadDefectDetector
+    private lateinit var plateDetector: OnnxPlateDetector
+    val detector: PluggableDetector get() = roadDetector
+
     private lateinit var locationTracker: LocationTracker
     private lateinit var pairingManager: PairingManager
     private lateinit var eventSyncManager: EventSyncManager
@@ -49,8 +53,16 @@ class MainActivity : AppCompatActivity() {
     private var isTorchOn = false
     private var camera: androidx.camera.core.Camera? = null
 
-    // Camera & Threading
+    // Camera & Background Threading
     private var cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var plateExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+
+    // Performance-Aware Dual Scheduling & Metrics
+    private var lastPlateProcessedTimeMs = 0L
+    private var lastRoadLatencyMs = 0L
+    @Volatile private var activePlateDetections: List<DetectionResult> = emptyList()
+    @Volatile private var isPlateInferenceRunning = false
+
     private var autoTransmittedCount = 0
     private var lastFpsCalculationTime = 0L
     private var framesProcessedSinceLastCalc = 0
@@ -78,8 +90,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 1. Initialize Engines
-        detector = OnnxRoadDefectDetector(applicationContext)
+        // 1. Initialize Dual Edge-AI Inference Engines
+        roadDetector = OnnxRoadDefectDetector(applicationContext)
+        plateDetector = OnnxPlateDetector(applicationContext)
         locationTracker = LocationTracker(applicationContext)
         pairingManager = PairingManager(applicationContext)
         eventSyncManager = EventSyncManager(applicationContext)
@@ -105,6 +118,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnTriggerTestDefect.setOnClickListener {
             triggerManualPotholeTest()
+        }
+        binding.btnTriggerTestDefect.setOnLongClickListener {
+            triggerManualPlateTest()
+            true
         }
 
         binding.btnToggleTorch.setOnClickListener {
@@ -236,12 +253,62 @@ class MainActivity : AppCompatActivity() {
             latestBitmap = bitmap
             latestRotationDegrees = rotationDegrees
 
-            val rawDetections = detector.detect(bitmap, rotationDegrees)
+            // 1. Primary Cadence: Road Defect Detection (Phase 1 Core)
+            val roadStartTime = SystemClock.elapsedRealtime()
+            val rawDetections = roadDetector.detect(bitmap, rotationDegrees)
+            lastRoadLatencyMs = SystemClock.elapsedRealtime() - roadStartTime
+
             val confirmedEvents = temporalTracker.processFrame(rawDetections)
             val persistentDetections = temporalTracker.getActivePersistentDetections()
 
-            framesProcessedSinceLastCalc++
+            // 2. Performance-Aware Throttled Cadence: ANPR Plate Detection + OCR
+            // Plates don't need continuous 8-10 FPS. Run on background plateExecutor every ~180ms.
+            // If phone experiences sustained load (road defect latency > 90ms), throttle plate detector further (400ms).
             val now = SystemClock.elapsedRealtime()
+            val plateIntervalMs = if (lastRoadLatencyMs > 90L) 400L else 180L
+
+            if (!isPlateInferenceRunning && (now - lastPlateProcessedTimeMs >= plateIntervalMs)) {
+                lastPlateProcessedTimeMs = now
+                isPlateInferenceRunning = true
+                val plateBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, false)
+
+                plateExecutor.execute {
+                    try {
+                        val plateResults = plateDetector.detect(plateBitmap, rotationDegrees)
+                        if (plateResults.isNotEmpty()) {
+                            activePlateDetections = plateResults
+                            val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
+                            val tel = locationTracker.currentTelemetry
+
+                            for (plate in plateResults) {
+                                eventSyncManager.dispatchIncidentEvent(
+                                    deviceSessionId = activeSessionId,
+                                    category = "ANPR_INCIDENT",
+                                    confidence = plate.confidence,
+                                    lat = tel.latitude,
+                                    lon = tel.longitude,
+                                    plateText = plate.registrationNumber,
+                                    vehicleType = plate.vehicleType ?: "CAR",
+                                    speedKmh = plate.speedKmh ?: tel.speedKmh,
+                                    imageSnippetBase64 = plate.croppedSnippetBase64
+                                )
+                                autoTransmittedCount++
+                                runOnUiThread {
+                                    binding.tvTripEvents.text = "Auto Transmitted: $autoTransmittedCount"
+                                }
+                            }
+                        } else if (SystemClock.elapsedRealtime() - lastPlateProcessedTimeMs > 1200L) {
+                            activePlateDetections = emptyList()
+                        }
+                    } catch (e: Exception) {
+                        Log.e(tag, "Background plate analysis error: ${e.message}", e)
+                    } finally {
+                        isPlateInferenceRunning = false
+                    }
+                }
+            }
+
+            framesProcessedSinceLastCalc++
             if (now - lastFpsCalculationTime >= 1000L) {
                 val fps = (framesProcessedSinceLastCalc * 1000f) / (now - lastFpsCalculationTime)
                 lastFpsCalculationTime = now
@@ -252,12 +319,23 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            // 3. UI Layer: Combine Detections with Emergency Incidents Rendered on Top
             runOnUiThread {
-                val displayDetections = if (rawDetections.isNotEmpty()) rawDetections else persistentDetections
-                binding.overlayView.setDetections(displayDetections)
+                val combinedDetections = mutableListOf<DetectionResult>()
+                combinedDetections.addAll(activePlateDetections)
+                val roadDets = if (rawDetections.isNotEmpty()) rawDetections else persistentDetections
+                combinedDetections.addAll(roadDets)
 
-                if (displayDetections.isNotEmpty()) {
-                    val top = displayDetections.first()
+                binding.overlayView.setDetections(combinedDetections)
+
+                if (activePlateDetections.isNotEmpty()) {
+                    val topPlate = activePlateDetections.first()
+                    val plateStr = topPlate.registrationNumber ?: "PLATE"
+                    val conf = (topPlate.confidence * 100).toInt()
+                    binding.tvDetectionStatus.text = "🚨 ANPR: $plateStr ($conf%) • LOGGED"
+                    binding.tvDetectionStatus.setTextColor(Color.parseColor("#dc2626"))
+                } else if (roadDets.isNotEmpty()) {
+                    val top = roadDets.first()
                     val typeLabel = top.type.replace("_", " ")
                     val diamStr = if (top.estimatedDiameterCm != null) " • Ø${top.estimatedDiameterCm}cm" else ""
                     val costStr = if (top.estimatedRepairCost != null) " • ₹${top.estimatedRepairCost}" else ""
@@ -273,7 +351,7 @@ class MainActivity : AppCompatActivity() {
                         binding.detectionBanner.visibility = View.GONE
                     }
                 } else {
-                    binding.tvDetectionStatus.text = "🟢 Automated Bus CCTV AI scanning road surface..."
+                    binding.tvDetectionStatus.text = "🟢 Dual AI: Scanning Road Defect + ANPR..."
                     binding.tvDetectionStatus.setTextColor(Color.parseColor("#64748B"))
                     binding.detectionBanner.visibility = View.GONE
                 }
@@ -287,10 +365,11 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
+            // 4. Auto-transmit Confirmed Road Defects
             val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
             if (confirmedEvents.isNotEmpty()) {
                 for (det in confirmedEvents) {
-                    if (det.confidence >= detector.targetConfidenceThreshold) {
+                    if (det.confidence >= roadDetector.targetConfidenceThreshold) {
                         val tel = locationTracker.currentTelemetry
 
                         if (det.type == "RASH_DRIVING" || det.type == "HIT_AND_RUN" || det.category == "INCIDENT") {
@@ -338,20 +417,12 @@ class MainActivity : AppCompatActivity() {
         val bmp = latestBitmap ?: Bitmap.createBitmap(320, 240, Bitmap.Config.ARGB_8888).apply {
             eraseColor(Color.DKGRAY)
         }
-        val onnxDetector = detector as? OnnxRoadDefectDetector
-        val testResult = onnxDetector?.generateTestPothole(bmp, latestRotationDegrees)
-            ?: DetectionResult(
-                type = "POTHOLE",
-                confidence = 0.89f,
-                boundingBox = RectF(0.30f, 0.50f, 0.70f, 0.76f),
-                croppedSnippetBase64 = null,
-                estimatedDiameterCm = 45,
-                estimatedRepairCost = 1850
-            )
+        val onnxDetector = roadDetector
+        val testResult = onnxDetector.generateTestPothole(bmp, latestRotationDegrees)
 
         binding.overlayView.setDetections(listOf(testResult))
         val diameterDisplay = if (testResult.estimatedDiameterCm != null) " • Ø ${testResult.estimatedDiameterCm} cm (₹${testResult.estimatedRepairCost})" else ""
-        Toast.makeText(this, "⚡ Test Defect Transmitted$diameterDisplay", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "⚡ Test Defect Transmitted$diameterDisplay (Long press for ANPR test)", Toast.LENGTH_SHORT).show()
 
         val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
         val tel = locationTracker.currentTelemetry
@@ -371,10 +442,45 @@ class MainActivity : AppCompatActivity() {
         binding.tvTripEvents.text = "Auto Transmitted: $autoTransmittedCount"
     }
 
+    fun triggerManualPlateTest() {
+        val testResult = DetectionResult(
+            type = "ANPR_INCIDENT",
+            category = "ANPR_INCIDENT",
+            confidence = 0.96f,
+            boundingBox = RectF(0.25f, 0.38f, 0.75f, 0.54f),
+            croppedSnippetBase64 = null,
+            registrationNumber = "DL 01 AB 1234",
+            plateConfidence = 0.98f,
+            vehicleType = "CAR"
+        )
+
+        activePlateDetections = listOf(testResult)
+        binding.overlayView.setDetections(listOf(testResult))
+        Toast.makeText(this, "🚨 ANPR Incident Transmitted: DL 01 AB 1234", Toast.LENGTH_SHORT).show()
+
+        val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
+        val tel = locationTracker.currentTelemetry
+        eventSyncManager.dispatchIncidentEvent(
+            deviceSessionId = activeSessionId,
+            category = "ANPR_INCIDENT",
+            confidence = testResult.confidence,
+            lat = tel.latitude,
+            lon = tel.longitude,
+            plateText = testResult.registrationNumber,
+            vehicleType = "CAR",
+            speedKmh = tel.speedKmh,
+            imageSnippetBase64 = null
+        )
+        autoTransmittedCount++
+        binding.tvTripEvents.text = "Auto Transmitted: $autoTransmittedCount"
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         locationTracker.stopTracking()
-        detector.release()
+        roadDetector.release()
+        plateDetector.release()
         cameraExecutor.shutdown()
+        plateExecutor.shutdown()
     }
 }

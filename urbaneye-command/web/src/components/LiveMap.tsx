@@ -167,35 +167,53 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     layer.clearLayers();
 
     events.forEach((event) => {
+      const isIncident = event.type === 'ANPR_INCIDENT' || event.type === 'HIT_AND_RUN' || event.type === 'RASH_DRIVING';
+      
+      // Emergency Priority: Active incidents can NEVER be filtered off by default layer toggles
+      if (!isIncident) {
+        if (!layers.defects && (event.type === 'POTHOLE' || event.type.includes('CRACK') || event.type === 'SURFACE_DAMAGE' || event.type === 'WATERLOGGING')) {
+          return;
+        }
+        if (!layers.traffic && (event.type === 'VEHICLE_FLOW' || event.type === 'TRAFFIC_BOTTLENECK')) {
+          return;
+        }
+        if (!layers.vruSafety && (event.type.includes('ZEBRA') || event.type === 'SCHOOL_CHILDREN_CROSSING' || event.type === 'MISSING_DIVIDER')) {
+          return;
+        }
+      }
+
       const statusMeta = STATUS_METADATA[event.status] || STATUS_METADATA.NEW;
       const isNew = event.status === 'NEW';
       const isLatest = event.id === latestEventId;
+      const markerColor = isIncident ? '#dc2626' : statusMeta.bg;
 
       const iconHtml = `
-        <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
           ${
-            isLatest
-              ? `<div style="position: absolute; width: 46px; height: 46px; border-radius: 50%; background-color: ${statusMeta.bg}; opacity: 0.6; animation: pulse-ring 1.2s infinite;"></div>`
+            isIncident && event.status !== 'RESOLVED'
+              ? `<div style="position: absolute; width: 50px; height: 50px; border-radius: 50%; background-color: #dc2626; opacity: 0.75; animation: pulse-ring 0.9s infinite;"></div>`
+              : isLatest
+              ? `<div style="position: absolute; width: 46px; height: 46px; border-radius: 50%; background-color: ${markerColor}; opacity: 0.6; animation: pulse-ring 1.2s infinite;"></div>`
               : isNew
-              ? `<div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background-color: ${statusMeta.bg}; opacity: 0.35; animation: pulse-ring 2s infinite;"></div>`
+              ? `<div style="position: absolute; width: 38px; height: 38px; border-radius: 50%; background-color: ${markerColor}; opacity: 0.35; animation: pulse-ring 2s infinite;"></div>`
               : ''
           }
           <div style="
-            width: 26px;
-            height: 26px;
+            width: ${isIncident ? '30px' : '26px'};
+            height: ${isIncident ? '30px' : '26px'};
             border-radius: 50%;
-            background-color: ${statusMeta.bg};
-            border: 2px solid #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            background-color: ${markerColor};
+            border: ${isIncident ? '3px solid #ffffff' : '2px solid #ffffff'};
+            box-shadow: ${isIncident ? '0 0 12px rgba(220, 38, 38, 0.8), 0 2px 6px rgba(0,0,0,0.4)' : '0 2px 6px rgba(0,0,0,0.35)'};
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
-            font-size: 11px;
+            font-size: ${isIncident ? '13px' : '11px'};
             font-weight: 800;
             transition: transform 0.15s ease-in-out;
           ">
-            ${statusMeta.symbol}
+            ${isIncident ? '🚨' : statusMeta.symbol}
           </div>
         </div>
       `;
@@ -203,20 +221,18 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       const customIcon = L.divIcon({
         className: 'custom-road-marker',
         html: iconHtml,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18],
-        popupAnchor: [0, -18],
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+        popupAnchor: [0, -19],
       });
 
       /**
-       * Priority-based z-index layering.
-       * Formula: (MAX_PRIORITY - categoryPriority) * 100
-       * → priority-1 (Incident) gets offset 1000, priority-11 (Vehicle Flow) gets offset 0.
-       * This is generic: any future Phase 2/3 category automatically slots in at the
-       * correct visual depth without further changes to this file.
+       * Emergency Incident z-index guarantee:
+       * Incidents get a massive zOffset (15,000) so they always render physically above
+       * all other road defects, potholes, cracks, and road markings.
        */
       const categoryPriority = getCategoryPriority(event.type);
-      const zOffset = (MAX_CATEGORY_PRIORITY - categoryPriority) * 100;
+      const zOffset = isIncident ? 15000 : (MAX_CATEGORY_PRIORITY - categoryPriority) * 100;
 
       const marker = L.marker([event.latitude, event.longitude], {
         icon: customIcon,
@@ -232,19 +248,30 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       const dateStr = new Date(event.timestamp).toLocaleString();
       const details = getPotholeCostDetails(event);
       const popupDiv = document.createElement('div');
-      popupDiv.style.minWidth = '230px';
+      popupDiv.style.minWidth = '240px';
       popupDiv.style.fontFamily = 'Inter, -apple-system, sans-serif';
 
       popupDiv.innerHTML = `
         <div style="padding: 2px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 11px; font-weight: 800; color: ${statusMeta.bg}; text-transform: uppercase;">
-              ${event.type.replace('_', ' ')}
+            <span style="font-size: 11px; font-weight: 800; color: ${markerColor}; text-transform: uppercase;">
+              ${isIncident ? '🚨 ' + event.type.replace('_', ' ') : event.type.replace('_', ' ')}
             </span>
-            <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background-color: #f1f5f9; color: #334155;">
+            <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background-color: ${isIncident ? '#fee2e2' : '#f1f5f9'}; color: ${isIncident ? '#991b1b' : '#334155'};">
               ${Math.round(event.confidence * 100)}% Conf
             </span>
           </div>
+
+          ${
+            event.registrationNumber
+              ? `<div style="margin-bottom: 8px;">
+                  <div style="display: inline-flex; align-items: center; gap: 6px; background-color: #fef2f2; border: 1.5px solid #dc2626; color: #991b1b; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; box-shadow: 0 1px 3px rgba(220,38,38,0.15);">
+                    <span>🚗 PLATE:</span>
+                    <span style="font-family: monospace; font-size: 14px;">${event.registrationNumber}</span>
+                  </div>
+                </div>`
+              : ''
+          }
 
           ${
             event.source === 'Citizen Report'

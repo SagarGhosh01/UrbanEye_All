@@ -62,6 +62,9 @@ dependencies {
     // On-Device AI Inference (ONNX Runtime Mobile)
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.19.2'
 
+    // On-Device OCR (Google ML Kit Text Recognition)
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
+
     // Room Database (Offline Queuing & Sync Engine)
     def roomVersion = '2.6.1'
     implementation "androidx.room:room-runtime:$roomVersion"
