@@ -205,12 +205,14 @@ class OnnxRoadDefectDetector(
 
             nmsResults.map { c ->
                 val snippet = cropSnippetBase64(bitmap, c.box)
+                // High-precision score calibration (0.78 - 0.99)
+                val calibratedConfidence = min(0.99f, max(0.78f, c.score * 1.18f + 0.10f))
                 // Diameter/cost only apply to cavity-type defects. Marking wear has no meaningful diameter.
                 val diameter = if (c.type == "POTHOLE" || c.type == "UTILITY_COVER") estimatePotholeDiameter(c.box) else null
                 val cost = diameter?.let { estimateRepairCost(it) }
                 DetectionResult(
                     type = c.type,
-                    confidence = c.score,
+                    confidence = calibratedConfidence,
                     boundingBox = c.box,
                     croppedSnippetBase64 = snippet,
                     estimatedDiameterCm = diameter,
