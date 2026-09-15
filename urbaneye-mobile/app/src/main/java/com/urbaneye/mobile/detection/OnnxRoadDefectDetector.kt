@@ -353,8 +353,10 @@ class OnnxRoadDefectDetector(
         return (kotlin.math.round(rawCost / 50f) * 50f).toInt().coerceAtLeast(800)
     }
 
+    private var testDefectIndex = 0
+
     /**
-     * Generates a test defect for validation and demonstration.
+     * Generates test road defect hazards cycling across all core categories requested by road authorities.
      */
     fun generateTestPothole(bitmap: Bitmap, rotationDegrees: Int): DetectionResult {
         val orientedBitmap = if (rotationDegrees != 0) {
@@ -364,17 +366,29 @@ class OnnxRoadDefectDetector(
             bitmap
         }
 
-        val box = RectF(0.30f, 0.50f, 0.70f, 0.76f)
+        val testCategories = listOf(
+            Pair("POTHOLE", 45),
+            Pair("SURFACE_DAMAGE", null),
+            Pair("MISSING_DIVIDER", null),
+            Pair("FADED_ZEBRA_CROSSING", null),
+            Pair("DAMAGED_SIGNBOARD", null),
+            Pair("WATERLOGGING", 65)
+        )
+
+        val currentTest = testCategories[testDefectIndex % testCategories.size]
+        testDefectIndex++
+
+        val box = RectF(0.28f, 0.45f, 0.72f, 0.75f)
         var snippet = cropSnippetBase64(orientedBitmap, box)
         if (snippet.isNullOrEmpty()) {
             snippet = createSyntheticPotholeSnippetBase64()
         }
-        val diameter = estimatePotholeDiameter(box)
-        val cost = estimateRepairCost(diameter)
+        val diameter = currentTest.second
+        val cost = if (diameter != null) estimateRepairCost(diameter) else 4200
 
         return DetectionResult(
-            type = "POTHOLE",
-            confidence = 0.91f,
+            type = currentTest.first,
+            confidence = 0.93f,
             boundingBox = box,
             croppedSnippetBase64 = snippet,
             estimatedDiameterCm = diameter,

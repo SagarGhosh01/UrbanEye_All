@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RoadEvent, EventStatus, DefectType } from '../types';
-import { Eye, CheckCircle2, Wrench, AlertTriangle, Image as ImageIcon, Trash2, MapPin, Bus, Clock } from 'lucide-react';
+import { Eye, CheckCircle2, Wrench, AlertTriangle, Image as ImageIcon, Trash2, MapPin, Bus, Clock, Download } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCategoryColor, getCategoryDisplayName } from '../constants/detectionCategories';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
@@ -189,6 +189,31 @@ export const DefectTable: React.FC<DefectTableProps> = ({
     );
   };
 
+  const handleExportCsv = () => {
+    if (!filteredEvents.length) return;
+    const headers = ['Defect_ID', 'Category', 'Severity', 'Confidence_Pct', 'Estimated_Repair_Cost_INR', 'Estimated_Diameter_CM', 'Latitude', 'Longitude', 'Status', 'Timestamp'];
+    const rows = filteredEvents.map((e) => [
+      `"${e.id}"`,
+      `"${e.type}"`,
+      `"${e.severity}"`,
+      Math.round(e.confidence * 100),
+      e.estimatedRepairCost || 0,
+      e.estimatedDiameterCm || 'N/A',
+      e.latitude,
+      e.longitude,
+      `"${e.status}"`,
+      `"${e.timestamp}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `UrbanEye_Road_Defects_Audit_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className={`rounded-xl shadow-sm border overflow-hidden transition-colors duration-300 ${wrap}`}>
       {/* ── Header Controls ──────────────────────────────────── */}
@@ -216,13 +241,16 @@ export const DefectTable: React.FC<DefectTableProps> = ({
               className={`flex-1 sm:flex-initial px-2.5 py-2 border rounded-lg focus:outline-none focus:ring-1 text-xs min-h-[40px] cursor-pointer ${inputCls}`}
               style={{ backgroundColor: '#1e293b', color: '#e2e8f0', borderColor: '#334155' }}
             >
-              <option value="ALL">All Defect Types</option>
+              <option value="ALL">All Categories</option>
+              <option value="POTHOLE">🕳️ Potholes</option>
+              <option value="SURFACE_DAMAGE">⚡ Damaged Roads / Wear</option>
+              <option value="MISSING_DIVIDER">🚧 Missing Road Dividers</option>
+              <option value="FADED_ZEBRA_CROSSING">🚸 Faded Zebra Crossings</option>
+              <option value="DAMAGED_SIGNBOARD">🛑 Damaged Signboards</option>
+              <option value="WATERLOGGING">💧 Waterlogging</option>
+              <option value="ROAD_CRACK">⚠️ Road Cracks</option>
+              <option value="UTILITY_COVER">⚠️ Utility Covers</option>
               <option value="ANPR_INCIDENT">🚨 ANPR Incidents</option>
-              <option value="POTHOLE">Potholes</option>
-              <option value="ROAD_CRACK">Road Cracks</option>
-              <option value="SURFACE_DAMAGE">Surface Wear</option>
-              <option value="WATERLOGGING">Waterlogging</option>
-              <option value="VEHICLE_FLOW">Vehicle Flow</option>
             </select>
             <select
               value={selectedStatus}
@@ -237,6 +265,16 @@ export const DefectTable: React.FC<DefectTableProps> = ({
               <option value="RESOLVED">Resolved</option>
             </select>
           </div>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={!filteredEvents.length}
+            className="px-3 py-2 border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition min-h-[40px] disabled:opacity-50"
+            title="Download Filtered Defect Audit Log as CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
           {onPurgeEvents && events.length > 0 && (
             <button
               onClick={() => setIsPurgeModalOpen(true)}
