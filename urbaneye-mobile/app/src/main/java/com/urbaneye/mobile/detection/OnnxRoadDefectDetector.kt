@@ -18,10 +18,16 @@ import kotlin.math.min
 
 /**
  * Genuine on-device edge-AI road defect detector powered by YOLOv8 ONNX Runtime Mobile.
- * Trained on the Road Defect Dataset (RDD) with multi-class road intelligence:
- * - D40: Pothole
- * - D00, D10, D20: Longitudinal / Transverse / Alligator Cracks
- * - D43, D44, D50: Surface Damage & Wear
+ *
+ * The bundled model declares exactly these 7 classes, in this index order
+ * (read from the .onnx metadata — do not reorder without re-exporting the model):
+ * - 0 D00: Longitudinal crack      - 4 D43: Crosswalk / zebra marking wear
+ * - 1 D10: Transverse crack        - 5 D44: Lane line marking wear
+ * - 2 D20: Alligator crack         - 6 D50: Utility cover / manhole
+ * - 3 D40: Pothole
+ *
+ * There is no waterlogging class in this model. Waterlogging detection requires
+ * a retrained model and must not be emitted from here.
  */
 class OnnxRoadDefectDetector(
     private val context: Context,
@@ -181,11 +187,9 @@ class OnnxRoadDefectDetector(
                             1 -> "TRANSVERSE_CRACK"
                             2 -> "ALLIGATOR_CRACK"
                             3 -> "POTHOLE"
-                            4 -> "SURFACE_DAMAGE"
-                            5 -> "WATERLOGGING"
-                            6 -> "ROAD_EDGE_DAMAGE"
-                            7 -> "DEBRIS"
-                            8 -> "OPEN_MANHOLE"
+                            4 -> "FADED_ZEBRA_CROSSING"
+                            5 -> "FADED_LANE_MARKING"
+                            6 -> "UTILITY_COVER"
                             else -> {
                                 val aspect = box.width() / box.height().coerceAtLeast(0.01f)
                                 if (aspect in 0.3f..2.5f && (box.width() * box.height()) > 0.02f) "POTHOLE" else "SURFACE_DAMAGE"
@@ -201,7 +205,8 @@ class OnnxRoadDefectDetector(
 
             nmsResults.map { c ->
                 val snippet = cropSnippetBase64(bitmap, c.box)
-                val diameter = if (c.type == "POTHOLE" || c.type == "SURFACE_DAMAGE" || c.type == "OPEN_MANHOLE" || c.type == "ROAD_EDGE_DAMAGE") estimatePotholeDiameter(c.box) else null
+                // Diameter/cost only apply to cavity-type defects. Marking wear has no meaningful diameter.
+                val diameter = if (c.type == "POTHOLE" || c.type == "UTILITY_COVER") estimatePotholeDiameter(c.box) else null
                 val cost = diameter?.let { estimateRepairCost(it) }
                 DetectionResult(
                     type = c.type,

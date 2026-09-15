@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { detectFrame, loadEdgeModel } from '../services/edgeDetector';
 import {
   Camera,
   X,
@@ -36,8 +37,7 @@ interface CapturedItem {
   confidence: number;
   imageSnippet: string | null;
   timestamp: string;
-  diameterCm: number;
-  repairCost: number;
+  diameterCm: number | null;
   deduplicated: boolean;
 }
 
@@ -53,23 +53,23 @@ export interface DetectedPotholeBox {
   y: number; // SVG Y coordinate (0..350)
   w: number; // SVG Width
   h: number; // SVG Height
-  widthCm: number;
-  lengthCm: number; // Standardized in cm
-  depthCm: number;
-  areaM2: number;
+  /**
+   * Perspective estimate of ground size, cavity-type defects only; null otherwise.
+   * Depth, area and repair cost are deliberately absent: depth cannot be recovered
+   * from a single camera, and cost is computed server-side from measured area.
+   */
+  diameterCm: number | null;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   severityEmoji: string;
-  repairCost: number;
   color: string;
   labelYOffset: number; // Staggering offset to prevent label clutter
 }
 
 
+// The one model that actually runs. Previous revisions listed four engines
+// (TensorRT INT8, SAM2, MobileNetV4 3D-Depth) with invented latencies; none existed.
 const AI_ENGINES = [
-  { id: 'YOLOv11x-seg', label: 'YOLOv11x-seg PWD Edge (TensorRT INT8)', latency: '6.4 ms' },
-  { id: 'MobileNetV4-3D', label: 'MobileNetV4 3D-Depth (WebGL)', latency: '8.2 ms' },
-  { id: 'SAM2-ZeroShot', label: 'SAM2 Zero-Shot Segmenter (ONNX)', latency: '12.1 ms' },
-  { id: 'YOLO26-seg', label: 'YOLO26-seg Edge Active Model', latency: '4.8 ms' },
+  { id: 'urbaneye-road-defect-v1', label: 'UrbanEye YOLOv8n Road Defect (ONNX / WASM)', latency: 'measured live' },
 ];
 
 export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
@@ -82,6 +82,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const prevBoxesRef = useRef<DetectedPotholeBox[]>([]);
   const lastAutoCaptureTimeRef = useRef<number>(0);
+  const inferenceBusyRef = useRef<boolean>(false);
 
   // Camera & Sensor State
   const [cameraActive, setCameraActive] = useState(false);
@@ -89,16 +90,18 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [gpsStatus, setGpsStatus] = useState<'LOCATING' | 'FIXED' | 'FAILED'>('LOCATING');
-  const [telemetrySpeed, setTelemetrySpeed] = useState<number>(38);
-  const [telemetryHeading, setTelemetryHeading] = useState<number>(184);
+  const [telemetrySpeed, setTelemetrySpeed] = useState<number>(0);
+  const [telemetryHeading, setTelemetryHeading] = useState<number>(0);
 
   // AI & Scanner State
-  const [selectedEngine, setSelectedEngine] = useState<string>('YOLOv11x-seg');
+  const [selectedEngine, setSelectedEngine] = useState<string>('urbaneye-road-defect-v1');
   const [videoFilter, setVideoFilter] = useState<'NORMAL' | 'THERMAL' | 'NIGHT_VISION' | 'SEGMENTATION'>('NORMAL');
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
   const [autoDetectLoop, setAutoDetectLoop] = useState(true);
   const [isCapturing, setIsCapturing] = useState(false);
   const [showModelInfo, setShowModelInfo] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
 
   // Dynamic Multi-Box YOLO Detection State
   const [detectedPotholes, setDetectedPotholes] = useState<DetectedPotholeBox[]>([]);
@@ -200,12 +203,21 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setGpsLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+          // Real device telemetry when the platform provides it. speed is m/s.
+          if (typeof pos.coords.speed === 'number' && !Number.isNaN(pos.coords.speed)) {
+            setTelemetrySpeed(Math.round(pos.coords.speed * 3.6));
+          }
+          if (typeof pos.coords.heading === 'number' && !Number.isNaN(pos.coords.heading)) {
+            setTelemetryHeading(Math.round(pos.coords.heading));
+          }
           setGpsStatus('FIXED');
         },
         (err) => {
-          console.warn('Geolocation lookup notice:', err.message);
+          // Fall back to a district centroid so the demo still runs, but say that the
+          // position is approximate rather than reporting a fix we do not have.
+          console.warn('Geolocation unavailable:', err.message);
           setGpsLocation({ lat: 31.2536, lon: 75.326 });
-          setGpsStatus('FIXED');
+          setGpsStatus('FAILED');
         },
         { enableHighAccuracy: true, timeout: 5000 }
       );
@@ -241,176 +253,70 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
    * to accurately detect potholes across all lighting, road types (asphalt/paved/dirt/wet),
    * and camera streams.
    */
-  const analyzeSpatialPotholes = () => {
-    if (!canvasRef.current || !videoRef.current || !cameraActive) return;
-    const canvas = canvasRef.current;
+  /**
+   * Runs one camera frame through the real edge model.
+   *
+   * This is the same road_defect_detector.onnx that ships inside the Android app,
+   * executed here in WebAssembly, so the browser demo and the phone agree.
+   *
+   * What this replaced: a dark-pixel thresholder that split the frame into three
+   * sectors, assigned confidences from the fixed list [0.94, 0.88, 0.82], and — when
+   * it found nothing at all — drew a pothole in the centre of the frame with an
+   * invented 6.4 cm depth and a Rs 3,850 repair cost. It reported a critical pothole
+   * when pointed at a wall. An empty result is now a normal, honest outcome.
+   */
+  const analyzeSpatialPotholes = async () => {
+    if (!videoRef.current || !cameraActive) return;
     const video = videoRef.current;
-    const vW = video.videoWidth || 640;
-    const vH = video.videoHeight || 480;
-    if (vW === 0 || vH === 0) return;
-
-    // Ultra-fast 160x120 analysis resolution for 0% lag on mobile phones
-    const sampleW = 160;
-    const sampleH = 120;
-    canvas.width = sampleW;
-    canvas.height = sampleH;
-
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0, sampleW, sampleH);
+    if (!video.videoWidth || !video.videoHeight) return;
+    if (inferenceBusyRef.current) return;   // never queue frames behind a slow one
+    inferenceBusyRef.current = true;
 
     try {
-      // Analyze lower 65% road ROI
-      const roiYStart = Math.floor(sampleH * 0.35);
-      const roiHeight = Math.floor(sampleH * 0.60);
-      const imageData = ctx.getImageData(0, roiYStart, sampleW, roiHeight);
-      const data = imageData.data;
-      const totalPixels = data.length / 4;
-
-      let lumaSum = 0;
-      let colorfulPixels = 0;
-      let brightIndoorPixels = 0;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-        const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-        lumaSum += luma;
-
-        if (chroma > 45) colorfulPixels++;
-        if (luma > 230) brightIndoorPixels++;
-      }
-
-      const avgLuma = lumaSum / totalPixels;
-      const colorfulRatio = colorfulPixels / totalPixels;
-      const brightRatio = brightIndoorPixels / totalPixels;
-
-      // Extreme Non-Road Rejector: Only reject if image is overwhelmingly colorful (>45%) or pointing at ceiling light (>35%)
-      if (colorfulRatio > 0.45 || brightRatio > 0.35) {
-        setDetectedPotholes([]);
-        setSelectedBoxId(null);
-        prevBoxesRef.current = [];
-        return;
-      }
-
-      // Dynamic Adaptive Cavity Thresholding based on frame average brightness
-      const cavityLumaMax = Math.max(45, Math.min(115, Math.floor(avgLuma * 0.76 + 10)));
-
-      const sectorBounds = [
-        { minX: sampleW, maxX: 0, minY: roiHeight, maxY: 0, count: 0 },
-        { minX: sampleW, maxX: 0, minY: roiHeight, maxY: 0, count: 0 },
-        { minX: sampleW, maxX: 0, minY: roiHeight, maxY: 0, count: 0 },
-      ];
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-        const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-
-        const pixelIdx = i / 4;
-        const px = pixelIdx % sampleW;
-        const py = Math.floor(pixelIdx / sampleW);
-
-        // Dark cavity pixel candidate matching relative darkness & low saturation
-        if (luma <= cavityLumaMax && chroma < 35) {
-          const sectorIdx = Math.min(2, Math.floor((px / sampleW) * 3));
-          const s = sectorBounds[sectorIdx];
-          s.count++;
-          if (px < s.minX) s.minX = px;
-          if (px > s.maxX) s.maxX = px;
-          if (py < s.minY) s.minY = py;
-          if (py > s.maxY) s.maxY = py;
-        }
-      }
+      const detections = await detectFrame(video, 0.25);
+      setModelReady(true);
+      setModelError(null);
 
       const svgW = 500;
       const svgH = 350;
-      const palette = ['#ef4444', '#10b981', '#f59e0b'];
-      const confidences = [0.94, 0.88, 0.82];
-      const rawCandidateBoxes: DetectedPotholeBox[] = [];
+      const palette: Record<string, string> = {
+        POTHOLE: '#f97316',
+        UTILITY_COVER: '#92400e',
+        LONGITUDINAL_CRACK: '#eab308',
+        TRANSVERSE_CRACK: '#eab308',
+        ALLIGATOR_CRACK: '#ca8a04',
+        FADED_ZEBRA_CROSSING: '#059669',
+        FADED_LANE_MARKING: '#0d9488',
+      };
 
-      sectorBounds.forEach((s, idx) => {
-        const sectorWidth = s.maxX - s.minX;
-        const sectorHeight = s.maxY - s.minY;
-        if (s.count >= 8 && sectorWidth >= 6 && sectorHeight >= 4) {
-          const normX = Math.round((s.minX / sampleW) * svgW);
-          const normY = Math.round(135 + (s.minY / roiHeight) * 170);
-          const normW = Math.max(80, Math.min(170, Math.round((sectorWidth / sampleW) * svgW)));
-          const normH = Math.max(55, Math.min(125, Math.round((sectorHeight / roiHeight) * svgH)));
+      const rawCandidateBoxes: DetectedPotholeBox[] = detections.map((d, idx) => {
+        // Diameter is a perspective estimate for cavity-type defects only. There is no
+        // depth here and no cost here: depth is unrecoverable from one camera, and cost
+        // is computed server-side from measured area during ingestion.
+        const diameterCm = d.estimatedDiameterCm;
+        const severity: DetectedPotholeBox['severity'] =
+          diameterCm === null ? 'MEDIUM' : diameterCm >= 75 ? 'CRITICAL' : diameterCm >= 45 ? 'HIGH' : 'MEDIUM';
 
-          const conf = confidences[idx % confidences.length];
-          const widthCm = Math.round(normW * 0.42);
-          const lengthCm = Math.round(normH * 0.55);
-          const depthCm = Number((4.2 + (normW * normH) / 14000).toFixed(1));
-          const areaM2 = Number(((widthCm / 100) * (lengthCm / 100)).toFixed(2));
-          const repairCost = Math.round(areaM2 * 3400 + depthCm * 190 + 750);
-
-          rawCandidateBoxes.push({
-            id: `pothole-sector-${idx}`,
-            trackId: 101 + idx,
-            type: 'POTHOLE',
-            label: `pothole #${101 + idx} (${conf})`,
-            confidence: conf,
-            confidenceHistory: [conf],
-            status: 'UNCONFIRMED',
-            x: Math.min(svgW - normW - 15, Math.max(15, normX)),
-            y: Math.min(svgH - normH - 15, Math.max(120, normY)),
-            w: normW,
-            h: normH,
-            widthCm,
-            lengthCm,
-            depthCm,
-            areaM2,
-            severity: depthCm > 7.0 ? 'CRITICAL' : 'HIGH',
-            severityEmoji: depthCm > 7.0 ? '🔴' : '🟠',
-            repairCost,
-            color: palette[idx % palette.length],
-            labelYOffset: 0,
-          });
-        }
+        return {
+          id: `det-${d.type}-${idx}`,
+          trackId: 101 + idx,
+          type: d.type,
+          label: `${d.type.toLowerCase().replace(/_/g, ' ')} ${d.confidence.toFixed(2)}`,
+          confidence: d.confidence,
+          confidenceHistory: [d.confidence],
+          status: 'UNCONFIRMED' as const,
+          x: Math.round(d.x * svgW),
+          y: Math.round(d.y * svgH),
+          w: Math.max(18, Math.round(d.w * svgW)),
+          h: Math.max(14, Math.round(d.h * svgH)),
+          diameterCm,
+          severity,
+          severityEmoji: severity === 'CRITICAL' ? '🔴' : severity === 'HIGH' ? '🟠' : '🟡',
+          color: palette[d.type] ?? '#64748b',
+          labelYOffset: 0,
+        };
       });
 
-      // Fallback: If no candidate box was created from sector thresholding, generate 1 active road defect box in center ROI
-      if (rawCandidateBoxes.length === 0) {
-        const normX = 175;
-        const normY = 160;
-        const normW = 140;
-        const normH = 90;
-        const conf = 0.94;
-        const widthCm = 58;
-        const lengthCm = 82;
-        const depthCm = 6.4;
-        const areaM2 = 0.48;
-        const repairCost = 3850;
-
-        rawCandidateBoxes.push({
-          id: 'pothole-sector-active',
-          trackId: 101,
-          type: 'POTHOLE',
-          label: `pothole #101 (${conf})`,
-          confidence: conf,
-          confidenceHistory: [conf],
-          status: 'UNCONFIRMED',
-          x: normX,
-          y: normY,
-          w: normW,
-          h: normH,
-          widthCm,
-          lengthCm,
-          depthCm,
-          areaM2,
-          severity: 'HIGH',
-          severityEmoji: '🟠',
-          repairCost,
-          color: '#ef4444',
-          labelYOffset: 0,
-        });
-      }
 
       // Frame-to-frame IoU box tracking & status promotion (UNCONFIRMED -> CONFIRMED)
       const prevBoxes = prevBoxesRef.current;
@@ -460,7 +366,12 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         }
       }
     } catch (e) {
-      // Ignore read errors
+      // A failure here is almost always the model failing to load. Say so on screen
+      // rather than leaving a camera view that silently detects nothing forever.
+      setModelError(e instanceof Error ? e.message : 'Edge model failed to run');
+      setModelReady(false);
+    } finally {
+      inferenceBusyRef.current = false;
     }
   };
 
@@ -490,13 +401,62 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
     reader.readAsDataURL(file);
   };
 
+  /**
+   * Gives the detector something to classify: an uploaded still if one was supplied,
+   * otherwise the live video element. Returns null when neither is available.
+   */
+  const sourceForClassification = async (overrideImage?: string): Promise<CanvasImageSource | null> => {
+    if (overrideImage) {
+      return await new Promise<CanvasImageSource | null>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = overrideImage;
+      });
+    }
+    if (videoRef.current && cameraActive && videoRef.current.videoWidth > 0) {
+      return videoRef.current;
+    }
+    return null;
+  };
+
   const captureAndTransmit = async (overrideImage?: string, overrideType?: string, overrideConf?: number) => {
     if (isCapturing) return;
     setIsCapturing(true);
 
     const activeBox = detectedPotholes.find((b) => b.id === selectedBoxId) || detectedPotholes[0];
-    const typeToIngest = overrideType || activeBox?.type || 'POTHOLE';
-    const confToIngest = overrideConf || activeBox?.confidence || 0.88;
+
+    // Nothing may be ingested without a classification from the model. This used to
+    // default to POTHOLE at 0.88 whenever there was no detection, so pressing capture
+    // on an office ceiling wrote a confident pothole into the district database.
+    let typeToIngest = overrideType ?? activeBox?.type ?? null;
+    let confToIngest = overrideConf ?? activeBox?.confidence ?? null;
+    let classifiedBox = activeBox ?? null;
+
+    if (typeToIngest === null || confToIngest === null) {
+      try {
+        const frameSource = await sourceForClassification(overrideImage);
+        const found = frameSource ? await detectFrame(frameSource, 0.25) : [];
+        if (found.length === 0) {
+          setLastTransmitted('No road defect found in this frame — nothing was sent.');
+          speakAlert('No road defect detected. Nothing was sent.');
+          setIsCapturing(false);
+          return;
+        }
+        const best = found.reduce((a, b) => (b.confidence > a.confidence ? b : a));
+        typeToIngest = best.type;
+        confToIngest = best.confidence;
+        classifiedBox = {
+          ...(activeBox ?? ({} as DetectedPotholeBox)),
+          diameterCm: best.estimatedDiameterCm,
+          severity: 'MEDIUM',
+        } as DetectedPotholeBox;
+      } catch (err) {
+        setLastTransmitted('Could not classify this frame — nothing was sent.');
+        setIsCapturing(false);
+        return;
+      }
+    }
 
     try {
       let imageSnippet: string | null = overrideImage || null;
@@ -534,12 +494,10 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
       const lat = gpsLocation?.lat || 31.2536;
       const lon = gpsLocation?.lon || 75.326;
-      const widthCm = activeBox?.widthCm || 58;
-      const lengthCm = activeBox?.lengthCm || 82;
-      const lengthM = Number((lengthCm / 100).toFixed(2));
-      const depthCm = activeBox?.depthCm || 6.4;
-      const areaM2 = activeBox?.areaM2 || 0.48;
-      const repairCost = activeBox?.repairCost || 3850;
+      // Only the perspective diameter is genuinely derived on this device. Width,
+      // length, area and cost are computed server-side from it during ingestion, and
+      // depth is omitted entirely — one camera cannot measure it.
+      const diameterCm = classifiedBox?.diameterCm ?? null;
 
       // 🛡️ Client-side O(1) GPS Grid & pHash Deduplication Check (Cache tracking)
       const dedupResult = deduplicationService.checkAndRegisterDetection(
@@ -547,12 +505,12 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         lon,
         confToIngest,
         imageSnippet,
-        { widthCm, lengthCm, depthCm, repairCost }
+        { diameterCm }
       );
 
-      const currentSpeed = Math.round(25 + Math.random() * 25);
-      setTelemetrySpeed(currentSpeed);
-      setTelemetryHeading(Math.round(160 + Math.random() * 50));
+      // Telemetry comes from the Geolocation API, or is omitted. It used to be
+      // Math.random(), which meant every ingested event carried an invented speed.
+      const currentSpeed = telemetrySpeed;
 
       const payload = {
         deviceSessionId: 'sess-bus-live-phone',
@@ -564,13 +522,9 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         heading: telemetryHeading,
         speed: currentSpeed,
         imageSnippet,
-        widthM: widthCm / 100,
-        lengthM: lengthM,
-        depthCm: depthCm,
-        areaM2: areaM2,
-        estimatedDiameterCm: widthCm,
-        estimatedRepairCost: repairCost,
-        severity: depthCm > 7 ? 'CRITICAL' : 'HIGH',
+        // Only what this device genuinely derived. The server fills in width, length,
+        // area and cost from the diameter, and leaves them null if it cannot.
+        estimatedDiameterCm: diameterCm,
         timestamp: new Date().toISOString(),
       };
 
@@ -630,8 +584,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         confidence: confToIngest,
         imageSnippet,
         timestamp: new Date().toLocaleTimeString(),
-        diameterCm: widthCm,
-        repairCost,
+        diameterCm,
         deduplicated: isDup,
       };
 
@@ -647,14 +600,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         heading: telemetryHeading,
         speed: currentSpeed,
         imageSnippet,
-        estimatedDiameterCm: widthCm,
-        widthM: widthCm / 100,
-        lengthM: lengthM,
-        depthCm: depthCm,
-        areaM2: areaM2,
-        severity: depthCm > 7 ? 'CRITICAL' : 'HIGH',
-        severityScore: Math.min(100, Math.round(depthCm * 6 + areaM2 * 25)),
-        estimatedRepairCost: repairCost,
+        estimatedDiameterCm: diameterCm,
+        severity: classifiedBox?.severity ?? 'MEDIUM',
         status: 'NEW',
         timestamp: new Date().toISOString(),
         createdAt: new Date().toISOString(),
@@ -890,10 +837,10 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                 <span>{detectedPotholes.length > 0 ? `DETECTED: ${detectedPotholes.length} POTHOLES` : 'STATUS: ROAD CLEAR'}</span>
               </span>
               <span className="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded font-bold">
-                {activeBox ? `MAX DEPTH: ${activeBox.depthCm} cm` : 'DEPTH: 0.0 cm'}
+                {activeBox?.diameterCm ? `SIZE: Ø${activeBox.diameterCm} cm` : 'SIZE: not measurable'}
               </span>
               <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold">
-                {activeBox ? `EST. REPAIR: ₹${activeBox.repairCost}` : 'EST. REPAIR: ₹0'}
+                {activeBox ? `CONF: ${(activeBox.confidence * 100).toFixed(0)}%` : 'CONF: —'}
               </span>
             </div>
 
@@ -961,18 +908,22 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                 </div>
 
                 <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Width & Length</div>
-                  <div className="font-bold text-rose-400 text-sm mt-0.5">{activeBox.widthCm} cm × {activeBox.lengthCm} cm</div>
+                  <div className="text-slate-400 text-[10px]">Ground size (est.)</div>
+                  <div className="font-bold text-rose-400 text-sm mt-0.5">
+                    {activeBox.diameterCm ? `Ø ${activeBox.diameterCm} cm` : 'Not applicable'}
+                  </div>
                 </div>
 
                 <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Depth (est.)</div>
-                  <div className="font-bold text-amber-400 text-sm mt-0.5">{activeBox.depthCm} cm ({activeBox.severity})</div>
+                  <div className="text-slate-400 text-[10px]">Depth</div>
+                  <div className="font-bold text-amber-400 text-sm mt-0.5" title="A single camera cannot recover depth">
+                    Not measurable
+                  </div>
                 </div>
 
                 <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">PWD Est. Repair</div>
-                  <div className="font-bold text-emerald-400 text-sm mt-0.5">₹{activeBox.repairCost}</div>
+                  <div className="text-slate-400 text-[10px]">Repair estimate</div>
+                  <div className="font-bold text-emerald-400 text-sm mt-0.5">Computed on ingest</div>
                 </div>
               </div>
             </div>
@@ -1154,7 +1105,9 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                       <span className="font-bold text-slate-300 truncate max-w-[65px]">
                         {item.type.replace(/_/g, ' ')}
                       </span>
-                      <span className="text-emerald-400 font-bold">₹{item.repairCost}</span>
+                      <span className="text-emerald-400 font-bold">
+                        {item.diameterCm ? `Ø${item.diameterCm}cm` : `${(item.confidence * 100).toFixed(0)}%`}
+                      </span>
                     </div>
                   </div>
                 ))}

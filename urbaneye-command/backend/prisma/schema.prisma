@@ -30,10 +30,35 @@ model District {
   maxLat    Float?
   minLon    Float?
   maxLon    Float?
-  users     User[]
-  sessions  BusDeviceSession[]
-  events    RoadEvent[]
-  createdAt DateTime           @default(now())
+  users        User[]
+  sessions     BusDeviceSession[]
+  events       RoadEvent[]
+  observations TrafficObservation[]
+  createdAt    DateTime           @default(now())
+}
+
+/// A single traffic reading from a bus camera: what it saw, where, and how fast it was
+/// moving at the time. Congestion is derived from these, never hand-authored — the bus's
+/// own speed against the free-flow speed previously observed on the same segment is the
+/// congestion signal, and the vehicle counts come from the on-device detector.
+model TrafficObservation {
+  id          String   @id @default(uuid())
+  districtId  String
+  district    District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  busLabel    String
+  latitude    Float
+  longitude   Float
+  segmentKey  String   // lat/lon rounded to ~100m, so repeat passes aggregate
+  busSpeedKmh Float?
+  cars        Int      @default(0)
+  twoWheelers Int      @default(0)
+  buses       Int      @default(0)
+  trucks      Int      @default(0)
+  pedestrians Int      @default(0)
+  timestamp   DateTime @default(now())
+
+  @@index([districtId, timestamp])
+  @@index([segmentKey])
 }
 
 model User {
@@ -101,6 +126,10 @@ model RoadEvent {
   reporterEmail       String?
   timestamp           DateTime          @default(now())
   createdAt           DateTime          @default(now())
+  // Lifecycle stamps — these are what make time-to-repair and SLA breach provable.
+  // Without them we can show a defect exists but not how long it went unrepaired.
+  assignedAt          DateTime?
+  resolvedAt          DateTime?
 
   @@index([districtId, status])
   @@index([timestamp])

@@ -88,6 +88,9 @@ class OverlayView @JvmOverloads constructor(
                 "LONGITUDINAL_CRACK",
                 "TRANSVERSE_CRACK"         -> Pair(Color.rgb(234, 179,   8), "⚠️ HIGH")     // #eab308 Amber Yellow
                 "SURFACE_DAMAGE"           -> Pair(Color.rgb(192, 132, 252), "⚡ MEDIUM")   // #c084fc Purple Accent
+                "FADED_ZEBRA_CROSSING"     -> Pair(Color.rgb(  5, 150, 105), "🚸 MARKING")   // #059669 Emerald
+                "FADED_LANE_MARKING"       -> Pair(Color.rgb(  8, 145, 178), "🛣️ LANE WEAR") // #0891b2 Cyan
+                "UTILITY_COVER"            -> Pair(Color.rgb(146,  64,  14), "⚠️ COVER")     // #92400e Ochre
                 "WATERLOGGING"             -> Pair(Color.rgb( 56, 189, 248), "💧 WATERLOG")  // #38bdf8 Sky Blue
                 "ROAD_EDGE_DAMAGE"         -> Pair(Color.rgb(244,  63,  94), "⚠️ EDGE DAMAGE")// #f43f5e Rose Red
                 "MISSING_DIVIDER"          -> Pair(Color.rgb(  6, 182, 212), "🚧 HAZARD")    // #06b6d4 Cyan

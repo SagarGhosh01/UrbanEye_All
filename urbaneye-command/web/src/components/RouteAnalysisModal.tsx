@@ -83,7 +83,7 @@ export const RouteAnalysisModal: React.FC<RouteAnalysisModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Real-Time AI Diversion & Dispatch Engine • Segment Tag: {analysis?.junctionTag || 'Junction 04'}
+                Real-Time AI Diversion & Dispatch Engine • Segment Tag: {analysis?.junctionTag || 'Awaiting telemetry'}
               </p>
             </div>
           </div>
@@ -205,7 +205,7 @@ export const RouteAnalysisModal: React.FC<RouteAnalysisModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => handleActionClick('Traffic Warden Dispatched to Junction 04')}
+                    onClick={() => handleActionClick(`Traffic Warden Dispatched to ${analysis?.junctionTag ?? 'segment'}`)}
                     className="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold flex flex-col items-center justify-center space-y-1.5 transition text-center"
                   >
                     <UserCheck className="w-4 h-4 text-teal-400" />
@@ -242,7 +242,7 @@ export const RouteAnalysisModal: React.FC<RouteAnalysisModalProps> = ({
         <div className="p-4 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between text-xs text-slate-400 shrink-0">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-teal-400" />
-            <span>Bus Edge Sensor Sources: {analysis?.sensorDataSources.join(', ') || 'Fleet #24, #31, #42'}</span>
+            <span>Bus Edge Sensor Sources: {analysis?.sensorDataSources.join(', ') || 'No bus has reported on this segment yet'}</span>
           </span>
           <button
             type="button"

@@ -261,25 +261,25 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
                   <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-xs text-center">
                     <span className="text-[9px] text-slate-400 font-bold uppercase block">Width</span>
                     <div className="text-sm font-black font-mono text-slate-900">
-                      {details.widthM} <span className="text-[10px] font-normal text-slate-500">m</span>
+                      {details.widthM ?? '\u2014'} <span className="text-[10px] font-normal text-slate-500">m</span>
                     </div>
                   </div>
                   <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-xs text-center">
                     <span className="text-[9px] text-slate-400 font-bold uppercase block">Length</span>
                     <div className="text-sm font-black font-mono text-slate-900">
-                      {details.lengthM} <span className="text-[10px] font-normal text-slate-500">m</span>
+                      {details.lengthM ?? '\u2014'} <span className="text-[10px] font-normal text-slate-500">m</span>
                     </div>
                   </div>
                   <div className="bg-white p-2 rounded-lg border border-amber-200 shadow-xs text-center">
                     <span className="text-[9px] text-amber-600 font-bold uppercase block">Depth</span>
                     <div className="text-sm font-black font-mono text-amber-700">
-                      {details.depthCm} <span className="text-[10px] font-normal text-amber-600">cm</span>
+                      {details.depthCm ?? '\u2014'} <span className="text-[10px] font-normal text-amber-600">cm</span>
                     </div>
                   </div>
                   <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-xs text-center">
                     <span className="text-[9px] text-slate-400 font-bold uppercase block">Area</span>
                     <div className="text-sm font-black font-mono text-slate-900">
-                      {details.areaM2} <span className="text-[10px] font-normal text-slate-500">m²</span>
+                      {details.areaM2 ?? '\u2014'} <span className="text-[10px] font-normal text-slate-500">m²</span>
                     </div>
                   </div>
                 </div>
@@ -304,7 +304,7 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
                   </div>
                   <div className="flex items-start space-x-1.5">
                     <Coins className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Material Infill:</strong> {details.materialEstimate}</span>
+                    <span><strong>Material Infill:</strong> {details.materialEstimate ?? 'Needs measured area'}</span>
                   </div>
                 </div>
               </div>

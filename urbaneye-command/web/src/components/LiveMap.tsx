@@ -262,7 +262,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
           {/* Cavity & Repair Cost Bar */}
           <div style="font-size: 11px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; background-color: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 6px; border: 1px solid #fde68a;">
-            <span>Ø ${details.diameterCm} cm (${details.severity})</span>
+            <span>Ø ${details.formattedDiameter} (${details.severity})</span>
             <span style="color: #059669; font-weight: 800;">Fix: ${details.formattedCost}</span>
           </div>
 

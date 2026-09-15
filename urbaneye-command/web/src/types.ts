@@ -130,6 +130,13 @@ export interface RoadEvent {
   reporterEmail?: string | null;
   timestamp: string;
   createdAt: string;
+  assignedAt?: string | null;
+  resolvedAt?: string | null;
+  // Accountability fields, computed server-side from timestamp + severity SLA target.
+  ageDays?: number;
+  slaTargetDays?: number;
+  slaStatus?: 'WITHIN' | 'DUE_SOON' | 'BREACHED' | 'RESOLVED_LATE' | 'RESOLVED_ON_TIME';
+  daysOverdue?: number;
 }
 
 export interface AnalyticsStats {
@@ -324,11 +331,12 @@ export interface SafetyRiskZone {
 }
 
 export interface VRUSafetyStats {
-  overallVruSafetyScore: number;
+  /** null until at least one bus has observed a segment — render as "—", not 0. */
+  overallVruSafetyScore: number | null;
   activeSchoolZonesMonitored: number;
-  nearMissCount24h: number;
   highRiskCrossingsCount: number;
   vulnerablePedestriansTracked: number;
+  segmentsObserved?: number;
 }
 
 /* ── MODULE 3: Predictive Urban Risk & AI Recommendations ── */

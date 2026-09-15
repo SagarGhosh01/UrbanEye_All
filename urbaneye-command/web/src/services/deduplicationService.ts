@@ -15,10 +15,8 @@ export interface CachedPotholeEntry {
   confidence: number;
   pHash: string;
   imageSnippet: string | null;
-  widthCm: number;
-  lengthCm: number;
-  depthCm: number;
-  repairCost: number;
+  diameterCm: number | null;
+
 }
 
 export interface DeduplicationConfig {
@@ -135,7 +133,7 @@ class DeduplicationService {
     lon: number,
     confidence: number,
     imageSnippet: string | null,
-    metrics: { widthCm: number; lengthCm: number; depthCm: number; repairCost: number }
+    metrics: { diameterCm: number | null }
   ): { isDuplicate: boolean; entry: CachedPotholeEntry; action: 'SKIP_UPLOAD' | 'UPLOAD_NEW' | 'UPDATE_BEST_FRAME' } {
     const now = Date.now();
     this.pruneExpiredEntries(now);
@@ -178,10 +176,7 @@ class DeduplicationService {
         matchedEntry.confidence = confidence;
         matchedEntry.imageSnippet = imageSnippet;
         matchedEntry.pHash = currentPHash;
-        matchedEntry.widthCm = metrics.widthCm;
-        matchedEntry.lengthCm = metrics.lengthCm;
-        matchedEntry.depthCm = metrics.depthCm;
-        matchedEntry.repairCost = metrics.repairCost;
+        matchedEntry.diameterCm = metrics.diameterCm;
         action = 'UPDATE_BEST_FRAME';
       }
 
@@ -202,10 +197,7 @@ class DeduplicationService {
       confidence,
       pHash: currentPHash,
       imageSnippet,
-      widthCm: metrics.widthCm,
-      lengthCm: metrics.lengthCm,
-      depthCm: metrics.depthCm,
-      repairCost: metrics.repairCost,
+      diameterCm: metrics.diameterCm,
     };
 
     // Add to grid map & cache list

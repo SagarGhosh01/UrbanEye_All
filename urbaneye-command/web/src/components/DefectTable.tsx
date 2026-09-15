@@ -123,6 +123,49 @@ export const DefectTable: React.FC<DefectTableProps> = ({
   };
 
   /**
+   * Days-unrepaired badge. This is the accountability record: it states how long a
+   * known defect has gone unfixed against the response target for its severity.
+   * Returns null for defects too new to have a meaningful age.
+   */
+  const getAgeBadge = (event: RoadEvent) => {
+    if (event.ageDays === undefined || event.slaStatus === undefined) return null;
+
+    const label =
+      event.slaStatus === 'BREACHED'
+        ? `${event.ageDays}d · ${event.daysOverdue}d OVERDUE`
+        : event.slaStatus === 'RESOLVED_LATE'
+        ? `FIXED IN ${event.ageDays}d · LATE`
+        : event.slaStatus === 'RESOLVED_ON_TIME'
+        ? `FIXED IN ${event.ageDays}d`
+        : `${event.ageDays}d OPEN`;
+
+    const tone: Record<string, string> = isDark
+      ? {
+          BREACHED: 'bg-red-900/50 text-red-300 border-red-700',
+          DUE_SOON: 'bg-amber-900/50 text-amber-300 border-amber-700',
+          WITHIN: 'bg-slate-700 text-slate-300 border-slate-600',
+          RESOLVED_LATE: 'bg-amber-900/40 text-amber-300 border-amber-800',
+          RESOLVED_ON_TIME: 'bg-emerald-900/50 text-emerald-300 border-emerald-700',
+        }
+      : {
+          BREACHED: 'bg-red-50 text-red-700 border-red-200',
+          DUE_SOON: 'bg-amber-50 text-amber-800 border-amber-200',
+          WITHIN: 'bg-slate-100 text-slate-700 border-slate-200',
+          RESOLVED_LATE: 'bg-amber-50 text-amber-800 border-amber-200',
+          RESOLVED_ON_TIME: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        };
+
+    return (
+      <span
+        title={`Detected ${event.ageDays} day(s) ago · repair target ${event.slaTargetDays} days for ${event.severity ?? 'HIGH'} severity`}
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${tone[event.slaStatus]}`}
+      >
+        {label}
+      </span>
+    );
+  };
+
+  /**
    * Config-driven type badge — colors sourced from detectionCategories.ts.
    * No hex values are hardcoded here; adding a new category to the config
    * automatically gives it the correct badge color in this table.
@@ -265,7 +308,10 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                         {Math.round(event.confidence * 100)}% on-device AI conf
                       </span>
                     </div>
-                    {getStatusBadge(event.status)}
+                    <div className="flex flex-col items-end gap-1">
+                      {getStatusBadge(event.status)}
+                      {getAgeBadge(event)}
+                    </div>
                   </div>
 
                   {/* Pothole Cavity Diameter & Repair Price Pill */}
@@ -275,7 +321,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                       <div className="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-700/50 text-xs">
                         <div className="flex items-center space-x-1.5">
                           <span className="font-mono font-extrabold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30 text-[11px]">
-                            Ø {details.diameterCm} cm
+                            {details.formattedDiameter}
                           </span>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${details.severityColor}`}>
                             {details.severity}
@@ -482,7 +528,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                         <div className="flex flex-col space-y-1">
                           <div className="flex items-center space-x-1.5">
                             <span className="font-mono text-xs font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/30">
-                              Ø {details.diameterCm} cm
+                              {details.formattedDiameter}
                             </span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${details.severityColor}`}>
                               {details.severity}
@@ -527,6 +573,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
                   {/* Status */}
                   <td className="py-2 px-3">
                     {getStatusBadge(event.status)}
+                    <div className="mt-1">{getAgeBadge(event)}</div>
                     {event.reviewNotes && (
                       <div className={`text-[10px] mt-0.5 truncate max-w-[130px] ${cellSub}`} title={event.reviewNotes}>
                         Note: {event.reviewNotes}

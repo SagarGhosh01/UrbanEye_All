@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../prisma.js';
 import { getIO } from '../realtime/socket.js';
+import { toSegmentKey } from '../traffic/traffic.router.js';
 
 export const safetyRouter = Router();
 
@@ -35,17 +36,45 @@ safetyRouter.get('/zones', async (req, res) => {
 
 // GET /api/safety/stats
 safetyRouter.get('/stats', async (req, res) => {
-  res.json({
-    status: 'SUCCESS',
-    stats: {
-      overallVruSafetyScore: 78, // 0 to 100
-      activeSchoolZonesMonitored: 8,
-      nearMissCount24h: 10,
-      highRiskCrossingsCount: 3,
-      vulnerablePedestriansTracked: 450,
-    },
-    timestamp: new Date().toISOString(),
-  });
+  try {
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const observations = await prisma.trafficObservation.findMany({
+      where: { timestamp: { gte: dayAgo } },
+    });
+
+    const pedestriansSeen = observations.reduce((s, o) => s + o.pedestrians, 0);
+    const segmentsWithPedestrians = new Set(
+      observations.filter((o) => o.pedestrians > 0).map((o) => o.segmentKey)
+    );
+
+    // A crossing is high risk when people are present and traffic is moving fast there.
+    const highRiskSegments = new Set(
+      observations
+        .filter((o) => o.pedestrians >= 3 && (o.busSpeedKmh ?? 0) >= 35)
+        .map((o) => o.segmentKey)
+    );
+
+    const monitoredSegments = new Set(observations.map((o) => o.segmentKey));
+    const overallVruSafetyScore =
+      monitoredSegments.size === 0
+        ? null
+        : Math.max(0, 100 - Math.round((highRiskSegments.size / monitoredSegments.size) * 100));
+
+    res.json({
+      status: 'SUCCESS',
+      stats: {
+        overallVruSafetyScore,
+        activeSchoolZonesMonitored: segmentsWithPedestrians.size,
+        highRiskCrossingsCount: highRiskSegments.size,
+        vulnerablePedestriansTracked: pedestriansSeen,
+        segmentsObserved: monitoredSegments.size,
+      },
+      dataSource: 'BUS_FLEET_OBSERVATIONS',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'ERROR', message: (error as Error).message });
+  }
 });
 
 // POST /api/safety/intervene
@@ -64,9 +93,53 @@ safetyRouter.post('/intervene', async (req, res) => {
   });
 });
 
-// POST /api/safety/analyze - Pedestrian Risk Engine (YOLO26-pose + Geofence + Trajectory Risk Scoring)
+/**
+ * POST /api/safety/analyze — pedestrian risk scoring for a location.
+ *
+ * Counts come from the bus fleet's own observations of that road segment when the caller
+ * doesn't supply them. Previously this fell back to hardcoded example numbers, which made
+ * the endpoint return a confident-looking risk score for places no bus had ever driven.
+ * With no observations, it now says so instead of scoring.
+ */
 safetyRouter.post('/analyze', async (req, res) => {
-  const { pedestrianCount = 8, vehicleCount = 23, avgSpeedKmh = 46, crossingOutsideMarked = true, isSchoolZone = true } = req.body;
+  const {
+    crossingOutsideMarked = true,
+    isSchoolZone = true,
+    latitude,
+    longitude,
+  } = req.body;
+
+  let { pedestrianCount, vehicleCount, avgSpeedKmh } = req.body;
+
+  // Pull real counts for this segment when the caller hasn't provided them.
+  if (pedestrianCount === undefined || vehicleCount === undefined) {
+    const where =
+      Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude))
+        ? { segmentKey: toSegmentKey(Number(latitude), Number(longitude)) }
+        : {};
+    const observations = await prisma.trafficObservation.findMany({
+      where,
+      orderBy: { timestamp: 'desc' },
+      take: 20,
+    });
+
+    if (observations.length === 0) {
+      res.status(404).json({
+        status: 'NO_DATA',
+        message:
+          'No bus observations for this location yet, so pedestrian risk cannot be scored. Pair a bus and drive the route first.',
+      });
+      return;
+    }
+
+    const passes = observations.length;
+    pedestrianCount = Math.round(observations.reduce((s, o) => s + o.pedestrians, 0) / passes);
+    vehicleCount = Math.round(
+      observations.reduce((s, o) => s + o.cars + o.twoWheelers + o.buses + o.trucks, 0) / passes
+    );
+    const speeds = observations.map((o) => o.busSpeedKmh).filter((s): s is number => typeof s === 'number' && s > 0);
+    avgSpeedKmh = speeds.length ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length) : 0;
+  }
 
   let riskScore = (Number(pedestrianCount) * 2.5) + (Number(vehicleCount) * 1.2) + (Number(avgSpeedKmh) * 0.85);
   if (crossingOutsideMarked) riskScore += 20;
@@ -77,7 +150,7 @@ safetyRouter.post('/analyze', async (req, res) => {
 
   res.json({
     status: 'SUCCESS',
-    riskEngine: 'UrbanEye Pedestrian Risk Engine (YOLO26-pose + Geofence)',
+    riskEngine: 'UrbanEye Pedestrian Risk Engine (on-device person counts + segment speed)',
     assessment: {
       isSchoolZone,
       pedestriansTracked: Number(pedestrianCount),

@@ -51,17 +51,30 @@ export function saveBase64ImageToDisk(base64Data: string, subfolder: string = 'c
   }
 }
 
+/**
+ * How a physical measurement was arrived at. Carried alongside the numbers so the
+ * dashboard — and anyone questioning them — can tell a derived figure from an assumed
+ * one. Depth in particular cannot be recovered from a single camera at all.
+ */
+export type MetricBasis =
+  | 'REPORTED_BY_DEVICE'    // the phone computed it and sent it
+  | 'DERIVED_FROM_IMAGE'    // computed here from the device's bounding-box geometry
+  | 'CLASS_TYPICAL'         // a documented default for this defect class, not a measurement
+  | 'UNKNOWN';              // no basis to state a figure
+
 export interface AdvancedDefectMetrics {
   diameterCm: number | null;
-  widthM: number;
-  lengthM: number;
-  depthCm: number;
-  areaM2: number;
+  widthM: number | null;
+  lengthM: number | null;
+  depthCm: number | null;
+  areaM2: number | null;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   severityScore: number;
   deteriorationPct: number | null;
   hazardSubCategory: string;
-  estimatedRepairCost: number;
+  estimatedRepairCost: number | null;
+  dimensionBasis: MetricBasis;
+  depthBasis: MetricBasis;
 }
 
 export function calculateDefectMetrics(
@@ -77,71 +90,102 @@ export function calculateDefectMetrics(
   confidence: number = 0.94
 ): AdvancedDefectMetrics {
   const upperType = type.toUpperCase();
-  const seed = Math.abs(Math.sin(lat * 1000 + lon * 1000));
-  const seed2 = Math.abs(Math.cos(lat * 500 + lon * 500));
+  // Dimensions come from the device's perspective-geometry estimate of the bounding box.
+  // When the device reported nothing, we state nothing — a figure invented here would be
+  // indistinguishable on the dashboard from one the camera actually derived.
+  let dimensionBasis: MetricBasis = 'UNKNOWN';
+  if (providedWidthM || providedLengthM || providedAreaM2) {
+    dimensionBasis = 'REPORTED_BY_DEVICE';
+  } else if (providedDiameter) {
+    dimensionBasis = 'DERIVED_FROM_IMAGE';
+  }
 
-  let widthM = providedWidthM || (providedDiameter ? Math.round((providedDiameter / 100) * 100) / 100 : Math.round((0.55 + seed * 0.77) * 100) / 100);
-  let lengthM = providedLengthM || Math.round((widthM * (1.15 + seed2 * 0.65)) * 100) / 100;
-  let depthCm = providedDepthCm || Math.round((4.0 + seed * 5.8) * 10) / 10;
-  let areaM2 = providedAreaM2 || Math.round((widthM * lengthM * 0.82) * 100) / 100;
-  let diameterCm = providedDiameter || Math.round(widthM * 100);
+  let widthM: number | null =
+    providedWidthM ?? (providedDiameter ? Math.round((providedDiameter / 100) * 100) / 100 : null);
+  // Road defects are elongated along the direction of travel; 1.3x is the ratio used
+  // when only a single across-track dimension is recoverable from the box.
+  let lengthM: number | null = providedLengthM ?? (widthM !== null ? Math.round(widthM * 1.3 * 100) / 100 : null);
+  let areaM2: number | null =
+    providedAreaM2 ?? (widthM !== null && lengthM !== null ? Math.round(widthM * lengthM * 0.82 * 100) / 100 : null);
+  let diameterCm: number | null = providedDiameter ?? (widthM !== null ? Math.round(widthM * 100) : null);
+
+  // Depth is NOT recoverable from a monocular camera. It is only ever populated when the
+  // device measures it — the intended source is the accelerometer jolt as the bus crosses
+  // the defect. Until that ships, this stays null rather than showing an invented figure.
+  const depthCm: number | null = providedDepthCm ?? null;
+  const depthBasis: MetricBasis = providedDepthCm ? 'REPORTED_BY_DEVICE' : 'UNKNOWN';
+
   let deteriorationPct: number | null = null;
   let hazardSubCategory = 'pothole';
 
+  /**
+   * Standard dimensions for road furniture that is built to a specification.
+   * A zebra crossing really is laid to a standard width, and a sign face really is
+   * roughly square — these are CLASS_TYPICAL, an honest engineering assumption rather
+   * than a measurement. Defects with no standard size (potholes, cracks, water) get no
+   * assumed dimensions at all; if the camera didn't measure them we say so.
+   */
+  const CLASS_TYPICAL_DIMENSIONS: Record<string, { widthM: number; lengthM: number | null }> = {
+    faded_zebra_crossing: { widthM: 3.5, lengthM: 8.0 },
+    damaged_signboard: { widthM: 0.6, lengthM: 0.6 },
+    faded_lane_marking: { widthM: 0.15, lengthM: null },  // length varies with the run
+    missing_divider: { widthM: 0.45, lengthM: null },
+  };
+
   if (upperType === 'POTHOLE') {
     hazardSubCategory = 'pothole';
-    if (!providedWidthM) widthM = Math.round((0.55 + seed * 0.77) * 100) / 100; // e.g., 0.82 m
-    if (!providedLengthM) lengthM = Math.round((0.85 + seed2 * 0.85) * 100) / 100; // e.g., 1.34 m
-    if (!providedDepthCm) depthCm = Math.round((4.0 + seed * 5.8) * 10) / 10; // e.g., 6.8 cm
-    if (!providedAreaM2) areaM2 = Math.round((widthM * lengthM * 0.82) * 100) / 100; // e.g., 1.09 m²
-    if (!providedDiameter) diameterCm = Math.round(widthM * 100);
-  } else if (upperType.includes('CRACK') || upperType === 'LONGITUDINAL_CRACK' || upperType === 'ALLIGATOR_CRACK') {
+  } else if (upperType.includes('CRACK')) {
     hazardSubCategory = upperType.includes('ALLIGATOR') ? 'alligator_crack' : 'longitudinal_crack';
-    if (!providedWidthM) widthM = Math.round((0.15 + seed * 0.25) * 100) / 100;
-    if (!providedLengthM) lengthM = Math.round((2.5 + seed2 * 5.5) * 100) / 100;
-    if (!providedDepthCm) depthCm = Math.round((1.5 + seed * 2.5) * 10) / 10;
-    if (!providedAreaM2) areaM2 = Math.round((widthM * lengthM) * 100) / 100;
-    deteriorationPct = Math.round(40 + seed * 45);
   } else if (upperType === 'SURFACE_DAMAGE' || upperType === 'ROAD_EDGE_DAMAGE' || upperType === 'RUTTING') {
     hazardSubCategory = upperType === 'ROAD_EDGE_DAMAGE' ? 'road_edge_damage' : 'rutting';
-    if (!providedWidthM) widthM = Math.round((1.2 + seed * 1.8) * 100) / 100;
-    if (!providedLengthM) lengthM = Math.round((3.0 + seed2 * 6.0) * 100) / 100;
-    if (!providedDepthCm) depthCm = Math.round((2.0 + seed * 4.0) * 10) / 10;
-    if (!providedAreaM2) areaM2 = Math.round((widthM * lengthM) * 100) / 100;
   } else if (upperType === 'WATERLOGGING') {
     hazardSubCategory = 'waterlogging';
-    if (!providedWidthM) widthM = Math.round((2.5 + seed * 3.5) * 100) / 100;
-    if (!providedLengthM) lengthM = Math.round((4.0 + seed2 * 5.0) * 100) / 100;
-    if (!providedDepthCm) depthCm = Math.round((4.0 + seed * 12.0) * 10) / 10;
-    if (!providedAreaM2) areaM2 = Math.round((widthM * lengthM) * 100) / 100;
-    deteriorationPct = Math.round(25 + seed * 50);
   } else if (upperType === 'MISSING_DIVIDER') {
     hazardSubCategory = 'missing_divider';
-    widthM = 0.45;
-    lengthM = Math.round((5.0 + seed * 15.0) * 100) / 100;
-    depthCm = 0;
-    areaM2 = Math.round((widthM * lengthM) * 100) / 100;
+  } else if (upperType === 'FADED_LANE_MARKING') {
+    hazardSubCategory = 'faded_lane_marking';
+  } else if (upperType === 'UTILITY_COVER') {
+    hazardSubCategory = 'utility_cover';
   } else if (upperType === 'FADED_ZEBRA_CROSSING' || upperType === 'MISSING_ZEBRA_CROSSING') {
     hazardSubCategory = 'faded_zebra_crossing';
-    widthM = 3.5;
-    lengthM = 8.0;
-    depthCm = 0;
-    areaM2 = 28.0;
-    deteriorationPct = Math.round(55 + seed * 38); // e.g. 68% deterioration
   } else if (upperType === 'DAMAGED_SIGNBOARD' || upperType === 'TRAFFIC_SIGN') {
     hazardSubCategory = 'damaged_signboard';
-    widthM = 0.6;
-    lengthM = 0.6;
-    depthCm = 0;
-    areaM2 = 0.36;
-    deteriorationPct = Math.round(40 + seed * 45); // e.g. 54% visibility
   }
 
-  // Calculate Severity Score (0 - 100)
-  const severityScore = Math.min(
-    100,
-    Math.round((depthCm * 4.5) + (areaM2 * 8.0) + (confidence * 25) + (seed * 15))
-  );
+  const typical = CLASS_TYPICAL_DIMENSIONS[hazardSubCategory];
+  if (typical && widthM === null) {
+    widthM = typical.widthM;
+    lengthM = providedLengthM ?? typical.lengthM;
+    areaM2 = lengthM !== null ? Math.round(widthM * lengthM * 100) / 100 : null;
+    dimensionBasis = 'CLASS_TYPICAL';
+  }
+
+  /**
+   * Severity, 0-100.
+   *
+   * Built from what is actually known: the defect class (a cavity threatens a vehicle
+   * more than a worn marking does), the affected area where the camera could measure it,
+   * and the detector's own confidence. Depth is deliberately absent — it used to dominate
+   * this score while being a trigonometric function of the GPS coordinate.
+   */
+  const CLASS_SEVERITY_BASE: Record<string, number> = {
+    pothole: 55,
+    utility_cover: 45,
+    alligator_crack: 40,
+    longitudinal_crack: 30,
+    rutting: 35,
+    road_edge_damage: 35,
+    waterlogging: 45,
+    missing_divider: 50,
+    faded_zebra_crossing: 35,
+    faded_lane_marking: 25,
+    damaged_signboard: 40,
+  };
+
+  const base = CLASS_SEVERITY_BASE[hazardSubCategory] ?? 35;
+  const areaContribution = areaM2 !== null ? Math.min(25, areaM2 * 8.0) : 0;
+  const depthContribution = depthCm !== null ? Math.min(20, depthCm * 2.5) : 0;
+  const severityScore = Math.min(100, Math.round(base + areaContribution + depthContribution + confidence * 15));
 
   let severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'HIGH';
   if (severityScore >= 80) severity = 'CRITICAL';
@@ -149,15 +193,35 @@ export function calculateDefectMetrics(
   else if (severityScore >= 45) severity = 'MEDIUM';
   else severity = 'LOW';
 
-  // Rule-Based PWD/NHAI Schedule of Rates (SOR) Cost Engine
-  let repairCost = providedCost || 0;
-  if (!repairCost || repairCost <= 0) {
-    const materialCost = areaM2 * 1800; // Bitumen/Asphalt SOR rate ₹1,800/m²
-    const labourCost = Math.max(1200, Math.round(areaM2 * 850)); // PWD labour crew rate
-    const equipmentCost = 1500; // Machinery deployment
-    const overhead = (materialCost + labourCost + equipmentCost) * 0.12; // 12% departmental overhead
-    const calculatedCost = materialCost + labourCost + equipmentCost + overhead;
-    repairCost = Math.max(1200, Math.round(calculatedCost / 50) * 50);
+  // Rule-Based PWD/NHAI Schedule of Rates (SOR) Cost Engine.
+  //
+  // Two rate cards, because the remedy differs: a cavity is patched with bitumen,
+  // a worn marking is repainted with thermoplastic. Applying the patching rate to a
+  // repaint overstates it by roughly an order of magnitude.
+  //
+  // TODO: verify both rate cards against the current state SOR schedule before
+  // quoting these figures to an authority — they are calibrated estimates, not
+  // rates lifted from a published schedule.
+  const isMarkingRepaint =
+    hazardSubCategory === 'faded_zebra_crossing' ||
+    hazardSubCategory === 'faded_lane_marking';
+
+  // Cost is quantity-based, so with no measured area there is no cost to quote.
+  let repairCost: number | null = providedCost && providedCost > 0 ? providedCost : null;
+  if (repairCost === null && areaM2 !== null) {
+    if (isMarkingRepaint) {
+      const materialCost = areaM2 * 420;  // Thermoplastic road-marking paint, ₹/m²
+      const labourCost = Math.max(800, Math.round(areaM2 * 180)); // Marking crew
+      const equipmentCost = 600;          // Applicator / pre-marking
+      const overhead = (materialCost + labourCost + equipmentCost) * 0.12;
+      repairCost = Math.max(800, Math.round((materialCost + labourCost + equipmentCost + overhead) / 50) * 50);
+    } else {
+      const materialCost = areaM2 * 1800; // Bitumen/Asphalt SOR rate ₹1,800/m²
+      const labourCost = Math.max(1200, Math.round(areaM2 * 850)); // PWD labour crew rate
+      const equipmentCost = 1500; // Machinery deployment
+      const overhead = (materialCost + labourCost + equipmentCost) * 0.12; // 12% departmental overhead
+      repairCost = Math.max(1200, Math.round((materialCost + labourCost + equipmentCost + overhead) / 50) * 50);
+    }
   }
 
   return {
@@ -171,7 +235,81 @@ export function calculateDefectMetrics(
     deteriorationPct,
     hazardSubCategory,
     estimatedRepairCost: repairCost,
+    dimensionBasis,
+    depthBasis,
   };
+}
+
+/**
+ * Repair-response targets in days, by severity.
+ *
+ * These are configurable defaults, NOT figures lifted from a published municipal
+ * policy. Before presenting a breach count to an authority, replace them with that
+ * body's own published redressal commitment so the number means something to them.
+ */
+export const REPAIR_SLA_DAYS: Record<string, number> = {
+  CRITICAL: 7,
+  HIGH: 15,
+  MEDIUM: 30,
+  LOW: 60,
+};
+
+export interface DefectAgeInfo {
+  ageDays: number;              // days open, or days taken to resolve
+  slaTargetDays: number;
+  slaStatus: 'WITHIN' | 'DUE_SOON' | 'BREACHED' | 'RESOLVED_LATE' | 'RESOLVED_ON_TIME';
+  daysOverdue: number;          // 0 unless breached
+  isOpen: boolean;
+}
+
+/**
+ * Computes how long a defect has gone unrepaired, and whether that breaches the
+ * response target for its severity.
+ *
+ * This is the accountability record: it does not claim a defect caused anything, only
+ * that it was detected on a date, was known, and remained unrepaired for N days.
+ */
+export function computeDefectAge(
+  detectedAt: Date | string,
+  status: string,
+  severity: string | null | undefined,
+  resolvedAt?: Date | string | null
+): DefectAgeInfo {
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const detected = new Date(detectedAt).getTime();
+  const isOpen = status !== 'RESOLVED';
+  const endpoint = isOpen ? Date.now() : new Date(resolvedAt || Date.now()).getTime();
+
+  const ageDays = Math.max(0, Math.floor((endpoint - detected) / MS_PER_DAY));
+  const slaTargetDays = REPAIR_SLA_DAYS[(severity || 'HIGH').toUpperCase()] ?? REPAIR_SLA_DAYS.HIGH;
+  const daysOverdue = Math.max(0, ageDays - slaTargetDays);
+
+  let slaStatus: DefectAgeInfo['slaStatus'];
+  if (!isOpen) {
+    slaStatus = daysOverdue > 0 ? 'RESOLVED_LATE' : 'RESOLVED_ON_TIME';
+  } else if (daysOverdue > 0) {
+    slaStatus = 'BREACHED';
+  } else if (ageDays >= slaTargetDays * 0.75) {
+    slaStatus = 'DUE_SOON';
+  } else {
+    slaStatus = 'WITHIN';
+  }
+
+  return { ageDays, slaTargetDays, slaStatus, daysOverdue, isOpen };
+}
+
+/**
+ * Groups defect types for deduplication. A pothole and a faded crossing can sit within
+ * the dedup radius of each other on the same stretch of road and are not the same defect,
+ * so proximity alone must never merge them.
+ *
+ * Crack subtypes are one family on purpose: the detector commonly flips between
+ * longitudinal/transverse/alligator across frames of the same crack.
+ */
+export function getDefectFamily(type: string): string {
+  const t = (type || '').toUpperCase();
+  if (t.includes('CRACK')) return 'CRACK';
+  return t;
 }
 
 export function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -372,8 +510,10 @@ export async function handleIngestEvent(req: Request, res: Response): Promise<vo
     const nowMs = timestamp ? new Date(timestamp).getTime() : Date.now();
     const DEDUPLICATION_RADIUS_METERS = 20; // 20-meter spatial coordinate radius
     const DEDUPLICATION_TIME_MS = 24 * 60 * 60 * 1000; // 24-hour configurable window
+    const incomingFamily = getDefectFamily(rawType);
 
     let duplicateEvent = IN_MEMORY_EVENTS.find((e) => {
+      if (getDefectFamily(String(e.type)) !== incomingFamily) return false;
       const eTime = new Date(e.timestamp).getTime();
       if (Math.abs(nowMs - eTime) > DEDUPLICATION_TIME_MS) return false;
       const dist = getDistanceMeters(numLat, numLon, Number(e.latitude), Number(e.longitude));
@@ -395,6 +535,7 @@ export async function handleIngestEvent(req: Request, res: Response): Promise<vo
         });
 
         for (const dbEvt of nearbyDbEvents) {
+          if (getDefectFamily(dbEvt.type) !== incomingFamily) continue;
           const dist = getDistanceMeters(numLat, numLon, dbEvt.latitude, dbEvt.longitude);
           if (dist <= DEDUPLICATION_RADIUS_METERS) {
             duplicateEvent = dbEvt as any;
@@ -843,13 +984,31 @@ eventsRouter.get(
 
       const take = Math.min(parseInt(limit as string, 10) || 50, 200);
       const skip = parseInt(offset as string, 10) || 0;
-      const paginatedEvents = dbEvents.slice(skip, skip + take);
+      const paginatedEvents = dbEvents.slice(skip, skip + take).map((e: any) => ({
+        ...e,
+        ...computeDefectAge(e.timestamp, e.status, e.severity, e.resolvedAt),
+      }));
+
+      const openEvents = dbEvents.filter((e: any) => e.status !== 'RESOLVED');
+      const breached = openEvents.filter(
+        (e: any) => computeDefectAge(e.timestamp, e.status, e.severity, e.resolvedAt).slaStatus === 'BREACHED'
+      );
+      const oldestOpenDays = openEvents.reduce(
+        (max: number, e: any) => Math.max(max, computeDefectAge(e.timestamp, e.status, e.severity, e.resolvedAt).ageDays),
+        0
+      );
 
       res.json({
         totalCount: dbEvents.length,
         limit: take,
         offset: skip,
         events: paginatedEvents,
+        accountability: {
+          openCount: openEvents.length,
+          slaBreachedCount: breached.length,
+          oldestOpenDays,
+          breachRatePercent: openEvents.length > 0 ? Math.round((breached.length / openEvents.length) * 100) : 0,
+        },
       });
     } catch (err: any) {
       console.error('List events error:', err);
@@ -875,15 +1034,28 @@ eventsRouter.patch(
         return;
       }
 
+      // Stamp the lifecycle transition the first time it happens, so time-to-repair
+      // is measured from the real event rather than recomputed on every later edit.
+      const transitionNow = new Date();
+
       let existingEvent = IN_MEMORY_EVENTS.find((e) => e.id === id);
       if (existingEvent) {
         existingEvent.status = status;
+        if (status === 'ASSIGNED_FOR_REPAIR' && !existingEvent.assignedAt) existingEvent.assignedAt = transitionNow;
+        if (status === 'RESOLVED' && !existingEvent.resolvedAt) existingEvent.resolvedAt = transitionNow;
         if (reviewNotes !== undefined) existingEvent.reviewNotes = reviewNotes;
       }
 
       try {
         const updateData: any = { status };
         if (reviewNotes !== undefined) updateData.reviewNotes = reviewNotes;
+
+        const priorRecord = await prisma.roadEvent.findUnique({
+          where: { id },
+          select: { assignedAt: true, resolvedAt: true },
+        });
+        if (status === 'ASSIGNED_FOR_REPAIR' && !priorRecord?.assignedAt) updateData.assignedAt = transitionNow;
+        if (status === 'RESOLVED' && !priorRecord?.resolvedAt) updateData.resolvedAt = transitionNow;
         const dbUpdated = await prisma.roadEvent.update({
           where: { id },
           data: updateData,
