@@ -23,6 +23,7 @@ interface LiveMapProps {
     incidents?: boolean;
     vruSafety?: boolean;
     predictive?: boolean;
+    heatmap?: boolean;
   };
 }
 
@@ -41,7 +42,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   onUpdateStatus,
   onSelectEvent,
   latestEventId,
-  activeLayerFilters = { defects: true, traffic: true, incidents: true, vruSafety: true, predictive: true },
+  activeLayerFilters = { defects: true, traffic: true, incidents: true, vruSafety: true, predictive: true, heatmap: true },
 }) => {
   const { isDark } = useTheme();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -52,6 +53,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const trafficLayerRef = useRef<L.LayerGroup | null>(null);
   const busLayerRef = useRef<L.LayerGroup | null>(null);
   const busMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const trafficPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const pulseCircleRef = useRef<L.CircleMarker | null>(null);
 
@@ -62,6 +64,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     incidents: activeLayerFilters.incidents ?? true,
     vruSafety: activeLayerFilters.vruSafety ?? true,
     predictive: activeLayerFilters.predictive ?? true,
+    heatmap: activeLayerFilters.heatmap ?? true,
   });
 
   // Collapsible legend state
@@ -97,6 +100,10 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           container.style.filter = 'brightness(0.68) invert(100%) contrast(1.25) hue-rotate(190deg) saturate(0.35)';
         }
       }
+
+      // Heatmap spatial density layer — renders below markers
+      const heatmapLayer = L.layerGroup().addTo(map);
+      heatmapLayerRef.current = heatmapLayer;
 
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
@@ -292,6 +299,59 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       }
     }
   }, [layers.traffic]);
+
+  // ─── Spatial Defect Density Heatmap Layer ─────────────────────────────────
+  useEffect(() => {
+    if (!mapInstanceRef.current || !heatmapLayerRef.current) return;
+
+    const heatmapLayer = heatmapLayerRef.current;
+    heatmapLayer.clearLayers();
+
+    if (!layers.heatmap) return;
+
+    events.forEach((event) => {
+      // Calculate severity weight for heatmap gradient
+      let weight = 0.5;
+      if (event.severity === 'CRITICAL') weight = 1.0;
+      else if (event.severity === 'HIGH') weight = 0.75;
+      else if (event.severity === 'MEDIUM') weight = 0.5;
+      else weight = 0.25;
+
+      const isIncident = event.type === 'ANPR_INCIDENT' || event.type === 'HIT_AND_RUN' || event.type === 'RASH_DRIVING';
+      const color = isIncident ? '#dc2626' : weight >= 0.75 ? '#ef4444' : weight >= 0.5 ? '#f59e0b' : '#3b82f6';
+
+      // Outer radial density field
+      const outerHalo = L.circleMarker([event.latitude, event.longitude], {
+        radius: 34 + weight * 16,
+        fillColor: color,
+        fillOpacity: 0.16 * weight,
+        stroke: false,
+        interactive: false,
+      });
+
+      // Mid intensity zone
+      const midHalo = L.circleMarker([event.latitude, event.longitude], {
+        radius: 18 + weight * 10,
+        fillColor: color,
+        fillOpacity: 0.32 * weight,
+        stroke: false,
+        interactive: false,
+      });
+
+      // Hotspot core
+      const coreMarker = L.circleMarker([event.latitude, event.longitude], {
+        radius: 7 + weight * 4,
+        fillColor: color,
+        fillOpacity: 0.75,
+        stroke: false,
+        interactive: false,
+      });
+
+      outerHalo.addTo(heatmapLayer);
+      midHalo.addTo(heatmapLayer);
+      coreMarker.addTo(heatmapLayer);
+    });
+  }, [events, layers.heatmap]);
 
   // Update center when props change
   useEffect(() => {
@@ -552,7 +612,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               onChange={(e) => setLayers({ ...layers, incidents: e.target.checked })}
               className="rounded text-teal-500 focus:ring-0"
             />
-            <span>🚨 Incidents & ANPR</span>
+            <span>🚨 Vehicle Tracker</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
@@ -563,6 +623,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               className="rounded text-teal-500 focus:ring-0"
             />
             <span>🚶 VRU Safety Risk</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
+            <input
+              type="checkbox"
+              checked={layers.heatmap}
+              onChange={(e) => setLayers({ ...layers, heatmap: e.target.checked })}
+              className="rounded text-teal-500 focus:ring-0"
+            />
+            <span>🔥 Defect Heatmap</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
@@ -654,9 +724,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                   <span className="w-4 h-1.5 rounded bg-[#7f1d1d] inline-block shrink-0" />
                   <span className="text-slate-200">Severe</span>
                 </div>
-              </div>
-              <div className="mt-1.5 text-[9px] text-slate-500 leading-tight">
-                Coverage reflects roads traveled by onboarded fleet buses
               </div>
             </div>
           </div>

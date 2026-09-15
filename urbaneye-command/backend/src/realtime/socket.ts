@@ -81,6 +81,11 @@ export function getIO(): SocketIOServer | null {
   return io;
 }
 
+export function getConnectedClientsCount(): number {
+  if (!io) return 0;
+  return io.sockets.sockets.size;
+}
+
 export function emitNewRoadEvent(event: any): void {
   if (!io) return;
   // Broadcast globally to all connected socket clients (web dashboard, mobile app)

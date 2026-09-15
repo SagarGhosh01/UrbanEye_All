@@ -88,15 +88,15 @@ class OverlayView @JvmOverloads constructor(
                 isIncident                 -> Pair(Color.rgb(220,  38,  38), "🚨 INCIDENT")   // #dc2626 Alert Crimson (Exclusively Reserved)
                 detection.type == "POTHOLE"-> Pair(Color.rgb(249, 115,  22), "⚠️ POTHOLE")    // #f97316 Signal Orange
                 detection.type.contains("CRACK") -> Pair(Color.rgb(234, 179,   8), "⚠️ CRACK") // #eab308 Balanced Amber
-                // Road-marking wear: model classes D43 and D44 respectively.
-                detection.type == "FADED_ZEBRA_CROSSING" -> Pair(Color.rgb(  5, 150, 105), "🚸 MARKING")  // #059669 Emerald
+                detection.type == "FADED_ZEBRA_CROSSING" -> Pair(Color.rgb(  5, 150, 105), "🚸 ZEBRA WEAR")  // #059669 Emerald
                 detection.type == "FADED_LANE_MARKING" -> Pair(Color.rgb(  8, 145, 178), "🛣️ LANE WEAR") // #0891b2 Cyan
                 detection.type == "UTILITY_COVER" -> Pair(Color.rgb(146,  64,  14), "⚠️ COVER")  // #92400e Ochre
-                detection.type == "SURFACE_DAMAGE" -> Pair(Color.rgb(148, 163, 184), "⚡ WEAR")// #94a3b8 Slate-adjacent
-                detection.type == "WATERLOGGING" -> Pair(Color.rgb(  2, 132, 199), "💧 WATERLOG")// #0284c7 Blue
+                detection.type == "SURFACE_DAMAGE" -> Pair(Color.rgb(148, 163, 184), "⚡ DAMAGED ROAD")// #94a3b8 Slate-adjacent
+                detection.type == "WATERLOGGING" -> Pair(Color.rgb(  2, 132, 199), "💧 WATERLOGGING")// #0284c7 Blue
                 detection.type == "VEHICLE_FLOW" -> Pair(Color.rgb(139,  92, 246), "🚗 DENSITY") // #8b5cf6 Purple
-                detection.type == "ROAD_EDGE_DAMAGE" -> Pair(Color.rgb(234,  88,  12), "⚠️ EDGE") // #ea580c Tangerine
-                detection.type == "MISSING_DIVIDER" -> Pair(Color.rgb( 13, 148, 136), "🚧 HAZARD")// #0d9488 Signal Teal
+                detection.type == "ROAD_EDGE_DAMAGE" -> Pair(Color.rgb(234,  88,  12), "⚠️ ROAD EDGE") // #ea580c Tangerine
+                detection.type == "MISSING_DIVIDER" -> Pair(Color.rgb( 13, 148, 136), "🚧 MISSING DIVIDER")// #0d9488 Signal Teal
+                detection.type == "DAMAGED_SIGNBOARD" -> Pair(Color.rgb(225,  29,  72), "🛑 DAMAGED SIGN")// #e11d48 Rose Red
                 else                       -> Pair(Color.rgb( 94, 234, 212), "ℹ️ DEFECT")    // #5eead4 Mint Teal
             }
 
@@ -153,11 +153,19 @@ class OverlayView @JvmOverloads constructor(
             val textHeight = 48f
             val pillMargin = 10f
 
+            val pillTop = if (screenRect.top < textHeight + pillMargin + 40f) {
+                // Draw label INSIDE top of bounding box when near screen/HUD top edge
+                screenRect.top + 8f
+            } else {
+                // Draw label ABOVE top of bounding box
+                screenRect.top - textHeight - pillMargin
+            }
+
             val labelRect = RectF(
                 screenRect.left,
-                (screenRect.top - textHeight - pillMargin).coerceAtLeast(0f),
+                pillTop,
                 screenRect.left + textWidth + 28f,
-                (screenRect.top - pillMargin).coerceAtLeast(textHeight)
+                pillTop + textHeight
             )
 
             // Draw pill background & border

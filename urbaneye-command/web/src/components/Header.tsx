@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-              <span>Incidents & ANPR</span>
+              <span>Vehicle Tracker</span>
             </button>
 
             <button
@@ -150,17 +150,17 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
-          {/* Live Edge Camera Sensor & Photo Upload Button (Only visible for Citizen Reporters) */}
+          {/* Camera & Photo Upload Button (Only visible for Citizen Reporters) */}
           {onOpenLiveCamera && user?.role === 'CITIZEN_REPORTER' && (
             <button
               type="button"
               onClick={onOpenLiveCamera}
               className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition active:scale-95 shrink-0"
-              title="Open Live Edge Phone / Web Camera Sensor for Real-Time AI Detection & Upload"
-              aria-label="Open Live Phone Camera"
+              title="Open Camera / Upload Photo for Citizen Defect Report"
+              aria-label="Open Camera or Upload Photo"
             >
-              <Camera className="w-3.5 h-3.5 shrink-0 text-amber-300 animate-pulse" />
-              <span className="hidden sm:inline">Live Camera / Upload</span>
+              <Camera className="w-3.5 h-3.5 shrink-0 text-white" />
+              <span className="hidden sm:inline">Camera / Upload Photo</span>
             </button>
           )}
 

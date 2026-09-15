@@ -7,10 +7,9 @@
  */
 
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../prisma.js';
 import type { CongestionLevel } from './bangalore-demo-scenario.js';
 
-const prisma = new PrismaClient();
 export const congestionRouter = Router();
 
 // ─── In-Memory Congestion State ──────────────────────────────────────────────

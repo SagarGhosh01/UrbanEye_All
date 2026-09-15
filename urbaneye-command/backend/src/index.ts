@@ -5,7 +5,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import { initSocketIO } from './realtime/socket.js';
+import { initSocketIO, getConnectedClientsCount } from './realtime/socket.js';
+import { prisma, ensureDatabaseInitialized } from './prisma.js';
 import { authRouter } from './auth/auth.router.js';
 import { pairingRouter } from './pairing/pairing.router.js';
 import { fleetRouter } from './pairing/fleet.js';
@@ -20,8 +21,19 @@ import { modelsRouter } from './models/models.router.js';
 import { detectRouter } from './models/detect.js';
 import { gpsRouter } from './gps/gps.router.js';
 import { startDemoPlayer } from './traffic/demo-player.js';
+import { apiRateLimiter, authRateLimiter, ingestionRateLimiter } from './middleware/rateLimiter.js';
+import { globalErrorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
+
+// Process Level Security & Crash Guards
+process.on('uncaughtException', (err) => {
+  console.error(`[CRITICAL] Uncaught Exception: ${err.message}`, err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Promise Rejection at:', promise, 'reason:', reason);
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -29,10 +41,27 @@ const server = http.createServer(app);
 // Initialize real-time Socket.IO
 initSocketIO(server);
 
+// Enterprise Security Headers & Correlation ID Middleware
+app.use((req, res, next) => {
+  const correlationId = req.headers['x-correlation-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  res.setHeader('X-Correlation-ID', correlationId);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('X-Powered-By', 'UrbanEye-SmartCity-Engine');
+  (req as any).correlationId = correlationId;
+  next();
+});
+
 // Middleware
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Rate Limiters
+app.use('/api/', apiRateLimiter);
+app.use('/api/auth/login', authRateLimiter);
+app.use('/api/events', ingestionRateLimiter);
 
 // URL Normalizer: Strip duplicate slashes (e.g. //api/pairing/request -> /api/pairing/request)
 app.use((req, res, next) => {
@@ -45,7 +74,7 @@ app.use((req, res, next) => {
 // Request logger
 app.use((req, res, next) => {
   if (req.method !== 'GET' || !req.url.startsWith('/api/pairing/status')) {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log(`[${new Date().toISOString()}] [${(req as any).correlationId}] ${req.method} ${req.url}`);
   }
   next();
 });
@@ -74,12 +103,38 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
-app.get('/api/health', (req, res) => {
+// Enterprise Telemetry & Health Check API
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'DISCONNECTED';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'CONNECTED';
+  } catch (err: any) {
+    dbStatus = `LIMITED / IN_MEMORY_FALLBACK (${err.message?.slice(0, 40) || 'DB offline'})`;
+  }
+
+  const memUsage = process.memoryUsage();
   res.json({
     status: 'HEALTHY',
-    service: 'UrbanEye Command Center API',
+    service: 'UrbanEye Command Center Engine',
+    version: '2.4.0',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    uptimeSeconds: Math.floor(process.uptime()),
+    database: {
+      status: dbStatus,
+    },
+    sockets: {
+      connectedClients: getConnectedClientsCount(),
+    },
+    system: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      memory: {
+        rssMb: Math.round(memUsage.rss / 1024 / 1024),
+        heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
+        heapTotalMb: Math.round(memUsage.heapTotal / 1024 / 1024),
+      },
+    },
   });
 });
 
@@ -101,6 +156,9 @@ if (clientDistPath) {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 }
+
+// Global Enterprise Error Handler Middleware
+app.use(globalErrorHandler);
 
 // Render Free Tier Anti-Sleep Keep-Alive Heartbeat
 function startRenderKeepAlive() {
@@ -128,18 +186,21 @@ function startRenderKeepAlive() {
 }
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🛡️  UrbanEye Command Backend listening on port ${PORT}`);
-  console.log(`📡 WebSocket / Socket.IO live intelligence streaming active`);
-  console.log(`🔗 REST API endpoints mounted at /api/*`);
-  console.log(`====================================================`);
-  startRenderKeepAlive();
+(async () => {
+  await ensureDatabaseInitialized();
+  server.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🛡️  UrbanEye Command Backend listening on port ${PORT}`);
+    console.log(`📡 WebSocket / Socket.IO live intelligence streaming active`);
+    console.log(`🔗 REST API endpoints mounted at /api/*`);
+    console.log(`====================================================`);
+    startRenderKeepAlive();
 
-  // Auto-start demo mode if DEMO_MODE env var is set
-  const demoMode = process.env.DEMO_MODE;
-  if (demoMode) {
-    console.log(`🎬 DEMO_MODE=${demoMode} detected — auto-starting demo player in 3s...`);
-    setTimeout(() => startDemoPlayer(), 3000);
-  }
-});
+    // Auto-start demo mode if DEMO_MODE env var is set
+    const demoMode = process.env.DEMO_MODE;
+    if (demoMode) {
+      console.log(`🎬 DEMO_MODE=${demoMode} detected — auto-starting demo player in 3s...`);
+      setTimeout(() => startDemoPlayer(), 3000);
+    }
+  });
+})();

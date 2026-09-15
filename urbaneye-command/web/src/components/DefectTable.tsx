@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { RoadEvent, EventStatus, DefectType } from '../types';
-import { Eye, CheckCircle2, Wrench, AlertTriangle, Image as ImageIcon, Trash2, MapPin, Bus, Clock } from 'lucide-react';
+import { Eye, CheckCircle2, Wrench, AlertTriangle, Image as ImageIcon, Trash2, MapPin, Bus, Clock, Download } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCategoryColor, getCategoryDisplayName } from '../constants/detectionCategories';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
 import { resolveImageSrc, DEFAULT_ROAD_DEFECT_SVG } from '../utils/imageUtils';
+import { calculateSLARemaining } from '../utils/slaCalculator';
 
 interface DefectTableProps {
   events: RoadEvent[];
@@ -128,39 +129,51 @@ export const DefectTable: React.FC<DefectTableProps> = ({
    * Returns null for defects too new to have a meaningful age.
    */
   const getAgeBadge = (event: RoadEvent) => {
-    if (event.ageDays === undefined || event.slaStatus === undefined) return null;
+    // If defect is resolved, show resolution badge
+    if (event.status === 'RESOLVED') {
+      return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${isDark ? 'bg-emerald-900/50 text-emerald-300 border-emerald-700' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
+          ✓ RESOLVED ON TIME
+        </span>
+      );
+    }
 
-    const label =
-      event.slaStatus === 'BREACHED'
-        ? `${event.ageDays}d · ${event.daysOverdue}d OVERDUE`
-        : event.slaStatus === 'RESOLVED_LATE'
-        ? `FIXED IN ${event.ageDays}d · LATE`
-        : event.slaStatus === 'RESOLVED_ON_TIME'
-        ? `FIXED IN ${event.ageDays}d`
-        : `${event.ageDays}d OPEN`;
+    const sla = calculateSLARemaining(event.timestamp, event.severity || undefined, event.type);
 
-    const tone: Record<string, string> = isDark
-      ? {
-          BREACHED: 'bg-red-900/50 text-red-300 border-red-700',
-          DUE_SOON: 'bg-amber-900/50 text-amber-300 border-amber-700',
-          WITHIN: 'bg-slate-700 text-slate-300 border-slate-600',
-          RESOLVED_LATE: 'bg-amber-900/40 text-amber-300 border-amber-800',
-          RESOLVED_ON_TIME: 'bg-emerald-900/50 text-emerald-300 border-emerald-700',
-        }
-      : {
-          BREACHED: 'bg-red-50 text-red-700 border-red-200',
-          DUE_SOON: 'bg-amber-50 text-amber-800 border-amber-200',
-          WITHIN: 'bg-slate-100 text-slate-700 border-slate-200',
-          RESOLVED_LATE: 'bg-amber-50 text-amber-800 border-amber-200',
-          RESOLVED_ON_TIME: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-        };
+    if (sla.isBreached) {
+      return (
+        <span
+          title={`SLA Breached by ${sla.overdueHours} hours. PWD Escalation Active.`}
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-black border animate-pulse ${
+            isDark ? 'bg-red-900/60 text-red-200 border-red-500' : 'bg-red-100 text-red-800 border-red-300'
+          }`}
+        >
+          🚨 {sla.formattedCountdown}
+        </span>
+      );
+    }
+
+    if (sla.status === 'WARNING') {
+      return (
+        <span
+          title={`SLA target: ${sla.slaHoursTotal}h. Less than 4h remaining.`}
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
+            isDark ? 'bg-amber-900/50 text-amber-200 border-amber-600' : 'bg-amber-100 text-amber-800 border-amber-300'
+          }`}
+        >
+          ⚡ {sla.formattedCountdown}
+        </span>
+      );
+    }
 
     return (
       <span
-        title={`Detected ${event.ageDays} day(s) ago · repair target ${event.slaTargetDays} days for ${event.severity ?? 'HIGH'} severity`}
-        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${tone[event.slaStatus]}`}
+        title={`SLA target: ${sla.slaHoursTotal} hours for ${event.severity ?? 'HIGH'} severity`}
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+          isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+        }`}
       >
-        {label}
+        ⏱️ {sla.formattedCountdown}
       </span>
     );
   };
@@ -187,6 +200,31 @@ export const DefectTable: React.FC<DefectTableProps> = ({
         {label}
       </span>
     );
+  };
+
+  const handleExportCsv = () => {
+    if (!filteredEvents.length) return;
+    const headers = ['Defect_ID', 'Category', 'Severity', 'Confidence_Pct', 'Estimated_Repair_Cost_INR', 'Estimated_Diameter_CM', 'Latitude', 'Longitude', 'Status', 'Timestamp'];
+    const rows = filteredEvents.map((e) => [
+      `"${e.id}"`,
+      `"${e.type}"`,
+      `"${e.severity}"`,
+      Math.round(e.confidence * 100),
+      e.estimatedRepairCost || 0,
+      e.estimatedDiameterCm || 'N/A',
+      e.latitude,
+      e.longitude,
+      `"${e.status}"`,
+      `"${e.timestamp}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `UrbanEye_Road_Defects_Audit_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -216,13 +254,16 @@ export const DefectTable: React.FC<DefectTableProps> = ({
               className={`flex-1 sm:flex-initial px-2.5 py-2 border rounded-lg focus:outline-none focus:ring-1 text-xs min-h-[40px] cursor-pointer ${inputCls}`}
               style={{ backgroundColor: '#1e293b', color: '#e2e8f0', borderColor: '#334155' }}
             >
-              <option value="ALL">All Defect Types</option>
+              <option value="ALL">All Categories</option>
+              <option value="POTHOLE">🕳️ Potholes</option>
+              <option value="SURFACE_DAMAGE">⚡ Damaged Roads / Wear</option>
+              <option value="MISSING_DIVIDER">🚧 Missing Road Dividers</option>
+              <option value="FADED_ZEBRA_CROSSING">🚸 Faded Zebra Crossings</option>
+              <option value="DAMAGED_SIGNBOARD">🛑 Damaged Signboards</option>
+              <option value="WATERLOGGING">💧 Waterlogging</option>
+              <option value="ROAD_CRACK">⚠️ Road Cracks</option>
+              <option value="UTILITY_COVER">⚠️ Utility Covers</option>
               <option value="ANPR_INCIDENT">🚨 ANPR Incidents</option>
-              <option value="POTHOLE">Potholes</option>
-              <option value="ROAD_CRACK">Road Cracks</option>
-              <option value="SURFACE_DAMAGE">Surface Wear</option>
-              <option value="WATERLOGGING">Waterlogging</option>
-              <option value="VEHICLE_FLOW">Vehicle Flow</option>
             </select>
             <select
               value={selectedStatus}
@@ -237,6 +278,16 @@ export const DefectTable: React.FC<DefectTableProps> = ({
               <option value="RESOLVED">Resolved</option>
             </select>
           </div>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={!filteredEvents.length}
+            className="px-3 py-2 border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition min-h-[40px] disabled:opacity-50"
+            title="Download Filtered Defect Audit Log as CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
           {onPurgeEvents && events.length > 0 && (
             <button
               onClick={() => setIsPurgeModalOpen(true)}
