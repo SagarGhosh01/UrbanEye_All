@@ -413,9 +413,13 @@ export interface SegmentCongestionState {
   segmentId: string;
   name: string | null;
   roadClass: string;
+  cityTag?: string;
   level: CongestionLevel;
   color: string;
   score: number;
+  congestionPct?: number;
+  avgSpeedKmh?: number;
+  vehicleCountPerHour?: number;
   coordinates: [number, number][];
   updatedAt: string | null;
 }

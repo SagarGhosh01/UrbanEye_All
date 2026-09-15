@@ -25,15 +25,26 @@ export async function getCongestionState(city: string = 'bangalore'): Promise<Co
     if (!res.ok) return { segments: [], dataSource: 'NONE' };
     const data = await res.json();
     let segments = data.congestion || [];
-    if (segments.length === 0 && city !== 'all') {
-      const fallbackRes = await fetch(`${API_BASE}/congestion-state?city=all`);
-      if (fallbackRes.ok) {
-        const fallbackData = await fallbackRes.json();
-        segments = fallbackData.congestion || [];
-      }
-    }
     return {
       segments,
+      dataSource: (data.dataSource as CongestionSource) || 'NONE',
+    };
+  } catch {
+    return { segments: [], dataSource: 'NONE' };
+  }
+}
+
+export async function getIndiaTraffic(roadClassFilter?: string[]): Promise<CongestionStateResult> {
+  try {
+    let url = `${API_BASE}/congestion-state?city=all`;
+    if (roadClassFilter && roadClassFilter.length > 0) {
+      url += `&roadClass=${roadClassFilter.join(',')}`;
+    }
+    const res = await fetch(url);
+    if (!res.ok) return { segments: [], dataSource: 'NONE' };
+    const data = await res.json();
+    return {
+      segments: data.congestion || [],
       dataSource: (data.dataSource as CongestionSource) || 'NONE',
     };
   } catch {

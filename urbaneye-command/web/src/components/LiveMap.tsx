@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { RoadEvent, EventStatus, SegmentCongestionState, CongestionLevel, CongestionSource } from '../types';
-import { ChevronUp, ChevronDown, Layers, Flame, Sliders, Activity, Zap } from 'lucide-react';
+import { ChevronUp, ChevronDown, Layers } from 'lucide-react';
 import { getCategoryPriority, MAX_CATEGORY_PRIORITY } from '../constants/detectionCategories';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { useTheme } from '../contexts/ThemeContext';
-import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
+import { getCongestionState, subscribeToCongestionUpdates, getIndiaTraffic } from '../services/congestionService';
 import { getFleet, subscribeToFleet, BusPosition } from '../services/fleetService';
 
 interface LiveMapProps {
@@ -67,13 +67,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     heatmap: activeLayerFilters.heatmap ?? true,
   });
 
-  // Advanced Heatmap Controls State
-  const [heatMode, setHeatMode] = useState<'DEFECTS' | 'TRAFFIC' | 'PREDICTIVE' | 'COMPOSITE'>('DEFECTS');
-  const [heatRadius, setHeatRadius] = useState<number>(36);
-  const [heatIntensity, setHeatIntensity] = useState<number>(1.2);
-  const [heatControlsOpen, setHeatControlsOpen] = useState<boolean>(true);
-  const [activeClusterCount, setActiveClusterCount] = useState<number>(0);
-  const [peakHeatScore, setPeakHeatScore] = useState<number>(0);
+  const [visibleRoadClasses, setVisibleRoadClasses] = useState<string[]>(['trunk', 'motorway']);
 
   // Collapsible legend state
   const [legendOpen, setLegendOpen] = useState(false);
@@ -88,9 +82,17 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [centerLat, centerLon],
-        zoom: zoom,
+        center: [22.5, 82.0],
+        zoom: 5,
         zoomControl: false, // Repositioned zoom control
+      });
+
+      map.on('zoomend', () => {
+        const z = map.getZoom();
+        if (z <= 7) setVisibleRoadClasses(['trunk', 'motorway']);
+        else if (z <= 10) setVisibleRoadClasses(['trunk', 'motorway', 'primary']);
+        else if (z <= 13) setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary']);
+        else setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
       });
 
       // Bottom-right zoom control: thumb-safe for one-handed mobile use & prevents blocking header
@@ -243,25 +245,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     trafficLayer.clearLayers();
     polylines.clear();
 
-    const getCityTagFromCoords = (lat: number, lon: number): string => {
-      if (lat > 30) {
-        if (lon >= 75.62 || lat < 31.28) return 'kapurthala';
-        return 'jalandhar';
-      }
-      if (lat > 18 && lat < 21) return 'mumbai';
-      return 'bangalore';
-    };
-
-    const cityTag = getCityTagFromCoords(centerLat, centerLon);
-
-    // Initial fetch of congestion state for the active city
-    getCongestionState(cityTag).then(({ segments, dataSource }) => {
+    getIndiaTraffic(visibleRoadClasses).then(({ segments, dataSource }) => {
       setCongestionSource(dataSource);
       if (segments.length === 0) return;
+      
       segments.forEach((seg) => {
+        if (!visibleRoadClasses.includes(seg.roadClass)) return;
         if (!seg.coordinates || seg.coordinates.length < 2) return;
+        
         const latLngs = seg.coordinates.map(([lat, lng]: [number, number]) => L.latLng(lat, lng));
-        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 5 : seg.roadClass === 'secondary' ? 4 : 3;
+        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'motorway' ? 5 : seg.roadClass === 'primary' ? 4 : 3;
         const polyline = L.polyline(latLngs, {
           color: seg.color || '#16a34a',
           weight,
@@ -270,33 +263,34 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           lineCap: 'round',
           smoothFactor: 1.0,
         });
-        if (seg.name || seg.level) {
-          const levelLabel = (seg.level || 'FREE_FLOW').replace('_', ' ');
-          polyline.bindTooltip(
-            `<strong>${seg.name || 'Urban Traffic Corridor'}</strong><br/><span style="color:${seg.color};font-weight:700">● ${levelLabel}</span> · Score: ${seg.score}`,
-            { sticky: true, className: 'traffic-tooltip' }
-          );
-        }
+
+        const levelLabel = (seg.level || 'FREE_FLOW').replace('_', ' ');
+        const popupContent = `
+<div style="font-family:Inter,sans-serif;min-width:220px;padding:4px">
+  <div style="font-size:9px;font-weight:800;color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:4px;margin-bottom:6px;text-align:center">⚠ DEMO TRAFFIC DATA</div>
+  <div style="font-weight:800;font-size:13px;margin-bottom:4px">${seg.name || 'Road Segment'}</div>
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+    <span style="width:10px;height:10px;border-radius:50%;background:${seg.color}"></span>
+    <span style="font-weight:700;font-size:12px;color:${seg.color}">${levelLabel}</span>
+  </div>
+  <div style="font-size:11px;color:#475569;margin-bottom:2px">Congestion: <strong>${seg.congestionPct || seg.score}%</strong></div>
+  <div style="font-size:11px;color:#475569;margin-bottom:2px">Avg Speed: <strong>${seg.avgSpeedKmh || '—'} km/h</strong></div>
+  <div style="font-size:11px;color:#475569;margin-bottom:2px">Vehicles: <strong>~${seg.vehicleCountPerHour ? seg.vehicleCountPerHour.toLocaleString() : '—'}/hr</strong></div>
+  <div style="font-size:11px;color:#64748b">City: <strong>${seg.cityTag}</strong> · Class: ${seg.roadClass}</div>
+  <div style="font-size:9px;color:#94a3b8;margin-top:6px;border-top:1px solid #e2e8f0;padding-top:4px">Simulated scenario — not real-time fleet data</div>
+</div>`;
+        polyline.bindPopup(popupContent);
         polyline.addTo(trafficLayer);
         polylines.set(seg.segmentId, polyline);
       });
     });
 
-    // Subscribe to real-time congestion updates via Socket.IO
     const unsub = subscribeToCongestionUpdates((payload) => {
       if (!payload.updates) return;
       payload.updates.forEach((update) => {
         const existing = polylines.get(update.segmentId);
         if (existing) {
           existing.setStyle({ color: update.color });
-          // Update tooltip content if bound
-          const tooltip = existing.getTooltip();
-          if (tooltip) {
-            const levelLabel = update.level.replace('_', ' ');
-            existing.setTooltipContent(
-              `<strong>${(tooltip.getContent() as string)?.match(/<strong>(.*?)<\/strong>/)?.[1] || 'Road Segment'}</strong><br/><span style="color:${update.color};font-weight:700">● ${levelLabel}</span> · Score: ${update.score}`
-            );
-          }
         }
       });
     });
@@ -306,7 +300,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       trafficLayer.clearLayers();
       polylines.clear();
     };
-  }, [centerLat, centerLon]);
+  }, [visibleRoadClasses, layers.traffic]);
 
   // Toggle traffic layer visibility
   useEffect(() => {
@@ -323,187 +317,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     }
   }, [layers.traffic]);
 
-  // ─── Advanced Multi-Tier Spatial Heatmap Engine ───────────────────────────
+  const isFirstRender = useRef(true);
   useEffect(() => {
-    if (!mapInstanceRef.current || !heatmapLayerRef.current) return;
-
-    const heatmapLayer = heatmapLayerRef.current;
-    heatmapLayer.clearLayers();
-
-    if (!layers.heatmap) {
-      setActiveClusterCount(0);
-      setPeakHeatScore(0);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
       return;
     }
-
-    // 1. Group events into spatial clusters (within ~350m radius threshold)
-    const clusters: Array<{
-      centerLat: number;
-      centerLon: number;
-      events: RoadEvent[];
-      totalCost: number;
-      maxSeverityWeight: number;
-    }> = [];
-
-    const THRESHOLD_KM = 0.35; // 350 meters
-
-    events.forEach((event) => {
-      // Filter events by selected heat mode
-      if (heatMode === 'DEFECTS') {
-        const isDefect = event.type === 'POTHOLE' || event.type.includes('CRACK') || event.type === 'SURFACE_DAMAGE' || event.type === 'WATERLOGGING';
-        if (!isDefect) return;
-      } else if (heatMode === 'TRAFFIC') {
-        const isTraffic = event.type === 'VEHICLE_FLOW' || event.type === 'TRAFFIC_BOTTLENECK' || event.speed !== undefined;
-        if (!isTraffic && event.type !== 'ANPR_INCIDENT') return;
-      } else if (heatMode === 'PREDICTIVE') {
-        if (event.status === 'RESOLVED') return;
-      }
-
-      const matchedCluster = clusters.find((c) => {
-        const dLat = (event.latitude - c.centerLat) * 111.32;
-        const dLon = (event.longitude - c.centerLon) * 111.32 * Math.cos((event.latitude * Math.PI) / 180);
-        return Math.sqrt(dLat * dLat + dLon * dLon) <= THRESHOLD_KM;
-      });
-
-      const cost = event.estimatedRepairCost || (event.severity === 'CRITICAL' ? 35000 : event.severity === 'HIGH' ? 15000 : 5000);
-      let sevWeight = event.severity === 'CRITICAL' ? 1.0 : event.severity === 'HIGH' ? 0.75 : event.severity === 'MEDIUM' ? 0.5 : 0.3;
-      if (event.type === 'ANPR_INCIDENT' || event.type === 'HIT_AND_RUN') sevWeight += 0.3;
-
-      if (matchedCluster) {
-        matchedCluster.events.push(event);
-        matchedCluster.totalCost += cost;
-        matchedCluster.maxSeverityWeight = Math.max(matchedCluster.maxSeverityWeight, sevWeight);
-        const n = matchedCluster.events.length;
-        matchedCluster.centerLat = (matchedCluster.centerLat * (n - 1) + event.latitude) / n;
-        matchedCluster.centerLon = (matchedCluster.centerLon * (n - 1) + event.longitude) / n;
-      } else {
-        clusters.push({
-          centerLat: event.latitude,
-          centerLon: event.longitude,
-          events: [event],
-          totalCost: cost,
-          maxSeverityWeight: sevWeight,
-        });
-      }
-    });
-
-    setActiveClusterCount(clusters.length);
-    let highestScore = 0;
-
-    // 2. Render Multi-Tier Radial Density Halos for each Cluster
-    clusters.forEach((cluster) => {
-      const count = cluster.events.length;
-      const densityMultiplier = Math.min(2.5, 1.0 + (count - 1) * 0.35);
-      const rawWeight = Math.min(1.0, cluster.maxSeverityWeight * densityMultiplier * (heatIntensity / 1.2));
-      const score = Math.min(99, Math.round(rawWeight * 100));
-      if (score > highestScore) highestScore = score;
-
-      let primaryColor = '#3b82f6'; // Low (Blue)
-      let midColor = '#eab308';     // Moderate (Amber)
-      let coreColor = '#ef4444';    // High (Red)
-      let pulseColor = '#d946ef';   // Critical (Magenta)
-
-      if (heatMode === 'TRAFFIC') {
-        primaryColor = '#06b6d4';
-        midColor = '#f59e0b';
-        coreColor = '#dc2626';
-        pulseColor = '#7f1d1d';
-      } else if (heatMode === 'PREDICTIVE') {
-        primaryColor = '#6366f1';
-        midColor = '#a855f7';
-        coreColor = '#ec4899';
-        pulseColor = '#f43f5e';
-      } else if (heatMode === 'COMPOSITE') {
-        primaryColor = '#14b8a6';
-        midColor = '#f97316';
-        coreColor = '#e11d48';
-        pulseColor = '#9333ea';
-      }
-
-      if (rawWeight < 0.4) {
-        coreColor = '#3b82f6';
-      } else if (rawWeight < 0.7) {
-        coreColor = '#f59e0b';
-      }
-
-      const rOuter = Math.max(22, (heatRadius * 1.4) + count * 4);
-      const rMid = Math.max(14, (heatRadius * 0.8) + count * 2);
-      const rCore = Math.max(7, (heatRadius * 0.35) + count);
-
-      // Tier 1: Outer Ambient Heat Field
-      const outerHalo = L.circleMarker([cluster.centerLat, cluster.centerLon], {
-        radius: rOuter,
-        fillColor: primaryColor,
-        fillOpacity: Math.min(0.28, 0.14 * rawWeight),
-        stroke: false,
-        interactive: false,
-      });
-
-      // Tier 2: Mid Density Thermal Zone
-      const midHalo = L.circleMarker([cluster.centerLat, cluster.centerLon], {
-        radius: rMid,
-        fillColor: midColor,
-        fillOpacity: Math.min(0.5, 0.28 * rawWeight),
-        stroke: false,
-        interactive: false,
-      });
-
-      // Tier 3: Core Hotspot
-      const coreMarker = L.circleMarker([cluster.centerLat, cluster.centerLon], {
-        radius: rCore,
-        fillColor: coreColor,
-        fillOpacity: Math.min(0.85, 0.65 * rawWeight),
-        stroke: false,
-        interactive: false,
-      });
-
-      // Tier 4: Interactive Focal Point Peak with Tooltip & Pulse
-      const focalPeak = L.circleMarker([cluster.centerLat, cluster.centerLon], {
-        radius: Math.max(4, rCore * 0.4),
-        fillColor: rawWeight > 0.75 ? pulseColor : '#ffffff',
-        fillOpacity: 0.95,
-        color: coreColor,
-        weight: 2,
-        interactive: true,
-      });
-
-      const formattedCost = '₹' + Math.round(cluster.totalCost).toLocaleString('en-IN');
-      const topDefectType = cluster.events[0]?.type.replace(/_/g, ' ') || 'ROAD DEFECT';
-
-      focalPeak.bindTooltip(
-        `<div style="font-family:Inter, sans-serif; padding:4px 6px; min-width:180px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-            <span style="font-size:10px; font-weight:800; color:${coreColor}; text-transform:uppercase;">🔥 HOTSPOT THERMAL RISK</span>
-            <span style="font-size:11px; font-weight:900; color:${pulseColor};">${score}%</span>
-          </div>
-          <div style="font-size:11px; font-weight:700; color:#0f172a; margin-bottom:2px;">
-            ${count} ${count === 1 ? 'Defect' : 'Defects in Cluster'} (${topDefectType})
-          </div>
-          <div style="font-size:10px; color:#475569; margin-bottom:4px;">
-            Est. PWD Repair Budget: <strong style="color:#059669;">${formattedCost}</strong>
-          </div>
-          <div style="font-size:9px; font-weight:700; background:#f1f5f9; color:#334155; padding:2px 6px; border-radius:4px; text-align:center;">
-            Mode: ${heatMode} · Radius: ${Math.round(rOuter)}px
-          </div>
-        </div>`,
-        { sticky: true, className: 'heatmap-cluster-tooltip' }
-      );
-
-      outerHalo.addTo(heatmapLayer);
-      midHalo.addTo(heatmapLayer);
-      coreMarker.addTo(heatmapLayer);
-      focalPeak.addTo(heatmapLayer);
-    });
-
-    setPeakHeatScore(highestScore);
-  }, [events, layers.heatmap, heatMode, heatRadius, heatIntensity]);
-
-  // Update center when props change
-  useEffect(() => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([centerLat, centerLon], zoom, { animate: true });
+      mapInstanceRef.current.flyTo([centerLat, centerLon], 12, { animate: true, duration: 1.5 });
     }
-  }, [centerLat, centerLon, zoom]);
+  }, [centerLat, centerLon]);
 
   // Handle Latest Event Glow Effect
   useEffect(() => {
@@ -777,7 +600,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               onChange={(e) => setLayers({ ...layers, heatmap: e.target.checked })}
               className="rounded text-teal-500 focus:ring-0"
             />
-            <span>🔥 Defect Heatmap</span>
+            <span>📢 Citizen Reports</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
@@ -837,18 +660,10 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                 </span>
               </div>
             )}
-            {congestionSource === 'SCRIPTED_DEMO' && (
-              <div className="mb-2 flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/15 px-2.5 py-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Simulated</span>
-                <span className="text-[10px] text-amber-200/90">Scripted Bangalore scenario — not fleet data</span>
-              </div>
-            )}
-            {congestionSource === 'FLEET_OBSERVATIONS' && (
-              <div className="mb-2 flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Live</span>
-                <span className="text-[10px] text-emerald-200/90">Derived from bus fleet observations</span>
-              </div>
-            )}
+            <div className="mb-2 flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/15 px-2.5 py-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Demo</span>
+              <span className="text-[10px] text-amber-200/90">Nationwide demo traffic — not real-time data</span>
+            </div>
             {/* Traffic Congestion Legend */}
             <div className="mt-2 pt-2 border-t border-white/10">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Live Traffic</div>

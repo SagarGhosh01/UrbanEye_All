@@ -135,8 +135,18 @@ export async function snapToNearestSegment(
 congestionRouter.get('/segments', async (req, res) => {
   try {
     const city = (req.query.city as string) || 'bangalore';
+    const whereClause: any = city === 'all' ? {} : { cityTag: city };
+
+    const roadClassQuery = req.query.roadClass as string | undefined;
+    if (roadClassQuery) {
+      const classes = roadClassQuery.split(',').map((c) => c.trim()).filter(Boolean);
+      if (classes.length > 0) {
+        whereClause.roadClass = { in: classes };
+      }
+    }
+
     const segments = await prisma.roadSegment.findMany({
-      where: { cityTag: city },
+      where: whereClause,
       select: {
         id: true,
         osmWayId: true,
@@ -144,6 +154,7 @@ congestionRouter.get('/segments', async (req, res) => {
         roadClass: true,
         coordinates: true,
         lengthM: true,
+        cityTag: true,
       },
     });
 
@@ -167,15 +178,25 @@ congestionRouter.get('/segments', async (req, res) => {
 });
 
 /**
- * GET /api/traffic/congestion-state?city=bangalore
- * Returns current congestion level + color for each segment
+ * GET /api/traffic/congestion-state?city=all&roadClass=trunk,primary
+ * Returns current congestion level + color + demo speed/volume for each segment
  */
 congestionRouter.get('/congestion-state', async (req, res) => {
   try {
-    const city = (req.query.city as string) || 'bangalore';
+    const city = (req.query.city as string) || 'all';
 
-    // Get all segments for this city (or all cities if requested)
-    const whereClause = city === 'all' ? {} : { cityTag: city };
+    // Build Prisma query filter
+    const whereClause: any = {};
+    if (city !== 'all') {
+      whereClause.cityTag = city;
+    }
+    const roadClassQuery = req.query.roadClass as string | undefined;
+    if (roadClassQuery) {
+      const classes = roadClassQuery.split(',').map((c) => c.trim()).filter(Boolean);
+      if (classes.length > 0) {
+        whereClause.roadClass = { in: classes };
+      }
+    }
 
     const segments = await prisma.roadSegment.findMany({
       where: whereClause,
@@ -191,14 +212,66 @@ congestionRouter.get('/congestion-state', async (req, res) => {
         level = state.level;
       } else {
         const lower = (seg.name || '').toLowerCase();
-        if (lower.includes('silk board') || lower.includes('tin factory') || lower.includes('marathahalli') || lower.includes('sea link') || lower.includes('nh-44 phagwara to jalandhar') || lower.includes('city center circular')) {
+        const city = seg.cityTag || '';
+
+        // Highly congested cities & key choke corridors
+        if (
+          lower.includes('silk board') ||
+          lower.includes('tin factory') ||
+          lower.includes('marathahalli') ||
+          lower.includes('sea link') ||
+          lower.includes('ring road') ||
+          lower.includes('em bypass') ||
+          lower.includes('pvnr') ||
+          lower.includes('nh-44 phagwara to jalandhar') ||
+          lower.includes('city center circular')
+        ) {
           level = 'SEVERE';
-        } else if (lower.includes('nh-70') || lower.includes('expressway') || lower.includes('western express') || lower.includes('gt road bypass')) {
+        } else if (
+          lower.includes('nh-70') ||
+          lower.includes('expressway') ||
+          lower.includes('western express') ||
+          lower.includes('gt road bypass') ||
+          lower.includes('omr') ||
+          lower.includes('sg highway') ||
+          lower.includes('shaheed path')
+        ) {
           level = 'HEAVY';
-        } else if (lower.includes('sh-24 subhanpur') || lower.includes('sh-71') || lower.includes('phagwara to narur') || lower.includes('indiranagar') || lower.includes('mg road') || lower.includes('model town')) {
+        } else if (
+          lower.includes('sh-24 subhanpur') ||
+          lower.includes('sh-71') ||
+          lower.includes('phagwara to narur') ||
+          lower.includes('indiranagar') ||
+          lower.includes('mg road') ||
+          lower.includes('model town') ||
+          lower.includes('anna salai') ||
+          lower.includes('hinjewadi')
+        ) {
           level = 'MODERATE';
-        } else if (lower.includes('phillaur to phagwara') || lower.includes('sh-24 kapurthala city') || lower.includes('sh-14') || lower.includes('sultanpur') || lower.includes('banga') || lower.includes('nakodar to nurmahal') || lower.includes('cantt')) {
+        } else if (
+          city === 'chandigarh' ||
+          lower.includes('phillaur to phagwara') ||
+          lower.includes('sh-24 kapurthala city') ||
+          lower.includes('sh-14') ||
+          lower.includes('sultanpur') ||
+          lower.includes('banga') ||
+          lower.includes('nakodar to nurmahal') ||
+          lower.includes('cantt') ||
+          lower.includes('rajpath') ||
+          lower.includes('park street')
+        ) {
           level = 'FREE_FLOW';
+        } else if (city === 'national') {
+          // National corridors: mostly Free Flow or Moderate with occasional Heavy
+          const nMod = index % 5;
+          level = nMod === 0 ? 'FREE_FLOW' : nMod === 1 ? 'FREE_FLOW' : nMod === 2 ? 'MODERATE' : nMod === 3 ? 'MODERATE' : 'HEAVY';
+        } else if (city === 'delhi' || city === 'bangalore' || city === 'mumbai') {
+          // Congested metropolises
+          const mMod = index % 4;
+          level = mMod === 0 ? 'SEVERE' : mMod === 1 ? 'HEAVY' : mMod === 2 ? 'MODERATE' : 'SEVERE';
+        } else if (city === 'pune' || city === 'hyderabad' || city === 'chennai' || city === 'kolkata') {
+          const cMod = index % 3;
+          level = cMod === 0 ? 'MODERATE' : cMod === 1 ? 'HEAVY' : 'FREE_FLOW';
         } else {
           // Balanced distribution across network
           const mod = index % 4;
@@ -211,6 +284,23 @@ congestionRouter.get('/congestion-state', async (req, res) => {
 
       const score = state?.score ?? (level === 'SEVERE' ? 92 : level === 'HEAVY' ? 74 : level === 'MODERATE' ? 48 : 18);
 
+      // Derive realistic demo speed and vehicle density based on congestion tier
+      let avgSpeedKmh = 68;
+      let vehicleCountPerHour = 950;
+      if (level === 'SEVERE') {
+        avgSpeedKmh = Math.max(6, Math.round(14 - (score - 85) * 0.5));
+        vehicleCountPerHour = 4800 + (index % 12) * 100;
+      } else if (level === 'HEAVY') {
+        avgSpeedKmh = Math.max(16, Math.round(28 - (score - 60) * 0.4));
+        vehicleCountPerHour = 3200 + (index % 8) * 100;
+      } else if (level === 'MODERATE') {
+        avgSpeedKmh = Math.max(32, Math.round(48 - (score - 30) * 0.3));
+        vehicleCountPerHour = 1900 + (index % 6) * 80;
+      } else {
+        avgSpeedKmh = 65 + (index % 5) * 4;
+        vehicleCountPerHour = 750 + (index % 5) * 50;
+      }
+
       return {
         segmentId: seg.id,
         name: seg.name,
@@ -219,6 +309,9 @@ congestionRouter.get('/congestion-state', async (req, res) => {
         level,
         color: CONGESTION_COLORS[level],
         score,
+        congestionPct: score,
+        avgSpeedKmh,
+        vehicleCountPerHour,
         coordinates: JSON.parse(seg.coordinates) as [number, number][],
         updatedAt: state?.updatedAt ? new Date(state.updatedAt).toISOString() : null,
       };
@@ -239,7 +332,7 @@ congestionRouter.get('/congestion-state', async (req, res) => {
 });
 
 /**
- * GET /api/traffic/congestion-summary?city=bangalore
+ * GET /api/traffic/congestion-summary?city=all
  * Aggregate stats for the traffic panel
  */
 congestionRouter.get('/congestion-summary', async (req, res) => {

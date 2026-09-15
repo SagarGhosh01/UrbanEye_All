@@ -613,12 +613,11 @@ const defaultStats: AnalyticsStats = {
                       </span>
                     </div>
 
-                    <div className="h-[380px] sm:h-[450px] w-full rounded-b-xl border border-slate-700/80 overflow-hidden relative shadow-xl">
+                    <div className="h-[420px] sm:h-[520px] w-full rounded-b-xl border border-slate-700/80 overflow-hidden relative shadow-xl">
                       <LiveMap
                         events={events}
                         centerLat={activeDistrict.centerLat}
                         centerLon={activeDistrict.centerLon}
-                        zoom={12}
                         onUpdateStatus={handleUpdateStatus}
                         onSelectEvent={(ev) => setSelectedEventForDetail(ev)}
                         latestEventId={latestLiveAlert?.id}
