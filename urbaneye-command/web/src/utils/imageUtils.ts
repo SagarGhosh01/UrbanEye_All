@@ -29,6 +29,15 @@ export function resolveImageSrc(imageSnippet: string | null | undefined): string
         const apiOrigin = envApi.replace(/\/api\/?$/, '');
         return `${apiOrigin}${str}`;
       }
+      if (typeof window !== 'undefined') {
+        const host = window.location.hostname || 'localhost';
+        const protocol = window.location.protocol || 'http:';
+        // If web app is running on Vite dev port (e.g., 3000), backend uploads are served on port 5000
+        if (window.location.port === '3000') {
+          return `${protocol}//${host}:5000${str}`;
+        }
+        return `${protocol}//${window.location.host}${str}`;
+      }
     } catch {
       // fallback to relative path
     }
