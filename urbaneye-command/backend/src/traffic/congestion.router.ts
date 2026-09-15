@@ -26,10 +26,28 @@ export interface SegmentCongestion {
 const congestionState = new Map<string, SegmentCongestion>();
 
 /**
- * Update congestion state for a batch of segments.
- * Called by both the real-time aggregation engine and the demo player.
+ * Where the congestion figures currently on display came from.
+ *
+ * This travels with the data to the client so the map can label a scripted scenario
+ * as scripted. An overlay animating across real OSM geometry is indistinguishable
+ * from measured traffic unless we say which it is, and a viewer who assumes the
+ * wrong one is being misled by omission.
  */
-export function updateCongestionState(updates: SegmentCongestion[]): void {
+export type CongestionSource = 'SCRIPTED_DEMO' | 'FLEET_OBSERVATIONS' | 'NONE';
+
+let congestionSource: CongestionSource = 'NONE';
+
+export function getCongestionSource(): CongestionSource {
+  return congestionState.size === 0 ? 'NONE' : congestionSource;
+}
+
+/**
+ * Update congestion state for a batch of segments.
+ * Called by both the real-time aggregation engine and the demo player; the caller
+ * must declare which it is, so provenance cannot drift away from the data.
+ */
+export function updateCongestionState(updates: SegmentCongestion[], source: CongestionSource): void {
+  congestionSource = source;
   for (const update of updates) {
     congestionState.set(update.segmentId, update);
   }
@@ -47,6 +65,7 @@ export function getAllCongestionState(): SegmentCongestion[] {
  */
 export function clearCongestionState(): void {
   congestionState.clear();
+  congestionSource = 'NONE';
 }
 
 // ─── Congestion Color/Level Mapping ──────────────────────────────────────────
@@ -183,6 +202,9 @@ congestionRouter.get('/congestion-state', async (req, res) => {
       city,
       count: result.length,
       congestion: result,
+      // 'SCRIPTED_DEMO' means these levels come from a scenario script, not from
+      // buses. The dashboard must surface this — see the map's data-source badge.
+      dataSource: getCongestionSource(),
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {

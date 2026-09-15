@@ -193,7 +193,7 @@ async function demoTick(): Promise<void> {
     });
 
     // Update global congestion state
-    updateCongestionState(updates);
+    updateCongestionState(updates, 'SCRIPTED_DEMO');
 
     // Emit over Socket.IO — same shape as real congestion updates
     const payload = updates.map((u) => ({

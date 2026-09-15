@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { RoadEvent, EventStatus, SegmentCongestionState, CongestionLevel } from '../types';
+import { RoadEvent, EventStatus, SegmentCongestionState, CongestionLevel, CongestionSource } from '../types';
 import { ChevronUp, ChevronDown, Layers } from 'lucide-react';
 import { getCategoryPriority, MAX_CATEGORY_PRIORITY } from '../constants/detectionCategories';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
@@ -63,6 +63,9 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
   // Collapsible legend state
   const [legendOpen, setLegendOpen] = useState(false);
+  // Provenance of the congestion overlay. Surfaced on the map, because an overlay
+  // animating over real OSM geometry is indistinguishable from measured traffic.
+  const [congestionSource, setCongestionSource] = useState<CongestionSource>('NONE');
 
   // Initialize Map
   useEffect(() => {
@@ -136,7 +139,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     const polylines = trafficPolylinesRef.current;
 
     // Initial fetch of congestion state
-    getCongestionState('bangalore').then((segments: SegmentCongestionState[]) => {
+    getCongestionState('bangalore').then(({ segments, dataSource }) => {
+      setCongestionSource(dataSource);
       if (segments.length === 0) return;
       segments.forEach((seg) => {
         if (!seg.coordinates || seg.coordinates.length < 2) return;
@@ -523,6 +527,18 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               </div>
             </div>
 
+            {congestionSource === 'SCRIPTED_DEMO' && (
+              <div className="mb-2 flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/15 px-2.5 py-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Simulated</span>
+                <span className="text-[10px] text-amber-200/90">Scripted Bangalore scenario — not fleet data</span>
+              </div>
+            )}
+            {congestionSource === 'FLEET_OBSERVATIONS' && (
+              <div className="mb-2 flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Live</span>
+                <span className="text-[10px] text-emerald-200/90">Derived from bus fleet observations</span>
+              </div>
+            )}
             {/* Traffic Congestion Legend */}
             <div className="mt-2 pt-2 border-t border-white/10">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Live Traffic</div>

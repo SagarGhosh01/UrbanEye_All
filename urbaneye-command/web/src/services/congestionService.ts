@@ -5,7 +5,7 @@
  * plus a real-time Socket.IO subscription for live updates.
  */
 
-import { SegmentCongestionState, CongestionUpdatePayload, CongestionSummary } from '../types';
+import { SegmentCongestionState, CongestionUpdatePayload, CongestionSummary, CongestionSource } from '../types';
 import { getSocket } from './socket';
 
 const API_BASE = '/api/traffic';
@@ -13,21 +13,26 @@ const API_BASE = '/api/traffic';
 /**
  * Fetch all road segments with their current congestion state
  */
-export async function getCongestionState(city: string = 'bangalore'): Promise<SegmentCongestionState[]> {
+export interface CongestionStateResult {
+  segments: SegmentCongestionState[];
+  /** Scripted scenario or real fleet data — drives the map's data-source badge. */
+  dataSource: CongestionSource;
+}
+
+export async function getCongestionState(city: string = 'bangalore'): Promise<CongestionStateResult> {
   try {
     const res = await fetch(`${API_BASE}/congestion-state?city=${city}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) return { segments: [], dataSource: 'NONE' };
     const data = await res.json();
-    return data.congestion || [];
-  } catch (err) {
-    console.error('Failed to fetch congestion state:', err);
-    return [];
+    return {
+      segments: data.congestion || [],
+      dataSource: (data.dataSource as CongestionSource) || 'NONE',
+    };
+  } catch {
+    return { segments: [], dataSource: 'NONE' };
   }
 }
 
-/**
- * Fetch congestion summary stats
- */
 export async function getCongestionSummary(): Promise<CongestionSummary | null> {
   try {
     const res = await fetch(`${API_BASE}/congestion-summary`);

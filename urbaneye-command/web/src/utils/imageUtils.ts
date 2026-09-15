@@ -21,6 +21,17 @@ export function resolveImageSrc(imageSnippet: string | null | undefined): string
     return str;
   }
 
+  // Bare base64 payloads, before the path check below. A base64 JPEG begins "/9j/"
+  // and a PNG "iVBORw0" — the JPEG case starts with a slash, so without this it gets
+  // treated as a server path and 404s. The Android client posts snippets this way.
+  if (/^\/9j\/|^iVBORw0|^R0lGOD|^UklGR/.test(str)) {
+    const mime = str.startsWith('iVBORw0') ? 'image/png'
+      : str.startsWith('R0lGOD') ? 'image/gif'
+      : str.startsWith('UklGR') ? 'image/webp'
+      : 'image/jpeg';
+    return `data:${mime};base64,${str}`;
+  }
+
   // Relative path resolution (e.g., /uploads/citizen-reports/...) for cross-origin production deploys
   if (str.startsWith('/')) {
     try {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { TrafficRouteSegment, BottleneckAlert, TrafficIntelligenceStats, District, SegmentCongestionState } from '../types';
+import { TrafficRouteSegment, BottleneckAlert, TrafficIntelligenceStats, District, SegmentCongestionState, CongestionSource } from '../types';
 import { getTrafficRoutes, getTrafficStats, getActiveBottlenecks } from '../services/trafficService';
 import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
 import { RouteAnalysisModal } from './RouteAnalysisModal';
@@ -37,6 +37,8 @@ function getPolylineCenter(coords: [number, number][]): [number, number] {
 export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = ({ district }) => {
   const { isDark } = useTheme();
   const [routes, setRoutes] = useState<TrafficRouteSegment[]>([]);
+  // Whether the congestion overlay is a scripted scenario or real fleet data.
+  const [congestionSource, setCongestionSource] = useState<CongestionSource>('NONE');
   const [stats, setStats] = useState<TrafficIntelligenceStats | null>(null);
   const [bottlenecks, setBottlenecks] = useState<BottleneckAlert[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<TrafficRouteSegment | null>(null);
@@ -195,7 +197,8 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
     const layer = congestionLayerRef.current;
     const polylines = congestionPolylinesRef.current;
 
-    getCongestionState('bangalore').then((segments: SegmentCongestionState[]) => {
+    getCongestionState('bangalore').then(({ segments, dataSource }) => {
+      setCongestionSource(dataSource);
       if (segments.length === 0) return;
       segments.forEach((seg) => {
         if (!seg.coordinates || seg.coordinates.length < 2) return;
@@ -257,6 +260,17 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
   return (
     <div className="space-y-6">
+      {congestionSource === 'SCRIPTED_DEMO' && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
+          <span className="rounded bg-amber-500/25 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
+            Simulated
+          </span>
+          <span className="text-[13px] text-amber-100/90">
+            Congestion levels are a scripted Bangalore scenario. Road geometry is real OpenStreetMap data;
+            the traffic values are not measured by the fleet.
+          </span>
+        </div>
+      )}
       {/* 1. Top 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: VEHICLES DETECTED */}

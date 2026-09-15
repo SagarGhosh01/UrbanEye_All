@@ -395,6 +395,9 @@ export interface UrbanRecommendation {
 
 // ─── Road Segment Congestion Layer Types ─────────────────────────────────────
 
+/** Where displayed congestion figures came from. 'SCRIPTED_DEMO' must be labelled in the UI. */
+export type CongestionSource = 'SCRIPTED_DEMO' | 'FLEET_OBSERVATIONS' | 'NONE';
+
 export type CongestionLevel = 'FREE_FLOW' | 'MODERATE' | 'HEAVY' | 'SEVERE';
 
 export interface RoadSegment {
