@@ -153,11 +153,19 @@ class OverlayView @JvmOverloads constructor(
             val textHeight = 48f
             val pillMargin = 10f
 
+            val pillTop = if (screenRect.top < textHeight + pillMargin + 40f) {
+                // Draw label INSIDE top of bounding box when near screen/HUD top edge
+                screenRect.top + 8f
+            } else {
+                // Draw label ABOVE top of bounding box
+                screenRect.top - textHeight - pillMargin
+            }
+
             val labelRect = RectF(
                 screenRect.left,
-                (screenRect.top - textHeight - pillMargin).coerceAtLeast(0f),
+                pillTop,
                 screenRect.left + textWidth + 28f,
-                (screenRect.top - pillMargin).coerceAtLeast(textHeight)
+                pillTop + textHeight
             )
 
             // Draw pill background & border
