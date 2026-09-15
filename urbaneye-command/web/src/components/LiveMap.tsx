@@ -8,7 +8,7 @@ import { resolveImageSrc } from '../utils/imageUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
 
-import { BANGALORE_TRAFFIC_HOTSPOTS, getTrafficLevelMetadata } from '../constants/bangaloreTrafficHeatmap';
+import { BANGALORE_ROAD_SEGMENTS, getTrafficLevelMetadata } from '../constants/bangaloreTrafficHeatmap';
 
 interface LiveMapProps {
   events: RoadEvent[];
@@ -275,7 +275,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     });
   }, [events, layers.heatmap]);
 
-  // ─── Google Maps-Style Bangalore Traffic Density Heatmap Layer ─────────────
+  // ─── Google Maps-Style Bangalore Traffic Road Polyline Layer ───────────────
   useEffect(() => {
     if (!mapInstanceRef.current || !trafficHeatmapLayerRef.current) return;
 
@@ -284,73 +284,63 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
     if (!layers.trafficHeatmap) return;
 
-    BANGALORE_TRAFFIC_HOTSPOTS.forEach((spot) => {
-      const meta = getTrafficLevelMetadata(spot.traffic_level);
-      const color = meta.color;
+    BANGALORE_ROAD_SEGMENTS.forEach((seg) => {
+      const latLngs = seg.coordinates.map(([lat, lng]) => L.latLng(lat, lng));
+      const color = seg.color;
 
-      // Tier 1: Soft Outer Radial Density Aura (Google Maps Heatmap look)
-      const outerHalo = L.circleMarker([spot.lat, spot.lng], {
-        radius: spot.radius * 1.9,
-        fillColor: color,
-        fillOpacity: 0.2,
-        stroke: false,
-        interactive: false,
+      // Outer Glow Casing Line (Google Maps Glowing Traffic Line look)
+      const glowPolyline = L.polyline(latLngs, {
+        color: color,
+        weight: 12,
+        opacity: 0.35,
+        lineJoin: 'round',
+        lineCap: 'round',
       });
 
-      // Tier 2: Mid Density Zone
-      const midHalo = L.circleMarker([spot.lat, spot.lng], {
-        radius: spot.radius * 1.15,
-        fillColor: color,
-        fillOpacity: 0.42,
-        stroke: false,
-        interactive: false,
-      });
-
-      // Tier 3: Core Hotspot Circle (Interactive Clickable Popup)
-      const coreMarker = L.circleMarker([spot.lat, spot.lng], {
-        radius: Math.max(10, spot.radius * 0.45),
-        fillColor: color,
-        fillOpacity: 0.88,
-        color: '#ffffff',
-        weight: 1.5,
-        interactive: true,
+      // Inner Core Traffic Line
+      const corePolyline = L.polyline(latLngs, {
+        color: color,
+        weight: 6,
+        opacity: 0.9,
+        lineJoin: 'round',
+        lineCap: 'round',
       });
 
       const popupContent = `
         <div style="min-width: 230px; font-family: Inter, -apple-system, sans-serif; padding: 2px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <span style="font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase;">
-              🚦 ${spot.road}
+              🚦 ${seg.road}
             </span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
             <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background-color: ${color}; color: #ffffff;">
-              ${spot.traffic_level} CONGESTION
+              ${seg.traffic_level} CONGESTION
             </span>
             <span style="font-size: 11px; font-weight: 800; color: #d97706;">
-              ${spot.congestion}% Congested
+              ${seg.congestion}% Congested
             </span>
           </div>
           <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-            <strong>Vehicle Count:</strong> ${spot.vehicle_count} vehicles/hr
+            <strong>Vehicle Volume:</strong> ${seg.vehicle_count} vehicles/hr
           </div>
           <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-            <strong>Average Speed:</strong> ${spot.avg_speed} km/h
+            <strong>Average Speed:</strong> ${seg.avg_speed} km/h
           </div>
           <div style="font-size: 10px; color: #64748b; margin-bottom: 6px;">
-            <strong>Last Updated:</strong> ${spot.last_updated}
+            <strong>Last Updated:</strong> ${seg.last_updated}
           </div>
           <div style="font-size: 9px; font-weight: 800; color: #0284c7; background-color: #e0f2fe; border: 1px solid #7dd3fc; padding: 3px 6px; border-radius: 4px; text-align: center;">
-            🚦 DEMO TRAFFIC DATA • BANGALORE FLEET
+            🚦 DEMO TRAFFIC DATA • BANGALORE ROAD NETWORK
           </div>
         </div>
       `;
 
-      coreMarker.bindPopup(popupContent);
+      corePolyline.bindPopup(popupContent);
+      glowPolyline.bindPopup(popupContent);
 
-      outerHalo.addTo(heatmapLayer);
-      midHalo.addTo(heatmapLayer);
-      coreMarker.addTo(heatmapLayer);
+      glowPolyline.addTo(heatmapLayer);
+      corePolyline.addTo(heatmapLayer);
     });
   }, [layers.trafficHeatmap]);
 
