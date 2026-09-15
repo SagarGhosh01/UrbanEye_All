@@ -563,13 +563,26 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           onClick={() => {
             if (mapInstanceRef.current) {
               setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+              mapInstanceRef.current.flyTo([31.1471, 75.3412], 9, { animate: true, duration: 1.2 });
+            }
+          }}
+          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white transition flex items-center gap-1"
+        >
+          <span>🌾</span>
+          <span>Punjab State (All Cities)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (mapInstanceRef.current) {
+              setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
               mapInstanceRef.current.flyTo([centerLat, centerLon], 12, { animate: true, duration: 1.2 });
             }
           }}
           className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-teal-600/80 hover:bg-teal-500 text-white transition flex items-center gap-1"
         >
           <span>📍</span>
-          <span>Kapurthala All Roads</span>
+          <span>Kapurthala District</span>
         </button>
       </div>
 
