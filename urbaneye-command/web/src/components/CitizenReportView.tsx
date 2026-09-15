@@ -15,6 +15,7 @@ import {
   Info,
   X,
   Image as ImageIcon,
+  Award,
 } from 'lucide-react';
 import L from 'leaflet';
 
@@ -295,14 +296,21 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 shrink-0 relative z-10">
-          <div className="bg-slate-900/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-700 text-center">
-            <div className="text-xs text-slate-400 font-medium">My Submissions</div>
-            <div className="text-xl font-black text-teal-400">{myReports.length}</div>
+        <div className="flex flex-wrap items-center gap-3 shrink-0 relative z-10">
+          <div className="bg-slate-900/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-teal-500/40 text-center shadow-lg">
+            <div className="text-[10px] text-teal-300 font-extrabold uppercase tracking-wider">Civic Rank</div>
+            <div className="text-xs font-black text-amber-300 flex items-center justify-center space-x-1 mt-0.5">
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span>{myReports.length >= 10 ? '🏆 Gold Sentinel' : myReports.length >= 5 ? '🥈 Silver Guardian' : '🥉 Civic Scout'}</span>
+            </div>
           </div>
-          <div className="bg-slate-900/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-700 text-center">
-            <div className="text-xs text-slate-400 font-medium">Reporter ID</div>
-            <div className="text-xs font-bold text-slate-200 truncate max-w-[120px]">{user.name || user.email}</div>
+          <div className="bg-slate-900/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-center">
+            <div className="text-xs text-slate-400 font-medium">My Submissions</div>
+            <div className="text-lg font-black text-teal-400">{myReports.length}</div>
+          </div>
+          <div className="bg-slate-900/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-center">
+            <div className="text-xs text-slate-400 font-medium">Public Impact</div>
+            <div className="text-xs font-bold text-emerald-400 mt-0.5">₹{(myReports.length * 3800).toLocaleString('en-IN')} Saved</div>
           </div>
         </div>
       </div>
