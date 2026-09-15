@@ -278,5 +278,66 @@ export const api = {
     if (!res.ok) throw new Error(`DELETE ${url} failed`);
     return { data: await res.json() };
   },
+
+  // Telemetry & All-India Vehicle Density API
+  async getNationalDensity(): Promise<{
+    status: string;
+    coverage: string;
+    totalActiveFleet: number;
+    averageFleetSpeedKmH: number;
+    nationalDensityIndex: number;
+    densityClusters: Array<{
+      cityName: string;
+      stateName: string;
+      centerLat: number;
+      centerLon: number;
+      activeVehicles: number;
+      avgSpeedKmH: number;
+      densityLevel: 'LOW' | 'MODERATE' | 'HEAVY' | 'SEVERE';
+      color: string;
+      densityIndex: number;
+    }>;
+    rawFleetPings: Array<{
+      deviceId: string;
+      busLabel: string;
+      routeTag?: string;
+      stateName?: string;
+      cityName?: string;
+      latitude: number;
+      longitude: number;
+      speedKmh: number;
+      heading?: number;
+      timestamp: number;
+    }>;
+  }> {
+    const res = await fetchWithRetry(`${API_BASE}/gps/national-density`, { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch national vehicle density');
+    return res.json();
+  },
+
+  async getLiveFleet(params?: { stateId?: string; districtId?: string }): Promise<{
+    status: string;
+    totalActiveFleet: number;
+    fleet: Array<{
+      deviceId: string;
+      busLabel: string;
+      routeTag?: string;
+      stateName?: string;
+      cityName?: string;
+      latitude: number;
+      longitude: number;
+      speedKmh: number;
+      heading?: number;
+      timestamp: number;
+    }>;
+  }> {
+    const query = new URLSearchParams();
+    if (params?.stateId) query.set('stateId', params.stateId);
+    if (params?.districtId) query.set('districtId', params.districtId);
+    const res = await fetchWithRetry(`${API_BASE}/gps/live-fleet?${query.toString()}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch live fleet pings');
+    return res.json();
+  },
 };
+
 

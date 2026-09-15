@@ -298,3 +298,396 @@ gpsRouter.get('/distance', (req: Request, res: Response): void => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ─── Real GPS Telemetry Store & All-India Vehicle Density Registry ─────────────
+
+export interface GpsTelemetryPing {
+  deviceId: string;
+  busLabel: string;
+  routeTag?: string;
+  stateId?: string;
+  districtId?: string;
+  stateName?: string;
+  cityName?: string;
+  latitude: number;
+  longitude: number;
+  speedKmh: number;
+  heading?: number;
+  timestamp: number;
+  updatedAt: string;
+}
+
+// In-memory active fleet telemetry registry (keyed by deviceId)
+const TELEMETRY_REGISTRY = new Map<string, GpsTelemetryPing>();
+
+// Default All-India Bus Fleet Telemetry Seed
+const INITIAL_INDIA_FLEET: GpsTelemetryPing[] = [
+  // Karnataka / Bangalore
+  {
+    deviceId: 'BUS-KA-01-F-1204',
+    busLabel: 'BMTC Bus Fleet #500-D',
+    routeTag: 'Outer Ring Road (Silk Board - Marathahalli)',
+    stateId: 'state-karnataka',
+    districtId: 'dist-bengaluru-urban',
+    stateName: 'Karnataka',
+    cityName: 'Bengaluru',
+    latitude: 12.9180,
+    longitude: 77.6260,
+    speedKmh: 14.5,
+    heading: 145,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    deviceId: 'BUS-KA-01-F-3382',
+    busLabel: 'BMTC Bus Fleet #335-E',
+    routeTag: 'Indiranagar 100ft Road Corridor',
+    stateId: 'state-karnataka',
+    districtId: 'dist-bengaluru-urban',
+    stateName: 'Karnataka',
+    cityName: 'Bengaluru',
+    latitude: 12.9770,
+    longitude: 77.6406,
+    speedKmh: 38.2,
+    heading: 90,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    deviceId: 'BUS-KA-01-F-8891',
+    busLabel: 'BMTC Bus Fleet #KIAS-9',
+    routeTag: 'Hebbal Flyover Express Corridor',
+    stateId: 'state-karnataka',
+    districtId: 'dist-bengaluru-urban',
+    stateName: 'Karnataka',
+    cityName: 'Bengaluru',
+    latitude: 13.0370,
+    longitude: 77.5960,
+    speedKmh: 58.0,
+    heading: 10,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    deviceId: 'BUS-KA-05-F-9912',
+    busLabel: 'KSRTC Airavat Express',
+    routeTag: 'Electronic City Flyover Expressway',
+    stateId: 'state-karnataka',
+    districtId: 'dist-bengaluru-urban',
+    stateName: 'Karnataka',
+    cityName: 'Bengaluru',
+    latitude: 12.8452,
+    longitude: 77.6602,
+    speedKmh: 64.0,
+    heading: 320,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Maharashtra / Mumbai & Pune
+  {
+    deviceId: 'BUS-MH-01-A-1102',
+    busLabel: 'BEST Transit Fleet #A-115',
+    routeTag: 'Marine Drive - Colaba Corridor',
+    stateId: 'state-maharashtra',
+    districtId: 'dist-mumbai-suburban',
+    stateName: 'Maharashtra',
+    cityName: 'Mumbai',
+    latitude: 18.9438,
+    longitude: 72.8232,
+    speedKmh: 22.0,
+    heading: 180,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    deviceId: 'BUS-MH-02-B-4408',
+    busLabel: 'BEST Transit Fleet #C-42',
+    routeTag: 'Bandra-Worli Sea Link Expressway',
+    stateId: 'state-maharashtra',
+    districtId: 'dist-mumbai-suburban',
+    stateName: 'Maharashtra',
+    cityName: 'Mumbai',
+    latitude: 19.0330,
+    longitude: 72.8170,
+    speedKmh: 72.5,
+    heading: 350,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    deviceId: 'BUS-MH-12-P-8821',
+    busLabel: 'PMPML Fleet #Pune-Express',
+    routeTag: 'Baner - Hinjewadi IT Park Expressway',
+    stateId: 'state-maharashtra',
+    districtId: 'dist-pune',
+    stateName: 'Maharashtra',
+    cityName: 'Pune',
+    latitude: 18.5590,
+    longitude: 73.7868,
+    speedKmh: 31.0,
+    heading: 270,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Delhi NCT / NCR
+  {
+    deviceId: 'BUS-DL-01-PC-5510',
+    busLabel: 'DTC Electric Fleet #419',
+    routeTag: 'Delhi Ring Road - AIIMS Junction',
+    stateId: 'state-delhi',
+    districtId: 'dist-delhi-central',
+    stateName: 'Delhi NCT',
+    cityName: 'New Delhi',
+    latitude: 28.5672,
+    longitude: 77.2100,
+    speedKmh: 18.5,
+    heading: 45,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    deviceId: 'BUS-DL-01-PC-7780',
+    busLabel: 'DTC Fleet #764',
+    routeTag: 'Dhaula Kuan - IGI Airport Expressway',
+    stateId: 'state-delhi',
+    districtId: 'dist-delhi-south',
+    stateName: 'Delhi NCT',
+    cityName: 'New Delhi',
+    latitude: 28.5921,
+    longitude: 77.1610,
+    speedKmh: 54.0,
+    heading: 210,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Punjab / GT Road Corridor
+  {
+    deviceId: 'BUS-PB-08-F-2401',
+    busLabel: 'Punjab Bus Fleet #24',
+    routeTag: 'NH-44 Highway - Kapurthala Corridor',
+    stateId: 'state-punjab',
+    districtId: 'dist-kapurthala',
+    stateName: 'Punjab',
+    cityName: 'Kapurthala',
+    latitude: 31.2536,
+    longitude: 75.7037,
+    speedKmh: 62.0,
+    heading: 90,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    deviceId: 'BUS-PB-09-F-8812',
+    busLabel: 'Punbus Fleet #Jalandhar-Express',
+    routeTag: 'Jalandhar GT Road Bypass',
+    stateId: 'state-punjab',
+    districtId: 'dist-jalandhar',
+    stateName: 'Punjab',
+    cityName: 'Jalandhar',
+    latitude: 31.3260,
+    longitude: 75.5762,
+    speedKmh: 58.5,
+    heading: 120,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Tamil Nadu / Chennai
+  {
+    deviceId: 'BUS-TN-01-N-4410',
+    busLabel: 'MTC Fleet #21G',
+    routeTag: 'Anna Salai Arterial Highway',
+    stateId: 'state-tamilnadu',
+    districtId: 'dist-chennai',
+    stateName: 'Tamil Nadu',
+    cityName: 'Chennai',
+    latitude: 13.0604,
+    longitude: 80.2496,
+    speedKmh: 24.0,
+    heading: 180,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Telangana / Hyderabad
+  {
+    deviceId: 'BUS-TS-09-Z-9901',
+    busLabel: 'TSRTC Fleet #47L',
+    routeTag: 'Hitec City IT Corridor',
+    stateId: 'state-telangana',
+    districtId: 'dist-hyderabad',
+    stateName: 'Telangana',
+    cityName: 'Hyderabad',
+    latitude: 17.4435,
+    longitude: 78.3772,
+    speedKmh: 28.5,
+    heading: 90,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // West Bengal / Kolkata
+  {
+    deviceId: 'BUS-WB-04-E-1209',
+    busLabel: 'WBTC Fleet #AC-1',
+    routeTag: 'E.M. Bypass Corridor',
+    stateId: 'state-west-bengal',
+    districtId: 'dist-kolkata',
+    stateName: 'West Bengal',
+    cityName: 'Kolkata',
+    latitude: 22.5354,
+    longitude: 88.3968,
+    speedKmh: 30.0,
+    heading: 340,
+    timestamp: Date.now(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+// Load initial seed into registry
+INITIAL_INDIA_FLEET.forEach((ping) => TELEMETRY_REGISTRY.set(ping.deviceId, ping));
+
+/**
+ * POST /api/gps/telemetry
+ * Real-Time GPS Telemetry Ingestion Endpoint for live buses & mobile edge APKs
+ */
+gpsRouter.post('/telemetry', (req: Request, res: Response): void => {
+  try {
+    const body = req.body;
+    const pings: GpsTelemetryPing[] = Array.isArray(body) ? body : [body];
+
+    if (pings.length === 0 || !pings[0].deviceId || pings[0].latitude === undefined || pings[0].longitude === undefined) {
+      res.status(400).json({ error: 'Invalid telemetry payload. Expected deviceId, latitude, longitude' });
+      return;
+    }
+
+    const updatedPings: GpsTelemetryPing[] = [];
+
+    pings.forEach((p) => {
+      const ping: GpsTelemetryPing = {
+        deviceId: p.deviceId,
+        busLabel: p.busLabel || `Bus Fleet #${p.deviceId.slice(-4)}`,
+        routeTag: p.routeTag || 'National Transit Corridor',
+        stateId: p.stateId,
+        districtId: p.districtId,
+        stateName: p.stateName || 'India',
+        cityName: p.cityName || 'Urban Transit',
+        latitude: Number(p.latitude),
+        longitude: Number(p.longitude),
+        speedKmh: Math.max(0, Number(p.speedKmh || 0)),
+        heading: p.heading !== undefined ? Number(p.heading) : 0,
+        timestamp: p.timestamp || Date.now(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      TELEMETRY_REGISTRY.set(ping.deviceId, ping);
+      updatedPings.push(ping);
+    });
+
+    res.json({
+      status: 'SUCCESS',
+      ingestedCount: updatedPings.length,
+      pings: updatedPings,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error ingesting GPS telemetry:', error);
+    res.status(500).json({ error: 'Failed to ingest GPS telemetry' });
+  }
+});
+
+/**
+ * GET /api/gps/live-fleet
+ * Returns all active vehicle fleet pings across India
+ */
+gpsRouter.get('/live-fleet', (req: Request, res: Response): void => {
+  const stateId = req.query.stateId as string;
+  const districtId = req.query.districtId as string;
+
+  let pings = Array.from(TELEMETRY_REGISTRY.values());
+
+  if (stateId) {
+    pings = pings.filter((p) => p.stateId === stateId);
+  }
+  if (districtId) {
+    pings = pings.filter((p) => p.districtId === districtId);
+  }
+
+  res.json({
+    status: 'SUCCESS',
+    totalActiveFleet: pings.length,
+    fleet: pings,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /api/gps/national-density
+ * Aggregates all-India vehicle density hotspots, city clusters, and traffic levels
+ */
+gpsRouter.get('/national-density', (req: Request, res: Response): void => {
+  const pings = Array.from(TELEMETRY_REGISTRY.values());
+
+  // Group by state/city for density score calculation
+  const cityDensityMap = new Map<string, { count: number; totalSpeed: number; pings: GpsTelemetryPing[] }>();
+
+  pings.forEach((p) => {
+    const key = p.cityName || 'National Corridors';
+    const curr = cityDensityMap.get(key) || { count: 0, totalSpeed: 0, pings: [] };
+    curr.count += 1;
+    curr.totalSpeed += p.speedKmh;
+    curr.pings.push(p);
+    cityDensityMap.set(key, curr);
+  });
+
+  const cityClusters = Array.from(cityDensityMap.entries()).map(([cityName, data]) => {
+    const avgSpeed = Math.round((data.totalSpeed / (data.count || 1)) * 10) / 10;
+    let densityLevel: 'LOW' | 'MODERATE' | 'HEAVY' | 'SEVERE' = 'LOW';
+    let color = '#22c55e'; // Green
+
+    if (avgSpeed < 15 || data.count >= 4) {
+      densityLevel = 'SEVERE';
+      color = '#ef4444';
+    } else if (avgSpeed < 28 || data.count >= 3) {
+      densityLevel = 'HEAVY';
+      color = '#f97316';
+    } else if (avgSpeed < 45 || data.count >= 2) {
+      densityLevel = 'MODERATE';
+      color = '#eab308';
+    }
+
+    const centerLat = data.pings.reduce((acc, p) => acc + p.latitude, 0) / data.count;
+    const centerLon = data.pings.reduce((acc, p) => acc + p.longitude, 0) / data.count;
+
+    return {
+      cityName,
+      stateName: data.pings[0]?.stateName || 'India',
+      centerLat: Math.round(centerLat * 10000) / 10000,
+      centerLon: Math.round(centerLon * 10000) / 10000,
+      activeVehicles: data.count,
+      avgSpeedKmH: avgSpeed,
+      densityLevel,
+      color,
+      densityIndex: Math.min(100, Math.round((data.count * 20) + (60 - avgSpeed))),
+    };
+  });
+
+  // Calculate nationwide metrics
+  const totalVehicles = pings.length;
+  const overallAvgSpeed = Math.round((pings.reduce((acc, p) => acc + p.speedKmh, 0) / (totalVehicles || 1)) * 10) / 10;
+
+  res.json({
+    status: 'SUCCESS',
+    coverage: 'All India National Highway & Urban Transit Mesh',
+    totalActiveFleet: totalVehicles,
+    averageFleetSpeedKmH: overallAvgSpeed,
+    nationalDensityIndex: Math.round(100 - (overallAvgSpeed / 80) * 100),
+    densityClusters: cityClusters,
+    rawFleetPings: pings,
+    timestamp: new Date().toISOString(),
+  });
+});
+

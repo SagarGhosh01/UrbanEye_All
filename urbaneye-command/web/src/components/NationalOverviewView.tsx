@@ -30,6 +30,14 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
   const [stateDistricts, setStateDistricts] = useState<DistrictSummaryItem[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
 
+  // All-India Vehicle Density & Telemetry State
+  const [nationalDensity, setNationalDensity] = useState<any | null>(null);
+  const [mapLayers, setMapLayers] = useState({
+    densityHeatmap: true,
+    liveFleet: true,
+    stateHealth: true,
+  });
+
   // Mobile-specific tab view: 'map' or 'rankings'
   const [mobileTab, setMobileTab] = useState<'map' | 'rankings'>('map');
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -37,13 +45,19 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const densityLayerRef = useRef<L.LayerGroup | null>(null);
+  const fleetLayerRef = useRef<L.LayerGroup | null>(null);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await api.getNationalSummary();
-      setStates(res.states);
-      setSummary(res.summary);
+      const [resSummary, resDensity] = await Promise.all([
+        api.getNationalSummary(),
+        api.getNationalDensity(),
+      ]);
+      setStates(resSummary.states);
+      setSummary(resSummary.summary);
+      setNationalDensity(resDensity);
     } catch (err) {
       console.error('Failed to load national summary:', err);
     } finally {
@@ -116,8 +130,16 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
         maxZoom: 19,
       }).addTo(map);
 
+      // Layer groups for Density, Fleet, and State Markers
+      const densityLayer = L.layerGroup().addTo(map);
+      densityLayerRef.current = densityLayer;
+
+      const fleetLayer = L.layerGroup().addTo(map);
+      fleetLayerRef.current = fleetLayer;
+
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
+
       mapInstanceRef.current = map;
     }
 
@@ -137,20 +159,88 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
     };
   }, []);
 
-  // Invalidate map size on mobile tab switch
+  // ─── Render All-India Vehicle Density & Live Fleet Markers ────────────────
   useEffect(() => {
-    if (mobileTab === 'map') {
-      const timer = setTimeout(() => {
-        mapInstanceRef.current?.invalidateSize();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [mobileTab]);
+    if (!mapInstanceRef.current || !densityLayerRef.current || !fleetLayerRef.current || !nationalDensity) return;
 
+    const densityLayer = densityLayerRef.current;
+    const fleetLayer = fleetLayerRef.current;
+
+    densityLayer.clearLayers();
+    fleetLayer.clearLayers();
+
+    // 1. Render All-India Vehicle Density Heatmap Halos
+    if (mapLayers.densityHeatmap && nationalDensity.densityClusters) {
+      nationalDensity.densityClusters.forEach((cluster: any) => {
+        const color = cluster.color || '#f97316';
+        const radius = Math.min(85, Math.max(32, cluster.activeVehicles * 22));
+
+        const outerHalo = L.circleMarker([cluster.centerLat, cluster.centerLon], {
+          radius: radius,
+          fillColor: color,
+          fillOpacity: 0.24,
+          stroke: false,
+          interactive: true,
+        });
+
+        const coreMarker = L.circleMarker([cluster.centerLat, cluster.centerLon], {
+          radius: 8,
+          fillColor: color,
+          fillOpacity: 0.9,
+          color: '#ffffff',
+          weight: 2,
+        });
+
+        const tooltipContent = `
+          <div style="font-family:sans-serif;font-size:11px;padding:3px;min-width:180px;">
+            <strong style="color:#0f172a;font-size:12px;">${cluster.cityName} (${cluster.stateName})</strong><br/>
+            <span style="color:${color};font-weight:700;">● ${cluster.densityLevel} VEHICLE DENSITY</span><br/>
+            <span>Active Fleet: <strong>${cluster.activeVehicles} Buses</strong></span><br/>
+            <span>Avg Speed: <strong>${cluster.avgSpeedKmH} km/h</strong></span>
+          </div>`;
+
+        outerHalo.bindTooltip(tooltipContent, { sticky: true });
+        coreMarker.bindTooltip(tooltipContent, { sticky: true });
+
+        outerHalo.addTo(densityLayer);
+        coreMarker.addTo(densityLayer);
+      });
+    }
+
+    // 2. Render Live GPS Bus Fleet Pointers
+    if (mapLayers.liveFleet && nationalDensity.rawFleetPings) {
+      nationalDensity.rawFleetPings.forEach((bus: any) => {
+        const busIcon = L.divIcon({
+          className: 'custom-fleet-marker',
+          html: `
+            <div style="background:#1E7F73;color:white;border-radius:6px;padding:2px 6px;font-weight:700;font-size:9px;border:1.5px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5);display:flex;align-items:center;gap:3px;white-space:nowrap;">
+              <span>🚌</span><span>${bus.busLabel}</span>
+            </div>`,
+          iconSize: [68, 22],
+          iconAnchor: [34, 11],
+        });
+
+        const m = L.marker([bus.latitude, bus.longitude], { icon: busIcon });
+        m.bindTooltip(`
+          <div style="font-family:sans-serif;font-size:11px;padding:3px;">
+            <strong style="color:#10233D;font-size:12px;">${bus.busLabel}</strong><br/>
+            <span style="color:#64748b;">Route: ${bus.routeTag || 'National Corridor'}</span><br/>
+            Speed: <strong style="color:#1E7F73;">${bus.speedKmh} km/h</strong> · City: <strong>${bus.cityName || 'India'}</strong>
+          </div>
+        `);
+        m.addTo(fleetLayer);
+      });
+    }
+  }, [nationalDensity, mapLayers]);
+
+  // Render State Health Markers
   useEffect(() => {
     if (!mapInstanceRef.current || !markersLayerRef.current || states.length === 0) return;
     const layer = markersLayerRef.current;
     layer.clearLayers();
+
+    if (!mapLayers.stateHealth) return;
+
     states.forEach((st) => {
       const health = getHealthMeta(st.roadHealthScore);
       const isSelected = selectedStateItem?.id === st.id;
@@ -214,7 +304,8 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
       marker.on('click', () => setSelectedStateItem(st));
       marker.addTo(layer);
     });
-  }, [states, selectedStateItem]);
+  }, [states, selectedStateItem, mapLayers.stateHealth]);
+
 
   const processedStates = useMemo(() => {
     let result = states.map((st) => ({
@@ -422,6 +513,43 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
           <div className="h-[380px] sm:h-[480px] w-full relative">
             <div ref={mapContainerRef} className="w-full h-full" />
 
+            {/* Top-Right Map Layers Toggle Switcher */}
+            <div className="absolute top-3 right-3 sm:right-4 z-[500] bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-2.5 shadow-xl text-xs space-y-1.5 text-slate-200">
+              <div className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-1">
+                All-India Map Layers
+              </div>
+
+              <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={mapLayers.densityHeatmap}
+                  onChange={(e) => setMapLayers({ ...mapLayers, densityHeatmap: e.target.checked })}
+                  className="rounded text-teal-500 focus:ring-0"
+                />
+                <span>🔥 Vehicle Density Heatmap</span>
+              </label>
+
+              <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={mapLayers.liveFleet}
+                  onChange={(e) => setMapLayers({ ...mapLayers, liveFleet: e.target.checked })}
+                  className="rounded text-teal-500 focus:ring-0"
+                />
+                <span>🚌 Live Bus Fleet GPS Pings</span>
+              </label>
+
+              <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={mapLayers.stateHealth}
+                  onChange={(e) => setMapLayers({ ...mapLayers, stateHealth: e.target.checked })}
+                  className="rounded text-teal-500 focus:ring-0"
+                />
+                <span>🏛️ State Health Markers</span>
+              </label>
+            </div>
+
             {/* Health Scale Legend Overlay */}
             <div className="absolute bottom-4 left-3 sm:left-4 z-[500] bg-slate-900/90 backdrop-blur-md text-white border border-white/10 rounded-lg p-2 sm:p-2.5 text-xs shadow-lg max-w-[210px] sm:max-w-none">
               <div className="font-semibold text-slate-200 text-[10px] sm:text-[11px] mb-1">
@@ -445,7 +573,7 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
             </div>
 
             {/* Mobile Quick Action Pill to view list */}
-            <div className="md:hidden absolute top-3 right-3 z-[500]">
+            <div className="md:hidden absolute bottom-3 right-3 z-[500]">
               <button
                 type="button"
                 onClick={() => setMobileTab('rankings')}
