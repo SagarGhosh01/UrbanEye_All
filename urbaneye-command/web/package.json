@@ -7,7 +7,7 @@
     "dev": "npm run copy:ort && vite",
     "build": "npm run copy:ort && tsc && vite build",
     "preview": "vite preview",
-    "copy:ort": "mkdir -p public/ort && cp node_modules/onnxruntime-web/dist/*.wasm public/ort/"
+    "copy:ort": "node -e \"const fs=require('fs'); fs.mkdirSync('public/ort', {recursive:true}); const srcDir='node_modules/onnxruntime-web/dist'; if(fs.existsSync(srcDir)){ fs.readdirSync(srcDir).filter(f=>f.endsWith('.wasm')).forEach(f=>fs.copyFileSync(srcDir+'/'+f, 'public/ort/'+f)); }\""
   },
   "dependencies": {
     "@types/leaflet": "^1.9.14",
