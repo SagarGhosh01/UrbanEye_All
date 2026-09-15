@@ -25,6 +25,7 @@ interface DefectDetailModalProps {
   onClose: () => void;
   onUpdateStatus: (eventId: string, status: EventStatus, notes?: string) => Promise<void>;
   onDelete?: (eventId: string) => Promise<void>;
+  onLocateOnMap?: (event: RoadEvent) => void;
   readOnly?: boolean;
 }
 
@@ -33,6 +34,7 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
   onClose,
   onUpdateStatus,
   onDelete,
+  onLocateOnMap,
   readOnly = false,
 }) => {
   const [notes, setNotes] = useState('');
@@ -215,15 +217,28 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
                   <MapPin className="w-3.5 h-3.5 text-red-600" />
                   <span>Exact GPS Coordinates</span>
                 </span>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 text-[11px] font-semibold flex items-center space-x-0.5 p-1 min-h-[36px]"
-                >
-                  <span>Open Map</span>
-                  <ExternalLink className="w-3 h-3 ml-0.5" />
-                </a>
+                <div className="flex items-center space-x-2">
+                  {onLocateOnMap && (
+                    <button
+                      type="button"
+                      onClick={() => onLocateOnMap(event)}
+                      className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded text-[11px] font-bold flex items-center space-x-1 transition min-h-[30px]"
+                      title="Zoom into place on GIS Map"
+                    >
+                      <MapPin className="w-3 h-3 text-emerald-600" />
+                      <span>Zoom on Map 🎯</span>
+                    </button>
+                  )}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 text-[11px] font-semibold flex items-center space-x-0.5 p-1 min-h-[36px]"
+                  >
+                    <span>External</span>
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>
+                </div>
               </span>
               <span className="font-mono font-bold text-slate-800 text-xs">
                 {event.latitude.toFixed(6)}° N, {event.longitude.toFixed(6)}° E

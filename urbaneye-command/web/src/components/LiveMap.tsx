@@ -27,6 +27,7 @@ interface LiveMapProps {
   };
 }
 
+
 const STATUS_METADATA: Record<EventStatus, { bg: string; text: string; label: string; symbol: string }> = {
   NEW: { bg: '#dc2626', text: '#ffffff', label: 'New Defect', symbol: '!' },
   ASSIGNED_FOR_REPAIR: { bg: '#d97706', text: '#ffffff', label: 'Assigned Repair', symbol: '⚙' },
@@ -48,6 +49,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const defectMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const incidentsLayerRef = useRef<L.LayerGroup | null>(null);
   const vruLayerRef = useRef<L.LayerGroup | null>(null);
   const trafficLayerRef = useRef<L.LayerGroup | null>(null);
@@ -56,7 +58,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const trafficPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const pulseCircleRef = useRef<L.CircleMarker | null>(null);
-  const canvasRendererRef = useRef<L.Canvas | null>(null);
 
   // Layer toggle state
   const [layers, setLayers] = useState({
@@ -90,15 +91,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
       map.on('zoomend', () => {
         const z = map.getZoom();
-        if (z <= 7) setVisibleRoadClasses(['trunk', 'motorway']);
-        else if (z <= 10) setVisibleRoadClasses(['trunk', 'motorway', 'primary']);
-        else if (z <= 13) setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary']);
+        if (z <= 6) setVisibleRoadClasses(['trunk', 'motorway']);
+        else if (z <= 9) setVisibleRoadClasses(['trunk', 'motorway', 'primary']);
+        else if (z <= 11) setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary']);
         else setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
       });
 
       // Bottom-right zoom control: thumb-safe for one-handed mobile use & prevents blocking header
       L.control.zoom({ position: 'bottomright' }).addTo(map);
-
       // OpenStreetMap high-contrast tile layer (100% free, no API key required, zero watermark)
       const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -211,6 +211,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         const marker = L.marker([bus.latitude, bus.longitude], { icon: busIcon(bus), zIndexOffset: 1200 })
           .bindPopup(popupFor(bus))
           .addTo(busLayer);
+        marker.on('click', () => {
+          if (mapInstanceRef.current) {
+            const curZ = mapInstanceRef.current.getZoom();
+            const targetZ = Math.max(curZ, 15);
+            mapInstanceRef.current.flyTo([bus.latitude, bus.longitude], targetZ, {
+              animate: true,
+              duration: 1.0,
+            });
+          }
+        });
         markers.set(bus.sessionId, marker);
       }
       setLiveBusCount(markers.size);
@@ -281,6 +291,18 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   <div style="font-size:9px;color:#94a3b8;margin-top:6px;border-top:1px solid #e2e8f0;padding-top:4px">Simulated scenario — not real-time fleet data</div>
 </div>`;
         polyline.bindPopup(popupContent);
+        polyline.on('click', () => {
+          if (mapInstanceRef.current) {
+            const bounds = polyline.getBounds();
+            if (bounds.isValid()) {
+              mapInstanceRef.current.fitBounds(bounds, {
+                maxZoom: 15,
+                padding: [45, 45],
+                animate: true,
+              });
+            }
+          }
+        });
         polyline.addTo(trafficLayer);
         polylines.set(seg.segmentId, polyline);
       });
@@ -325,17 +347,30 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       return;
     }
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([centerLat, centerLon], 12, { animate: true, duration: 1.5 });
+      setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+      mapInstanceRef.current.flyTo([centerLat, centerLon], 13, { animate: true, duration: 1.2 });
     }
   }, [centerLat, centerLon]);
 
-  // Handle Latest Event Glow Effect
+  // Handle Latest Event Glow & Zoom Focus Effect
   useEffect(() => {
     if (!mapInstanceRef.current || !latestEventId) return;
     const latestEv = events.find((e) => e.id === latestEventId);
     if (!latestEv) return;
 
-    mapInstanceRef.current.panTo([latestEv.latitude, latestEv.longitude], { animate: true });
+    const curZ = mapInstanceRef.current.getZoom();
+    const targetZ = Math.max(curZ, 15);
+    mapInstanceRef.current.flyTo([latestEv.latitude, latestEv.longitude], targetZ, {
+      animate: true,
+      duration: 1.0,
+    });
+
+    const marker = defectMarkersRef.current.get(latestEv.id);
+    if (marker) {
+      setTimeout(() => {
+        marker.openPopup();
+      }, 500);
+    }
 
     if (pulseCircleRef.current) {
       pulseCircleRef.current.remove();
@@ -367,6 +402,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
     const layer = markersLayerRef.current;
     layer.clearLayers();
+    defectMarkersRef.current.clear();
 
     events.forEach((event) => {
       const isIncident = event.type === 'ANPR_INCIDENT' || event.type === 'HIT_AND_RUN' || event.type === 'RASH_DRIVING';
@@ -442,6 +478,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       });
 
       marker.on('click', () => {
+        if (mapInstanceRef.current) {
+          const curZ = mapInstanceRef.current.getZoom();
+          const targetZ = Math.max(curZ, 15);
+          mapInstanceRef.current.flyTo([event.latitude, event.longitude], targetZ, {
+            animate: true,
+            duration: 1.0,
+          });
+        }
         if (onSelectEvent) {
           onSelectEvent(event);
         }
@@ -538,6 +582,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
       marker.bindPopup(popupDiv);
       marker.addTo(layer);
+      defectMarkersRef.current.set(event.id, marker);
     });
   }, [events, latestEventId, onSelectEvent]);
 
@@ -546,11 +591,12 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Top Left Quick Navigation Switcher */}
-      <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-white/10 p-1 rounded-xl shadow-xl">
+      <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 flex flex-wrap items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-white/10 p-1 rounded-xl shadow-xl max-w-[calc(100vw-180px)]">
         <button
           type="button"
           onClick={() => {
             if (mapInstanceRef.current) {
+              setVisibleRoadClasses(['trunk', 'motorway']);
               mapInstanceRef.current.flyTo([22.5, 82.0], 5, { animate: true, duration: 1.2 });
             }
           }}
@@ -563,7 +609,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           onClick={() => {
             if (mapInstanceRef.current) {
               setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
-              mapInstanceRef.current.flyTo([12.9716, 77.5946], 12, { animate: true, duration: 1.2 });
+              mapInstanceRef.current.flyTo([12.9716, 77.5946], 13, { animate: true, duration: 1.2 });
             }
           }}
           className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600/80 hover:bg-indigo-500 text-white transition flex items-center gap-1"
@@ -576,13 +622,26 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           onClick={() => {
             if (mapInstanceRef.current) {
               setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
-              mapInstanceRef.current.flyTo([19.0760, 72.8777], 12, { animate: true, duration: 1.2 });
+              mapInstanceRef.current.flyTo([19.0760, 72.8777], 13, { animate: true, duration: 1.2 });
             }
           }}
           className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white transition flex items-center gap-1"
         >
           <span>🌊</span>
           <span>Mumbai City</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (mapInstanceRef.current) {
+              setVisibleRoadClasses(['trunk', 'motorway', 'primary', 'secondary', 'tertiary']);
+              mapInstanceRef.current.flyTo([31.3800, 75.3800], 14, { animate: true, duration: 1.2 });
+            }
+          }}
+          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white transition flex items-center gap-1"
+        >
+          <span>📍</span>
+          <span>Kapurthala</span>
         </button>
         <button
           type="button"

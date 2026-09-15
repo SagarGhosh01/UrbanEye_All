@@ -202,6 +202,14 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
         outerHalo.bindTooltip(tooltipContent, { sticky: true });
         coreMarker.bindTooltip(tooltipContent, { sticky: true });
 
+        const zoomToCluster = () => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo([cluster.centerLat, cluster.centerLon], 9, { animate: true, duration: 1.0 });
+          }
+        };
+        outerHalo.on('click', zoomToCluster);
+        coreMarker.on('click', zoomToCluster);
+
         outerHalo.addTo(densityLayer);
         coreMarker.addTo(densityLayer);
       });
@@ -228,6 +236,11 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
             Speed: <strong style="color:#1E7F73;">${bus.speedKmh} km/h</strong> · City: <strong>${bus.cityName || 'India'}</strong>
           </div>
         `);
+        m.on('click', () => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo([bus.latitude, bus.longitude], 12, { animate: true, duration: 1.0 });
+          }
+        });
         m.addTo(fleetLayer);
       });
     }
@@ -297,11 +310,16 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
             e.stopPropagation();
             setSelectedStateItem(st);
             if (mapInstanceRef.current)
-              mapInstanceRef.current.setView([st.centerLat, st.centerLon], 7, { animate: true });
+              mapInstanceRef.current.flyTo([st.centerLat, st.centerLon], 7, { animate: true, duration: 1.0 });
           };
       }, 50);
       marker.bindPopup(popupDiv);
-      marker.on('click', () => setSelectedStateItem(st));
+      marker.on('click', () => {
+        setSelectedStateItem(st);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([st.centerLat, st.centerLon], 7, { animate: true, duration: 1.0 });
+        }
+      });
       marker.addTo(layer);
     });
   }, [states, selectedStateItem, mapLayers.stateHealth]);
@@ -647,7 +665,7 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
                     onClick={() => {
                       setSelectedStateItem(st);
                       if (mapInstanceRef.current)
-                        mapInstanceRef.current.setView([st.centerLat, st.centerLon], 7, { animate: true });
+                        mapInstanceRef.current.flyTo([st.centerLat, st.centerLon], 7, { animate: true, duration: 1.0 });
                     }}
                     className={`p-3.5 rounded-xl border transition cursor-pointer active:scale-[0.99] ${
                       isSelected
@@ -757,7 +775,7 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
                         onClick={() => {
                           setSelectedStateItem(st);
                           if (mapInstanceRef.current)
-                            mapInstanceRef.current.setView([st.centerLat, st.centerLon], 7, { animate: true });
+                            mapInstanceRef.current.flyTo([st.centerLat, st.centerLon], 7, { animate: true, duration: 1.0 });
                         }}
                         className={`cursor-pointer transition ${
                           isSelected ? 'bg-slate-700/50' : 'hover:bg-slate-700/30'

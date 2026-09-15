@@ -63,6 +63,7 @@ const defaultStats: AnalyticsStats = {
   const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
   const [latestLiveAlert, setLatestLiveAlert] = useState<RoadEvent | null>(null);
   const [selectedEventForDetail, setSelectedEventForDetail] = useState<RoadEvent | null>(null);
+  const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
 
   // Demo mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -619,8 +620,11 @@ const defaultStats: AnalyticsStats = {
                         centerLat={activeDistrict.centerLat}
                         centerLon={activeDistrict.centerLon}
                         onUpdateStatus={handleUpdateStatus}
-                        onSelectEvent={(ev) => setSelectedEventForDetail(ev)}
-                        latestEventId={latestLiveAlert?.id}
+                        onSelectEvent={(ev) => {
+                          setFocusedEventId(ev.id);
+                          setSelectedEventForDetail(ev);
+                        }}
+                        latestEventId={focusedEventId || latestLiveAlert?.id}
                       />
                     </div>
                   </div>
@@ -654,7 +658,10 @@ const defaultStats: AnalyticsStats = {
                         events.slice(0, 15).map((ev) => (
                           <div
                             key={ev.id}
-                            onClick={() => setSelectedEventForDetail(ev)}
+                            onClick={() => {
+                              setFocusedEventId(ev.id);
+                              setSelectedEventForDetail(ev);
+                            }}
                             className={`pt-2 first:pt-0 flex items-start space-x-2.5 text-xs p-1.5 rounded cursor-pointer transition ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}
                           >
                             {ev.imageSnippet ? (
@@ -707,7 +714,10 @@ const defaultStats: AnalyticsStats = {
                 <DefectTable
                   events={events}
                   onUpdateStatus={handleUpdateStatus}
-                  onSelectEvent={(ev) => setSelectedEventForDetail(ev)}
+                  onSelectEvent={(ev) => {
+                    setFocusedEventId(ev.id);
+                    setSelectedEventForDetail(ev);
+                  }}
                   onDeleteEvent={handleDeleteEvent}
                   onPurgeEvents={handlePurgeEvents}
                   isLoading={loadingData}
@@ -736,6 +746,14 @@ const defaultStats: AnalyticsStats = {
         onClose={() => setSelectedEventForDetail(null)}
         onUpdateStatus={handleUpdateStatus}
         onDelete={handleDeleteEvent}
+        onLocateOnMap={(ev) => {
+          setSelectedEventForDetail(null);
+          setFocusedEventId(ev.id);
+          const mapEl = document.querySelector('.leaflet-container');
+          if (mapEl) {
+            mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }}
         readOnly={user.role === 'STATE_ADMIN' && false}
       />
 
