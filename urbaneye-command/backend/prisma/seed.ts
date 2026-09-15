@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -818,8 +820,28 @@ async function main() {
     ...PUNJAB_ROAD_SEGMENTS,
   ];
 
-  for (const seg of ALL_DEMO_SEGMENTS) {
-    await prisma.roadSegment.create({ data: seg });
+  const jsonPath = path.resolve(__dirname, 'road_segments.json');
+  if (fs.existsSync(jsonPath)) {
+    console.log('📦 Loading 6,255 pre-computed road segments from road_segments.json...');
+    const rawSegments = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    const batchSize = 1000;
+    for (let i = 0; i < rawSegments.length; i += batchSize) {
+      const batch = rawSegments.slice(i, i + batchSize).map((s) => ({
+        osmWayId: s.osmWayId,
+        name: s.name,
+        roadClass: s.roadClass,
+        coordinates: s.coordinates,
+        districtId: s.districtId,
+        cityTag: s.cityTag,
+        lengthM: s.lengthM,
+      }));
+      await prisma.roadSegment.createMany({ data: batch });
+    }
+    console.log(`✅ Successfully seeded ${rawSegments.length} road segments across Punjab and India!`);
+  } else {
+    for (const seg of ALL_DEMO_SEGMENTS) {
+      await prisma.roadSegment.create({ data: seg });
+    }
   }
 
   // Seed Defect & Vehicle Density Hotspots across all Districts
