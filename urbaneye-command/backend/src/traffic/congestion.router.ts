@@ -191,19 +191,21 @@ congestionRouter.get('/congestion-state', async (req, res) => {
         level = state.level;
       } else {
         const lower = (seg.name || '').toLowerCase();
-        if (lower.includes('silk board') || lower.includes('tin factory') || lower.includes('marathahalli') || lower.includes('sea link')) {
+        if (lower.includes('silk board') || lower.includes('tin factory') || lower.includes('marathahalli') || lower.includes('sea link') || lower.includes('nh-44 phagwara to jalandhar') || lower.includes('city center circular')) {
           level = 'SEVERE';
-        } else if (lower.includes('outer ring road') || lower.includes('expressway') || lower.includes('nh-44') || lower.includes('western express') || lower.includes('bypass')) {
+        } else if (lower.includes('nh-70') || lower.includes('expressway') || lower.includes('western express') || lower.includes('gt road bypass')) {
           level = 'HEAVY';
-        } else if (lower.includes('indiranagar') || lower.includes('mg road') || lower.includes('100ft') || lower.includes('marine drive') || lower.includes('model town')) {
+        } else if (lower.includes('sh-24 subhanpur') || lower.includes('sh-71') || lower.includes('phagwara to narur') || lower.includes('indiranagar') || lower.includes('mg road') || lower.includes('model town')) {
           level = 'MODERATE';
+        } else if (lower.includes('phillaur to phagwara') || lower.includes('sh-24 kapurthala city') || lower.includes('sh-14') || lower.includes('sultanpur') || lower.includes('banga') || lower.includes('nakodar to nurmahal') || lower.includes('cantt')) {
+          level = 'FREE_FLOW';
         } else {
-          // Varied distribution across city network
-          const mod = index % 10;
-          if (mod === 0 || mod === 1) level = 'SEVERE';
-          else if (mod === 2 || mod === 3 || mod === 4) level = 'HEAVY';
-          else if (mod === 5 || mod === 6 || mod === 7) level = 'MODERATE';
-          else level = 'FREE_FLOW';
+          // Balanced distribution across network
+          const mod = index % 4;
+          if (mod === 0) level = 'FREE_FLOW';
+          else if (mod === 1) level = 'MODERATE';
+          else if (mod === 2) level = 'HEAVY';
+          else level = 'SEVERE';
         }
       }
 

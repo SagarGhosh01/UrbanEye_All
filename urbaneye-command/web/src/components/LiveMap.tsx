@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { RoadEvent, EventStatus, SegmentCongestionState, CongestionLevel, CongestionSource } from '../types';
-import { ChevronUp, ChevronDown, Layers } from 'lucide-react';
+import { ChevronUp, ChevronDown, Layers, Flame, Sliders, Activity, Zap } from 'lucide-react';
 import { getCategoryPriority, MAX_CATEGORY_PRIORITY } from '../constants/detectionCategories';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
 import { resolveImageSrc } from '../utils/imageUtils';
@@ -66,6 +66,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     predictive: activeLayerFilters.predictive ?? true,
     heatmap: activeLayerFilters.heatmap ?? true,
   });
+
+  // Advanced Heatmap Controls State
+  const [heatMode, setHeatMode] = useState<'DEFECTS' | 'TRAFFIC' | 'PREDICTIVE' | 'COMPOSITE'>('DEFECTS');
+  const [heatRadius, setHeatRadius] = useState<number>(36);
+  const [heatIntensity, setHeatIntensity] = useState<number>(1.2);
+  const [heatControlsOpen, setHeatControlsOpen] = useState<boolean>(true);
+  const [activeClusterCount, setActiveClusterCount] = useState<number>(0);
+  const [peakHeatScore, setPeakHeatScore] = useState<number>(0);
 
   // Collapsible legend state
   const [legendOpen, setLegendOpen] = useState(false);
@@ -315,58 +323,180 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     }
   }, [layers.traffic]);
 
-  // ─── Spatial Defect Density Heatmap Layer ─────────────────────────────────
+  // ─── Advanced Multi-Tier Spatial Heatmap Engine ───────────────────────────
   useEffect(() => {
     if (!mapInstanceRef.current || !heatmapLayerRef.current) return;
 
     const heatmapLayer = heatmapLayerRef.current;
     heatmapLayer.clearLayers();
 
-    if (!layers.heatmap) return;
+    if (!layers.heatmap) {
+      setActiveClusterCount(0);
+      setPeakHeatScore(0);
+      return;
+    }
+
+    // 1. Group events into spatial clusters (within ~350m radius threshold)
+    const clusters: Array<{
+      centerLat: number;
+      centerLon: number;
+      events: RoadEvent[];
+      totalCost: number;
+      maxSeverityWeight: number;
+    }> = [];
+
+    const THRESHOLD_KM = 0.35; // 350 meters
 
     events.forEach((event) => {
-      // Calculate severity weight for heatmap gradient
-      let weight = 0.5;
-      if (event.severity === 'CRITICAL') weight = 1.0;
-      else if (event.severity === 'HIGH') weight = 0.75;
-      else if (event.severity === 'MEDIUM') weight = 0.5;
-      else weight = 0.25;
+      // Filter events by selected heat mode
+      if (heatMode === 'DEFECTS') {
+        const isDefect = event.type === 'POTHOLE' || event.type.includes('CRACK') || event.type === 'SURFACE_DAMAGE' || event.type === 'WATERLOGGING';
+        if (!isDefect) return;
+      } else if (heatMode === 'TRAFFIC') {
+        const isTraffic = event.type === 'VEHICLE_FLOW' || event.type === 'TRAFFIC_BOTTLENECK' || event.speed !== undefined;
+        if (!isTraffic && event.type !== 'ANPR_INCIDENT') return;
+      } else if (heatMode === 'PREDICTIVE') {
+        if (event.status === 'RESOLVED') return;
+      }
 
-      const isIncident = event.type === 'ANPR_INCIDENT' || event.type === 'HIT_AND_RUN' || event.type === 'RASH_DRIVING';
-      const color = isIncident ? '#dc2626' : weight >= 0.75 ? '#ef4444' : weight >= 0.5 ? '#f59e0b' : '#3b82f6';
+      const matchedCluster = clusters.find((c) => {
+        const dLat = (event.latitude - c.centerLat) * 111.32;
+        const dLon = (event.longitude - c.centerLon) * 111.32 * Math.cos((event.latitude * Math.PI) / 180);
+        return Math.sqrt(dLat * dLat + dLon * dLon) <= THRESHOLD_KM;
+      });
 
-      // Outer radial density field
-      const outerHalo = L.circleMarker([event.latitude, event.longitude], {
-        radius: 34 + weight * 16,
-        fillColor: color,
-        fillOpacity: 0.16 * weight,
+      const cost = event.estimatedRepairCost || (event.severity === 'CRITICAL' ? 35000 : event.severity === 'HIGH' ? 15000 : 5000);
+      let sevWeight = event.severity === 'CRITICAL' ? 1.0 : event.severity === 'HIGH' ? 0.75 : event.severity === 'MEDIUM' ? 0.5 : 0.3;
+      if (event.type === 'ANPR_INCIDENT' || event.type === 'HIT_AND_RUN') sevWeight += 0.3;
+
+      if (matchedCluster) {
+        matchedCluster.events.push(event);
+        matchedCluster.totalCost += cost;
+        matchedCluster.maxSeverityWeight = Math.max(matchedCluster.maxSeverityWeight, sevWeight);
+        const n = matchedCluster.events.length;
+        matchedCluster.centerLat = (matchedCluster.centerLat * (n - 1) + event.latitude) / n;
+        matchedCluster.centerLon = (matchedCluster.centerLon * (n - 1) + event.longitude) / n;
+      } else {
+        clusters.push({
+          centerLat: event.latitude,
+          centerLon: event.longitude,
+          events: [event],
+          totalCost: cost,
+          maxSeverityWeight: sevWeight,
+        });
+      }
+    });
+
+    setActiveClusterCount(clusters.length);
+    let highestScore = 0;
+
+    // 2. Render Multi-Tier Radial Density Halos for each Cluster
+    clusters.forEach((cluster) => {
+      const count = cluster.events.length;
+      const densityMultiplier = Math.min(2.5, 1.0 + (count - 1) * 0.35);
+      const rawWeight = Math.min(1.0, cluster.maxSeverityWeight * densityMultiplier * (heatIntensity / 1.2));
+      const score = Math.min(99, Math.round(rawWeight * 100));
+      if (score > highestScore) highestScore = score;
+
+      let primaryColor = '#3b82f6'; // Low (Blue)
+      let midColor = '#eab308';     // Moderate (Amber)
+      let coreColor = '#ef4444';    // High (Red)
+      let pulseColor = '#d946ef';   // Critical (Magenta)
+
+      if (heatMode === 'TRAFFIC') {
+        primaryColor = '#06b6d4';
+        midColor = '#f59e0b';
+        coreColor = '#dc2626';
+        pulseColor = '#7f1d1d';
+      } else if (heatMode === 'PREDICTIVE') {
+        primaryColor = '#6366f1';
+        midColor = '#a855f7';
+        coreColor = '#ec4899';
+        pulseColor = '#f43f5e';
+      } else if (heatMode === 'COMPOSITE') {
+        primaryColor = '#14b8a6';
+        midColor = '#f97316';
+        coreColor = '#e11d48';
+        pulseColor = '#9333ea';
+      }
+
+      if (rawWeight < 0.4) {
+        coreColor = '#3b82f6';
+      } else if (rawWeight < 0.7) {
+        coreColor = '#f59e0b';
+      }
+
+      const rOuter = Math.max(22, (heatRadius * 1.4) + count * 4);
+      const rMid = Math.max(14, (heatRadius * 0.8) + count * 2);
+      const rCore = Math.max(7, (heatRadius * 0.35) + count);
+
+      // Tier 1: Outer Ambient Heat Field
+      const outerHalo = L.circleMarker([cluster.centerLat, cluster.centerLon], {
+        radius: rOuter,
+        fillColor: primaryColor,
+        fillOpacity: Math.min(0.28, 0.14 * rawWeight),
         stroke: false,
         interactive: false,
       });
 
-      // Mid intensity zone
-      const midHalo = L.circleMarker([event.latitude, event.longitude], {
-        radius: 18 + weight * 10,
-        fillColor: color,
-        fillOpacity: 0.32 * weight,
+      // Tier 2: Mid Density Thermal Zone
+      const midHalo = L.circleMarker([cluster.centerLat, cluster.centerLon], {
+        radius: rMid,
+        fillColor: midColor,
+        fillOpacity: Math.min(0.5, 0.28 * rawWeight),
         stroke: false,
         interactive: false,
       });
 
-      // Hotspot core
-      const coreMarker = L.circleMarker([event.latitude, event.longitude], {
-        radius: 7 + weight * 4,
-        fillColor: color,
-        fillOpacity: 0.75,
+      // Tier 3: Core Hotspot
+      const coreMarker = L.circleMarker([cluster.centerLat, cluster.centerLon], {
+        radius: rCore,
+        fillColor: coreColor,
+        fillOpacity: Math.min(0.85, 0.65 * rawWeight),
         stroke: false,
         interactive: false,
       });
+
+      // Tier 4: Interactive Focal Point Peak with Tooltip & Pulse
+      const focalPeak = L.circleMarker([cluster.centerLat, cluster.centerLon], {
+        radius: Math.max(4, rCore * 0.4),
+        fillColor: rawWeight > 0.75 ? pulseColor : '#ffffff',
+        fillOpacity: 0.95,
+        color: coreColor,
+        weight: 2,
+        interactive: true,
+      });
+
+      const formattedCost = '₹' + Math.round(cluster.totalCost).toLocaleString('en-IN');
+      const topDefectType = cluster.events[0]?.type.replace(/_/g, ' ') || 'ROAD DEFECT';
+
+      focalPeak.bindTooltip(
+        `<div style="font-family:Inter, sans-serif; padding:4px 6px; min-width:180px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <span style="font-size:10px; font-weight:800; color:${coreColor}; text-transform:uppercase;">🔥 HOTSPOT THERMAL RISK</span>
+            <span style="font-size:11px; font-weight:900; color:${pulseColor};">${score}%</span>
+          </div>
+          <div style="font-size:11px; font-weight:700; color:#0f172a; margin-bottom:2px;">
+            ${count} ${count === 1 ? 'Defect' : 'Defects in Cluster'} (${topDefectType})
+          </div>
+          <div style="font-size:10px; color:#475569; margin-bottom:4px;">
+            Est. PWD Repair Budget: <strong style="color:#059669;">${formattedCost}</strong>
+          </div>
+          <div style="font-size:9px; font-weight:700; background:#f1f5f9; color:#334155; padding:2px 6px; border-radius:4px; text-align:center;">
+            Mode: ${heatMode} · Radius: ${Math.round(rOuter)}px
+          </div>
+        </div>`,
+        { sticky: true, className: 'heatmap-cluster-tooltip' }
+      );
 
       outerHalo.addTo(heatmapLayer);
       midHalo.addTo(heatmapLayer);
       coreMarker.addTo(heatmapLayer);
+      focalPeak.addTo(heatmapLayer);
     });
-  }, [events, layers.heatmap]);
+
+    setPeakHeatScore(highestScore);
+  }, [events, layers.heatmap, heatMode, heatRadius, heatIntensity]);
 
   // Update center when props change
   useEffect(() => {
@@ -590,6 +720,102 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   return (
     <div className="relative w-full h-full min-h-[360px] sm:min-h-[460px] bg-slate-100 rounded-lg shadow-sm border border-slate-200 overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Top Left Advanced Heatmap HUD Control Panel */}
+      {layers.heatmap && (
+        <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 max-w-[calc(100vw-32px)]">
+          <div className="bg-slate-900/95 backdrop-blur-md border border-amber-500/30 rounded-xl shadow-2xl p-2.5 sm:p-3 text-xs text-white space-y-2 max-w-[260px] sm:min-w-[270px] animate-fade-in">
+            <div className="flex items-center justify-between border-b border-amber-500/20 pb-1.5">
+              <div className="flex items-center space-x-1.5 text-amber-400 font-extrabold text-[11px] tracking-wide uppercase">
+                <Flame className="w-3.5 h-3.5 animate-pulse" />
+                <span>Thermal Heat Engine</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHeatControlsOpen(!heatControlsOpen)}
+                className="text-slate-400 hover:text-amber-300 p-0.5 rounded"
+                title="Toggle Heat Controls"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Heat Mode Selector Pills */}
+            <div className="grid grid-cols-2 gap-1 text-[10px]">
+              {(['DEFECTS', 'TRAFFIC', 'PREDICTIVE', 'COMPOSITE'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setHeatMode(mode)}
+                  className={`px-2 py-1 rounded font-bold transition flex items-center justify-center space-x-1 ${
+                    heatMode === mode
+                      ? 'bg-amber-500 text-slate-950 shadow'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
+                  }`}
+                >
+                  <span>
+                    {mode === 'DEFECTS' ? '🛠️ Defects' : mode === 'TRAFFIC' ? '🚗 Flow' : mode === 'PREDICTIVE' ? '🔮 Risk' : '🌐 All'}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {heatControlsOpen && (
+              <div className="space-y-2 pt-1 border-t border-white/10 text-[10px]">
+                {/* Heat Radius Slider */}
+                <div>
+                  <div className="flex justify-between text-slate-300 font-semibold mb-1">
+                    <span>Heat Blur Radius</span>
+                    <span className="font-mono text-amber-400">{heatRadius}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="20"
+                    max="60"
+                    value={heatRadius}
+                    onChange={(e) => setHeatRadius(Number(e.target.value))}
+                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                  />
+                </div>
+
+                {/* Heat Intensity Slider */}
+                <div>
+                  <div className="flex justify-between text-slate-300 font-semibold mb-1">
+                    <span>Thermal Mass Intensity</span>
+                    <span className="font-mono text-amber-400">{heatIntensity.toFixed(1)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.5"
+                    step="0.1"
+                    value={heatIntensity}
+                    onChange={(e) => setHeatIntensity(Number(e.target.value))}
+                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                  />
+                </div>
+
+                {/* Thermal Gradient Bar */}
+                <div className="pt-1">
+                  <div className="text-[9px] text-slate-400 uppercase font-bold tracking-wider mb-1">Thermal Spectrum</div>
+                  <div className="h-2 rounded-full w-full bg-gradient-to-r from-blue-500 via-yellow-400 via-rose-500 to-fuchsia-600 shadow-inner" />
+                  <div className="flex justify-between text-[9px] text-slate-400 mt-0.5 font-mono">
+                    <span>Low (0%)</span>
+                    <span>High (60%)</span>
+                    <span>Peak (99%)</span>
+                  </div>
+                </div>
+
+                {/* Active Cluster Metrics */}
+                <div className="flex items-center justify-between pt-1 border-t border-white/10 text-slate-300 font-medium">
+                  <span>Clusters: <strong className="text-white">{activeClusterCount}</strong></span>
+                  <span>Peak Heat: <strong className="text-amber-400">{peakHeatScore}%</strong></span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Top Right GIS Layer Controls Toggle Panel */}
       <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-30 max-w-[calc(100vw-32px)]">
