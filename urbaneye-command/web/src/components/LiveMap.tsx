@@ -525,7 +525,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               onChange={(e) => setLayers({ ...layers, incidents: e.target.checked })}
               className="rounded text-teal-500 focus:ring-0"
             />
-            <span>🚨 Incidents & ANPR</span>
+            <span>🚨 Vehicle Tracker</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">

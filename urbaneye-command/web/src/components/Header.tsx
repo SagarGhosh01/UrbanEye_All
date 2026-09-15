@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-              <span>Incidents & ANPR</span>
+              <span>Vehicle Tracker</span>
             </button>
 
             <button
