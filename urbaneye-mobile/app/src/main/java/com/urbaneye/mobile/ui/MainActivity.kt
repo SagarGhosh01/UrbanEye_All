@@ -249,7 +249,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-            val bitmap = imageProxy.toBitmap() ?: return
+            val rawBitmap = imageProxy.toBitmap() ?: return
+            val bitmap = if (rawBitmap.config == Bitmap.Config.HARDWARE) {
+                rawBitmap.copy(Bitmap.Config.ARGB_8888, false) ?: rawBitmap
+            } else {
+                rawBitmap
+            }
             latestBitmap = bitmap
             latestRotationDegrees = rotationDegrees
 

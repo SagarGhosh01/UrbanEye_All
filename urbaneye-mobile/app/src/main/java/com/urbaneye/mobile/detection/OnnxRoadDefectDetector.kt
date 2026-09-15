@@ -424,12 +424,18 @@ class OnnxRoadDefectDetector(
 
     private fun cropSnippetBase64(source: Bitmap, box: RectF): String? {
         return try {
-            val left = (box.left * source.width).toInt().coerceIn(0, source.width - 1)
-            val top = (box.top * source.height).toInt().coerceIn(0, source.height - 1)
-            val width = ((box.right - box.left) * source.width).toInt().coerceIn(1, source.width - left)
-            val height = ((box.bottom - box.top) * source.height).toInt().coerceIn(1, source.height - top)
+            val safeSource = if (source.config == Bitmap.Config.HARDWARE) {
+                source.copy(Bitmap.Config.ARGB_8888, false) ?: source
+            } else {
+                source
+            }
 
-            val cropped = Bitmap.createBitmap(source, left, top, width, height)
+            val left = (box.left * safeSource.width).toInt().coerceIn(0, safeSource.width - 1)
+            val top = (box.top * safeSource.height).toInt().coerceIn(0, safeSource.height - 1)
+            val width = ((box.right - box.left) * safeSource.width).toInt().coerceIn(1, safeSource.width - left)
+            val height = ((box.bottom - box.top) * safeSource.height).toInt().coerceIn(1, safeSource.height - top)
+
+            val cropped = Bitmap.createBitmap(safeSource, left, top, width, height)
             val resized = Bitmap.createScaledBitmap(cropped, 240, 180, true)
 
             val outputStream = ByteArrayOutputStream()
@@ -440,7 +446,12 @@ class OnnxRoadDefectDetector(
         } catch (e: Exception) {
             Log.e(tag, "Crop snippet error, fallback to full frame capture: ${e.message}")
             try {
-                val resized = Bitmap.createScaledBitmap(source, 320, 240, true)
+                val safeSource = if (source.config == Bitmap.Config.HARDWARE) {
+                    source.copy(Bitmap.Config.ARGB_8888, false) ?: source
+                } else {
+                    source
+                }
+                val resized = Bitmap.createScaledBitmap(safeSource, 320, 240, true)
                 val outputStream = ByteArrayOutputStream()
                 resized.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
                 val bytes = outputStream.toByteArray()
