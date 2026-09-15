@@ -393,3 +393,50 @@ export interface UrbanRecommendation {
   createdAt: string;
 }
 
+// ─── Road Segment Congestion Layer Types ─────────────────────────────────────
+
+export type CongestionLevel = 'FREE_FLOW' | 'MODERATE' | 'HEAVY' | 'SEVERE';
+
+export interface RoadSegment {
+  id: string;
+  osmWayId: string;
+  name: string | null;
+  roadClass: string;
+  coordinates: [number, number][];
+  lengthM: number | null;
+}
+
+export interface SegmentCongestionState {
+  segmentId: string;
+  name: string | null;
+  roadClass: string;
+  level: CongestionLevel;
+  color: string;
+  score: number;
+  coordinates: [number, number][];
+  updatedAt: string | null;
+}
+
+export interface CongestionUpdatePayload {
+  city: string;
+  phase: number;
+  loopProgress: number;
+  segmentCount: number;
+  updates: Array<{
+    segmentId: string;
+    level: CongestionLevel;
+    score: number;
+    color: string;
+  }>;
+  timestamp: string;
+  isDemo?: boolean;
+}
+
+export interface CongestionSummary {
+  totalSegments: number;
+  freeFlow: number;
+  moderate: number;
+  heavy: number;
+  severe: number;
+  avgScore: number;
+}

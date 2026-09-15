@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { TrafficRouteSegment, BottleneckAlert, TrafficIntelligenceStats, District } from '../types';
+import { TrafficRouteSegment, BottleneckAlert, TrafficIntelligenceStats, District, SegmentCongestionState } from '../types';
 import { getTrafficRoutes, getTrafficStats, getActiveBottlenecks } from '../services/trafficService';
+import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
 import { RouteAnalysisModal } from './RouteAnalysisModal';
 import { useTheme } from '../contexts/ThemeContext';
 import {
@@ -45,6 +46,8 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routesLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const congestionLayerRef = useRef<L.LayerGroup | null>(null);
+  const congestionPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
 
   // Load Traffic Telemetry
   useEffect(() => {
@@ -115,6 +118,11 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
       const layerGroup = L.layerGroup().addTo(map);
       routesLayerGroupRef.current = layerGroup;
+
+      // Real road segment congestion layer
+      const congestionLayer = L.layerGroup().addTo(map);
+      congestionLayerRef.current = congestionLayer;
+
       mapInstanceRef.current = map;
     }
 
@@ -180,6 +188,54 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
     });
 
   }, [routes, selectedRoute, district, isDark]);
+
+  // Fetch and render real road segment congestion + subscribe to updates
+  useEffect(() => {
+    if (!congestionLayerRef.current) return;
+    const layer = congestionLayerRef.current;
+    const polylines = congestionPolylinesRef.current;
+
+    getCongestionState('bangalore').then((segments: SegmentCongestionState[]) => {
+      if (segments.length === 0) return;
+      segments.forEach((seg) => {
+        if (!seg.coordinates || seg.coordinates.length < 2) return;
+        const latLngs = seg.coordinates.map(([lat, lng]: [number, number]) => L.latLng(lat, lng));
+        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 5 : seg.roadClass === 'secondary' ? 4 : 3;
+        const polyline = L.polyline(latLngs, {
+          color: seg.color || '#16a34a',
+          weight,
+          opacity: 0.78,
+          lineJoin: 'round',
+          lineCap: 'round',
+        });
+        if (seg.name) {
+          const levelLabel = seg.level.replace('_', ' ');
+          polyline.bindTooltip(
+            `<strong>${seg.name}</strong><br/><span style="color:${seg.color};font-weight:700">${levelLabel}</span> · Score: ${seg.score}`,
+            { sticky: true }
+          );
+        }
+        polyline.addTo(layer);
+        polylines.set(seg.segmentId, polyline);
+      });
+    });
+
+    const unsub = subscribeToCongestionUpdates((payload) => {
+      if (!payload.updates) return;
+      payload.updates.forEach((update) => {
+        const existing = polylines.get(update.segmentId);
+        if (existing) {
+          existing.setStyle({ color: update.color });
+        }
+      });
+    });
+
+    return () => {
+      unsub();
+      layer.clearLayers();
+      polylines.clear();
+    };
+  }, []);
 
   const handleRouteClick = (route: TrafficRouteSegment) => {
     setSelectedRoute(route);

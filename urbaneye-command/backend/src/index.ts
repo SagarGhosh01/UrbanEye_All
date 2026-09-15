@@ -11,12 +11,14 @@ import { pairingRouter } from './pairing/pairing.router.js';
 import { eventsRouter } from './events/events.router.js';
 import { geographyRouter } from './geography/geography.router.js';
 import { trafficRouter } from './traffic/traffic.router.js';
+import { congestionRouter } from './traffic/congestion.router.js';
 import { incidentsRouter } from './incidents/incidents.router.js';
 import { safetyRouter } from './safety/safety.router.js';
 import { predictiveRouter } from './predictive/predictive.router.js';
 import { modelsRouter } from './models/models.router.js';
 import { detectRouter } from './models/detect.js';
 import { gpsRouter } from './gps/gps.router.js';
+import { startDemoPlayer } from './traffic/demo-player.js';
 
 dotenv.config();
 
@@ -55,6 +57,7 @@ app.use('/api/detections', eventsRouter);
 app.use('/detections', eventsRouter);
 app.use('/api/geography', geographyRouter);
 app.use('/api/traffic', trafficRouter);
+app.use('/api/traffic', congestionRouter);
 app.use('/api/incidents', incidentsRouter);
 app.use('/api/safety', safetyRouter);
 app.use('/api/predictive', predictiveRouter);
@@ -130,4 +133,11 @@ server.listen(PORT, () => {
   console.log(`🔗 REST API endpoints mounted at /api/*`);
   console.log(`====================================================`);
   startRenderKeepAlive();
+
+  // Auto-start demo mode if DEMO_MODE env var is set
+  const demoMode = process.env.DEMO_MODE;
+  if (demoMode) {
+    console.log(`🎬 DEMO_MODE=${demoMode} detected — auto-starting demo player in 3s...`);
+    setTimeout(() => startDemoPlayer(), 3000);
+  }
 });

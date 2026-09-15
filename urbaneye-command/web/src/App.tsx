@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { User, State, District, RoadEvent, AnalyticsStats, EventStatus } from './types';
 import { api } from './services/api';
 import { subscribeToDistrict, subscribeToNational } from './services/socket';
+import { startDemoMode, stopDemoMode } from './services/congestionService';
 import { Header, ActiveTabType } from './components/Header';
 import { LiveMap } from './components/LiveMap';
 import { DefectTable } from './components/DefectTable';
@@ -63,6 +64,10 @@ const defaultStats: AnalyticsStats = {
   const [latestLiveAlert, setLatestLiveAlert] = useState<RoadEvent | null>(null);
   const [selectedEventForDetail, setSelectedEventForDetail] = useState<RoadEvent | null>(null);
 
+  // Demo mode state
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoCity, setDemoCity] = useState<string | null>(null);
+
   // Helper constructors for fallback geography states
   const createFallbackDistrict = useCallback((u: User): District => {
     const distId = u.districtId || 'dist-kapurthala';
@@ -113,6 +118,36 @@ const defaultStats: AnalyticsStats = {
     }
     checkAuth();
   }, [token]);
+
+  // Demo mode detection via URL parameter (?demo=bangalore)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const demoParam = params.get('demo');
+    if (demoParam) {
+      console.log(`🎬 Demo mode detected: ${demoParam}`);
+      setIsDemoMode(true);
+      setDemoCity(demoParam);
+      startDemoMode(demoParam);
+
+      // Auto-set Bangalore center for the demo
+      if (demoParam === 'bangalore') {
+        setActiveDistrict({
+          id: 'demo-bangalore',
+          name: 'Bengaluru Urban',
+          code: 'BENGALURU_URBAN',
+          stateId: 'state-karnataka',
+          centerLat: 12.9716,
+          centerLon: 77.5946,
+        });
+      }
+    }
+
+    return () => {
+      if (demoParam) {
+        stopDemoMode();
+      }
+    };
+  }, []);
 
   // 2. Adjust View Mode based on Role
   useEffect(() => {
@@ -722,6 +757,37 @@ const defaultStats: AnalyticsStats = {
         }}
         activeDistrictId={activeDistrict?.id}
       />
+
+      {/* Demo Mode Badge — subtle indicator for presenter */}
+      {isDemoMode && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '16px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            backgroundColor: 'rgba(15, 23, 42, 0.88)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(234, 179, 8, 0.3)',
+            color: '#fbbf24',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.5px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            pointerEvents: 'none',
+          }}
+        >
+          <span>🎬</span>
+          <span>DEMO MODE</span>
+          <span style={{ color: '#94a3b8', fontWeight: 400 }}>• {demoCity || 'bangalore'}</span>
+        </div>
+      )}
     </div>
   );
 };

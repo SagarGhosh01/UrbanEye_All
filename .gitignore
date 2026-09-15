@@ -6,7 +6,9 @@ package-lock.json
 .env
 *.env
 dev.db
-dev.db-journal
+*.db
+*.db-journal
+*.sqlite
 
 # Build outputs & Uploads
 # ONNX Runtime wasm is copied from node_modules by `npm run copy:ort`, not source.

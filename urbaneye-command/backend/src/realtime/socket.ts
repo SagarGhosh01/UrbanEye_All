@@ -40,6 +40,35 @@ export function initSocketIO(httpServer: HttpServer): SocketIOServer {
       socket.join('national:live');
     });
 
+    // Traffic congestion room — subscribe to live congestion updates
+    socket.on('join:traffic', (cityTag?: string) => {
+      socket.join('traffic:live');
+      if (cityTag) {
+        socket.join(`traffic:${cityTag}`);
+      }
+    });
+
+    // Demo mode control — start/stop from frontend
+    socket.on('demo:start', (data?: { city?: string }) => {
+      const city = data?.city || 'bangalore';
+      console.log(`[Socket] demo:start requested for ${city}`);
+      // Dynamic import to avoid circular dependency
+      import('../traffic/demo-player.js').then(({ startDemoPlayer }) => {
+        startDemoPlayer();
+      }).catch((err) => {
+        console.error('[Socket] Failed to start demo player:', err.message);
+      });
+    });
+
+    socket.on('demo:stop', () => {
+      console.log('[Socket] demo:stop requested');
+      import('../traffic/demo-player.js').then(({ stopDemoPlayer }) => {
+        stopDemoPlayer();
+      }).catch((err) => {
+        console.error('[Socket] Failed to stop demo player:', err.message);
+      });
+    });
+
     socket.on('disconnect', () => {
       // clean up automatically handled by socket.io
     });
@@ -120,3 +149,13 @@ export function emitPairingConfirmed(session: any): void {
     districtName: session.district?.name,
   });
 }
+
+/**
+ * Emit a congestion update to all traffic subscribers
+ */
+export function emitCongestionUpdate(payload: any): void {
+  if (!io) return;
+  io.emit('traffic:congestion-update', payload);
+  io.to('traffic:live').emit('traffic:congestion-update', payload);
+}
+

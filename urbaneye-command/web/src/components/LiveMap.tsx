@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { RoadEvent, EventStatus } from '../types';
+import { RoadEvent, EventStatus, SegmentCongestionState, CongestionLevel } from '../types';
 import { ChevronUp, ChevronDown, Layers } from 'lucide-react';
 import { getCategoryPriority, MAX_CATEGORY_PRIORITY } from '../constants/detectionCategories';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { useTheme } from '../contexts/ThemeContext';
+import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
 
 interface LiveMapProps {
   events: RoadEvent[];
@@ -47,6 +48,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerRef = useRef<L.LayerGroup | null>(null);
   const vruLayerRef = useRef<L.LayerGroup | null>(null);
+  const trafficLayerRef = useRef<L.LayerGroup | null>(null);
+  const trafficPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const pulseCircleRef = useRef<L.CircleMarker | null>(null);
 
   // Layer toggle state
@@ -90,6 +93,11 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
+
+      // Traffic congestion polyline layer — renders below markers
+      const trafficLayer = L.layerGroup().addTo(map);
+      trafficLayerRef.current = trafficLayer;
+
       mapInstanceRef.current = map;
     }
 
@@ -119,6 +127,80 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       }
     };
   }, []);
+
+  // ─── Traffic Congestion Layer ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapInstanceRef.current || !trafficLayerRef.current) return;
+
+    const trafficLayer = trafficLayerRef.current;
+    const polylines = trafficPolylinesRef.current;
+
+    // Initial fetch of congestion state
+    getCongestionState('bangalore').then((segments: SegmentCongestionState[]) => {
+      if (segments.length === 0) return;
+      segments.forEach((seg) => {
+        if (!seg.coordinates || seg.coordinates.length < 2) return;
+        const latLngs = seg.coordinates.map(([lat, lng]: [number, number]) => L.latLng(lat, lng));
+        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 5 : seg.roadClass === 'secondary' ? 4 : 3;
+        const polyline = L.polyline(latLngs, {
+          color: seg.color || '#16a34a',
+          weight,
+          opacity: 0.82,
+          lineJoin: 'round',
+          lineCap: 'round',
+        });
+        if (seg.name) {
+          const levelLabel = seg.level.replace('_', ' ');
+          polyline.bindTooltip(
+            `<strong>${seg.name}</strong><br/><span style="color:${seg.color};font-weight:700">${levelLabel}</span> · Score: ${seg.score}`,
+            { sticky: true, className: 'traffic-tooltip' }
+          );
+        }
+        polyline.addTo(trafficLayer);
+        polylines.set(seg.segmentId, polyline);
+      });
+    });
+
+    // Subscribe to real-time congestion updates via Socket.IO
+    const unsub = subscribeToCongestionUpdates((payload) => {
+      if (!payload.updates) return;
+      payload.updates.forEach((update) => {
+        const existing = polylines.get(update.segmentId);
+        if (existing) {
+          existing.setStyle({ color: update.color });
+          // Update tooltip content if bound
+          const tooltip = existing.getTooltip();
+          if (tooltip) {
+            const levelLabel = update.level.replace('_', ' ');
+            existing.setTooltipContent(
+              `<strong>${(tooltip.getContent() as string)?.match(/<strong>(.*?)<\/strong>/)?.[1] || 'Road Segment'}</strong><br/><span style="color:${update.color};font-weight:700">${levelLabel}</span> · Score: ${update.score}`
+            );
+          }
+        }
+      });
+    });
+
+    return () => {
+      unsub();
+      trafficLayer.clearLayers();
+      polylines.clear();
+    };
+  }, []);
+
+  // Toggle traffic layer visibility
+  useEffect(() => {
+    if (!trafficLayerRef.current || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    if (layers.traffic) {
+      if (!map.hasLayer(trafficLayerRef.current)) {
+        trafficLayerRef.current.addTo(map);
+      }
+    } else {
+      if (map.hasLayer(trafficLayerRef.current)) {
+        map.removeLayer(trafficLayerRef.current);
+      }
+    }
+  }, [layers.traffic]);
 
   // Update center when props change
   useEffect(() => {
@@ -438,6 +520,32 @@ export const LiveMap: React.FC<LiveMapProps> = ({
               <div className="flex items-center space-x-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#475569] inline-block shrink-0" />
                 <span className="text-slate-200">Reviewed</span>
+              </div>
+            </div>
+
+            {/* Traffic Congestion Legend */}
+            <div className="mt-2 pt-2 border-t border-white/10">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Live Traffic</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-4 h-1.5 rounded bg-[#16a34a] inline-block shrink-0" />
+                  <span className="text-slate-200">Free Flow</span>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-4 h-1.5 rounded bg-[#d97706] inline-block shrink-0" />
+                  <span className="text-slate-200">Moderate</span>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-4 h-1.5 rounded bg-[#dc2626] inline-block shrink-0" />
+                  <span className="text-slate-200">Heavy</span>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-4 h-1.5 rounded bg-[#7f1d1d] inline-block shrink-0" />
+                  <span className="text-slate-200">Severe</span>
+                </div>
+              </div>
+              <div className="mt-1.5 text-[9px] text-slate-500 leading-tight">
+                Coverage reflects roads traveled by onboarded fleet buses
               </div>
             </div>
           </div>

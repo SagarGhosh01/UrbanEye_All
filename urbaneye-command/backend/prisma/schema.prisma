@@ -226,3 +226,18 @@ model UrbanRecommendation {
   @@index([districtId, status])
 }
 
+model RoadSegment {
+  id          String   @id @default(cuid())
+  osmWayId    String   @unique
+  name        String?
+  roadClass   String   // primary | secondary | trunk | tertiary
+  coordinates String   // JSON array of [lat, lng] pairs
+  districtId  String?
+  cityTag     String   @default("bangalore")
+  lengthM     Float?
+  createdAt   DateTime @default(now())
+
+  @@index([cityTag])
+  @@index([districtId])
+}
+
