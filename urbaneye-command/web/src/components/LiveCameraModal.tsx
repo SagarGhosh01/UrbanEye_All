@@ -96,8 +96,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
   // AI & Scanner State
   const [selectedEngine, setSelectedEngine] = useState<string>('urbaneye-road-defect-v1');
   const [videoFilter, setVideoFilter] = useState<'NORMAL' | 'THERMAL' | 'NIGHT_VISION' | 'SEGMENTATION'>('NORMAL');
-  const [voiceAlerts, setVoiceAlerts] = useState<boolean>(true);
-  const [autoDetectLoop, setAutoDetectLoop] = useState(true);
+  const [voiceAlerts, setVoiceAlerts] = useState<boolean>(false);
+  const [autoDetectLoop, setAutoDetectLoop] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [showModelInfo, setShowModelInfo] = useState(false);
   const [modelReady, setModelReady] = useState(false);
@@ -667,13 +667,13 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-extrabold text-xs sm:text-sm tracking-tight truncate flex items-center gap-1.5">
-                <span>Live Edge AI Vision</span>
+                <span>Citizen Defect Camera & Photo Uploader</span>
                 <span className="text-[8px] bg-teal-500/20 text-teal-300 px-1.5 py-0.5 rounded font-mono font-bold uppercase">
-                  AUTO-AI
+                  MANUAL INGEST
                 </span>
               </h3>
               <p className="text-[10px] text-slate-300 truncate">
-                Real-Time Dynamic YOLO Pothole Detection & Spatial HUD
+                Capture or Upload Road Defect Photos for Authority Verification
               </p>
             </div>
           </div>
@@ -731,20 +731,11 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
           />
           <canvas ref={canvasRef} className="hidden" />
 
-          {/* Top Status Bar (Z-Index 20 - Guaranteed NO OVERLAP with reticle card) */}
+          {/* Top Status Bar */}
           <div className="absolute top-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none select-none">
             <div className="bg-slate-950/85 backdrop-blur-md border border-teal-500/40 text-teal-300 text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg flex items-center space-x-1.5 shadow-md">
-              <Radio className="w-3 h-3 text-teal-400 animate-ping" />
-              <span className="truncate max-w-[130px] sm:max-w-none">{selectedEngineObj.label}</span>
-            </div>
-
-            <div className="bg-slate-950/85 backdrop-blur-md border border-slate-700 text-slate-300 text-[10px] font-mono px-2.5 py-1 rounded-lg flex items-center space-x-1 shadow-md">
-              <MapPin className="w-3 h-3 text-teal-400" />
-              <span>
-                {gpsLocation
-                  ? `${gpsLocation.lat.toFixed(4)}°, ${gpsLocation.lon.toFixed(4)}°`
-                  : 'GPS Locating...'}
-              </span>
+              <Camera className="w-3 h-3 text-teal-400" />
+              <span className="truncate max-w-[130px] sm:max-w-none">Live Viewfinder • Manual Ingest Mode</span>
             </div>
           </div>
 
@@ -763,9 +754,6 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                     <stop offset="100%" stopColor="transparent" />
                   </linearGradient>
                 </defs>
-
-                {/* Laser Scanning Beam Across Lower Road Surface */}
-                <line x1="20" y1="210" x2="480" y2="210" stroke="url(#laserGrad)" strokeWidth="2" className="animate-pulse pointer-events-none" />
 
                 {/* Render DYNAMIC YOLO Bounding Boxes directly at DETECTED Pothole locations on the road surface! */}
                 {detectedPotholes.map((box) => {
@@ -871,7 +859,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                 {telemetrySpeed} km/h • {telemetryHeading}° S
               </span>
               <span className="text-teal-300 font-bold border-l border-slate-800 pl-2">
-                AUTO-AI SCAN
+                MANUAL CAPTURE MODE
               </span>
             </div>
           </div>
@@ -973,7 +961,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             </div>
           )}
 
-          {/* Action Execution Bar - Manual & Automatic Control */}
+          {/* Action Execution Bar - Manual Control */}
           <input
             type="file"
             ref={fileInputRef}
@@ -982,9 +970,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             className="hidden"
           />
 
-          {/* Two actions: classify the current frame, or classify a photo. The auto-scan
-              toggle was removed — continuous scanning belongs on the bus-mounted device,
-              where the camera actually faces the road. */}
+          {/* Manual capture and photo upload buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               type="button"
@@ -992,8 +978,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
               disabled={isCapturing}
               className="w-full py-2.5 px-3 rounded-xl bg-[#1E7F73] hover:bg-[#186a60] text-white font-extrabold flex items-center justify-center space-x-1.5 shadow-lg transition active:scale-95 disabled:opacity-50 min-h-[44px]"
             >
-              <Zap className="w-4 h-4 text-amber-300 animate-bounce" />
-              <span className="truncate">{isCapturing ? 'Ingesting...' : 'Capture & Ingest Frame'}</span>
+              <Camera className="w-4 h-4 text-amber-300" />
+              <span className="truncate">{isCapturing ? 'Ingesting Photo...' : '📸 Take & Ingest Photo'}</span>
             </button>
 
             <button
@@ -1003,7 +989,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
               className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-teal-300 font-extrabold flex items-center justify-center space-x-1.5 transition active:scale-95 disabled:opacity-50 min-h-[44px]"
             >
               <ImageIcon className="w-4 h-4 text-teal-400" />
-              <span className="truncate">Upload & Ingest Photo</span>
+              <span className="truncate">📁 Upload Photo from Device</span>
             </button>
           </div>
 

@@ -291,7 +291,7 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">Report Road Hazards & Track Repair Lifecycle</h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-            Upload photos of road defects. UrbanEye's AI automatically analyzes damage severity, geotags the location, saves photos to server storage, and dispatches real-time alerts to municipal road authorities.
+            Upload or capture photos of road defects manually. Photos are geotagged, stored securely, and dispatched directly to municipal road authorities for verification and repair.
           </p>
         </div>
 
@@ -370,9 +370,9 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
                 </button>
               </div>
 
-              <div className="inline-flex items-center space-x-2 text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full font-medium">
-                <Sparkles className="w-3 h-3" />
-                <span>AI Perception Model verifies real defect photos</span>
+              <div className="inline-flex items-center space-x-2 text-[11px] text-teal-300 bg-teal-500/10 border border-teal-500/20 px-3 py-1 rounded-full font-medium">
+                <Camera className="w-3 h-3 text-teal-400" />
+                <span>Manual Citizen Photo Capture • Secure Storage</span>
               </div>
             </div>
           ) : (
