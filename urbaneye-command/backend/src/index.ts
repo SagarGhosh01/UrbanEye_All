@@ -5,7 +5,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import { initSocketIO } from './realtime/socket.js';
+import { initSocketIO, getConnectedClientsCount } from './realtime/socket.js';
+import { prisma } from './prisma.js';
 import { authRouter } from './auth/auth.router.js';
 import { pairingRouter } from './pairing/pairing.router.js';
 import { eventsRouter } from './events/events.router.js';
@@ -39,6 +40,18 @@ const server = http.createServer(app);
 // Initialize real-time Socket.IO
 initSocketIO(server);
 
+// Enterprise Security Headers & Correlation ID Middleware
+app.use((req, res, next) => {
+  const correlationId = req.headers['x-correlation-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  res.setHeader('X-Correlation-ID', correlationId);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('X-Powered-By', 'UrbanEye-SmartCity-Engine');
+  (req as any).correlationId = correlationId;
+  next();
+});
+
 // Middleware
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '15mb' }));
@@ -60,7 +73,7 @@ app.use((req, res, next) => {
 // Request logger
 app.use((req, res, next) => {
   if (req.method !== 'GET' || !req.url.startsWith('/api/pairing/status')) {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log(`[${new Date().toISOString()}] [${(req as any).correlationId}] ${req.method} ${req.url}`);
   }
   next();
 });
@@ -88,12 +101,38 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
-app.get('/api/health', (req, res) => {
+// Enterprise Telemetry & Health Check API
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'DISCONNECTED';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'CONNECTED';
+  } catch (err: any) {
+    dbStatus = `LIMITED / IN_MEMORY_FALLBACK (${err.message?.slice(0, 40) || 'DB offline'})`;
+  }
+
+  const memUsage = process.memoryUsage();
   res.json({
     status: 'HEALTHY',
-    service: 'UrbanEye Command Center API',
+    service: 'UrbanEye Command Center Engine',
+    version: '2.4.0',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    uptimeSeconds: Math.floor(process.uptime()),
+    database: {
+      status: dbStatus,
+    },
+    sockets: {
+      connectedClients: getConnectedClientsCount(),
+    },
+    system: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      memory: {
+        rssMb: Math.round(memUsage.rss / 1024 / 1024),
+        heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
+        heapTotalMb: Math.round(memUsage.heapTotal / 1024 / 1024),
+      },
+    },
   });
 });
 
