@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RoadEvent, EventStatus } from '../types';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
+import { calculateSLARemaining } from '../utils/slaCalculator';
 import {
   Wrench,
   X,
@@ -318,6 +319,132 @@ export const AssignWorkOrderModal: React.FC<AssignWorkOrderModalProps> = ({
         </div>
 
       </div>
+
+      {/* Dedicated Printable PWD Work Order Certificate (Only visible on window.print()) */}
+      <div id="printable-pwd-work-order" className="hidden">
+        <style>{`
+          @media print {
+            body * {
+              visibility: hidden !important;
+            }
+            #printable-pwd-work-order, #printable-pwd-work-order * {
+              visibility: visible !important;
+            }
+            #printable-pwd-work-order {
+              display: block !important;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              color: #000000 !important;
+              background: #ffffff !important;
+              font-family: Arial, sans-serif !important;
+              padding: 24px !important;
+              box-sizing: border-box !important;
+            }
+          }
+        `}</style>
+        <div style={{ border: '3px double #000', padding: '24px', backgroundColor: '#fff', color: '#000' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '12px', marginBottom: '16px' }}>
+            <div>
+              <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>PUBLIC WORKS DEPARTMENT (PWD)</h1>
+              <h2 style={{ fontSize: '13px', margin: '4px 0 0 0', textTransform: 'uppercase' }}>
+                Municipal Infrastructure & Rapid Road Repair Division — {event.district?.name || 'Kapurthala'}
+              </h2>
+            </div>
+            <div style={{ textAlign: 'right', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: '14px', fontWeight: 'bold' }}>OFFICIAL WORK ORDER</div>
+              <div style={{ fontSize: '12px', color: '#333' }}>{workOrderId}</div>
+              <div style={{ fontSize: '10px', color: '#666' }}>Date: {new Date().toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+
+          {/* Location & Defect Snapshot */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px', fontSize: '12px' }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '25%' }}>Defect Type</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc' }}>{event.type.replace(/_/g, ' ')}</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '25%' }}>Severity Level</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold', color: event.severity === 'CRITICAL' ? '#d32f2f' : '#333' }}>{event.severity || 'HIGH'}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>GPS Coordinates</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontFamily: 'monospace' }}>{event.latitude.toFixed(6)}, {event.longitude.toFixed(6)}</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Bus Fleet / Sensor ID</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc' }}>{event.busLabel}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Estimated Cavity Size</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc' }}>Ø {costDetails.formattedDiameter} ({event.depthCm ? `${event.depthCm}cm depth` : 'Standard depth'})</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Target SLA Repair Window</td>
+                <td style={{ padding: '6px', border: '1px solid #ccc', fontWeight: 'bold' }}>{priority.replace(/_/g, ' ')}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Contractor & Material Directives */}
+          <div style={{ marginBottom: '16px', fontSize: '12px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px' }}>
+              CONTRACTOR & MATERIAL SPECIFICATIONS
+            </h3>
+            <p style={{ margin: '4px 0' }}><strong>Assigned PWD Lead:</strong> {selectedLead} ({contractorPhone})</p>
+            <p style={{ margin: '4px 0' }}><strong>Material Standard:</strong> {materialSpec}</p>
+            <p style={{ margin: '4px 0' }}><strong>Field Directives:</strong> {customDirectives}</p>
+          </div>
+
+          {/* Financial Breakdown */}
+          <div style={{ marginBottom: '24px', fontSize: '12px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px' }}>
+              SCHEDULE OF RATES (SOR 2026) TENDER ALLOCATION
+            </h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f5f5f5' }}>
+                  <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'left' }}>Component Description</th>
+                  <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'right' }}>Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '6px', border: '1px solid #ccc' }}>Bituminous Asphalt / Cold Mix Raw Material</td>
+                  <td style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>₹{Math.round(allocatedBudget * 0.35).toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '6px', border: '1px solid #ccc' }}>PWD Labour Crew & Safety Traffic Marshalling</td>
+                  <td style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>₹{Math.round(allocatedBudget * 0.30).toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '6px', border: '1px solid #ccc' }}>Compactor Roller & Road Cutter Deployment</td>
+                  <td style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>₹{Math.round(allocatedBudget * 0.23).toLocaleString('en-IN')}</td>
+                </tr>
+                <tr style={{ fontWeight: 'bold', backgroundColor: '#fafafa' }}>
+                  <td style={{ padding: '8px', border: '1px solid #ccc' }}>TOTAL APPROVED TENDER VALUE</td>
+                  <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace', fontSize: '14px' }}>₹{allocatedBudget.toLocaleString('en-IN')}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Signatures */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', paddingTop: '16px', borderTop: '1px solid #000', fontSize: '11px', textAlign: 'center' }}>
+            <div style={{ width: '30%' }}>
+              <div style={{ borderBottom: '1px solid #000', marginBottom: '4px', height: '30px' }}></div>
+              <div>Prepared By (AI GIS System)</div>
+            </div>
+            <div style={{ width: '30%' }}>
+              <div style={{ borderBottom: '1px solid #000', marginBottom: '4px', height: '30px' }}></div>
+              <div>Executive Engineer (PWD)</div>
+            </div>
+            <div style={{ width: '30%' }}>
+              <div style={{ borderBottom: '1px solid #000', marginBottom: '4px', height: '30px' }}></div>
+              <div>Contractor Acceptance Signature</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };

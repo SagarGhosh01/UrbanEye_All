@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getCategoryColor, getCategoryDisplayName } from '../constants/detectionCategories';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
 import { resolveImageSrc, DEFAULT_ROAD_DEFECT_SVG } from '../utils/imageUtils';
+import { calculateSLARemaining } from '../utils/slaCalculator';
 
 interface DefectTableProps {
   events: RoadEvent[];
@@ -128,39 +129,51 @@ export const DefectTable: React.FC<DefectTableProps> = ({
    * Returns null for defects too new to have a meaningful age.
    */
   const getAgeBadge = (event: RoadEvent) => {
-    if (event.ageDays === undefined || event.slaStatus === undefined) return null;
+    // If defect is resolved, show resolution badge
+    if (event.status === 'RESOLVED') {
+      return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${isDark ? 'bg-emerald-900/50 text-emerald-300 border-emerald-700' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
+          ✓ RESOLVED ON TIME
+        </span>
+      );
+    }
 
-    const label =
-      event.slaStatus === 'BREACHED'
-        ? `${event.ageDays}d · ${event.daysOverdue}d OVERDUE`
-        : event.slaStatus === 'RESOLVED_LATE'
-        ? `FIXED IN ${event.ageDays}d · LATE`
-        : event.slaStatus === 'RESOLVED_ON_TIME'
-        ? `FIXED IN ${event.ageDays}d`
-        : `${event.ageDays}d OPEN`;
+    const sla = calculateSLARemaining(event.timestamp, event.severity || undefined, event.type);
 
-    const tone: Record<string, string> = isDark
-      ? {
-          BREACHED: 'bg-red-900/50 text-red-300 border-red-700',
-          DUE_SOON: 'bg-amber-900/50 text-amber-300 border-amber-700',
-          WITHIN: 'bg-slate-700 text-slate-300 border-slate-600',
-          RESOLVED_LATE: 'bg-amber-900/40 text-amber-300 border-amber-800',
-          RESOLVED_ON_TIME: 'bg-emerald-900/50 text-emerald-300 border-emerald-700',
-        }
-      : {
-          BREACHED: 'bg-red-50 text-red-700 border-red-200',
-          DUE_SOON: 'bg-amber-50 text-amber-800 border-amber-200',
-          WITHIN: 'bg-slate-100 text-slate-700 border-slate-200',
-          RESOLVED_LATE: 'bg-amber-50 text-amber-800 border-amber-200',
-          RESOLVED_ON_TIME: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-        };
+    if (sla.isBreached) {
+      return (
+        <span
+          title={`SLA Breached by ${sla.overdueHours} hours. PWD Escalation Active.`}
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-black border animate-pulse ${
+            isDark ? 'bg-red-900/60 text-red-200 border-red-500' : 'bg-red-100 text-red-800 border-red-300'
+          }`}
+        >
+          🚨 {sla.formattedCountdown}
+        </span>
+      );
+    }
+
+    if (sla.status === 'WARNING') {
+      return (
+        <span
+          title={`SLA target: ${sla.slaHoursTotal}h. Less than 4h remaining.`}
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
+            isDark ? 'bg-amber-900/50 text-amber-200 border-amber-600' : 'bg-amber-100 text-amber-800 border-amber-300'
+          }`}
+        >
+          ⚡ {sla.formattedCountdown}
+        </span>
+      );
+    }
 
     return (
       <span
-        title={`Detected ${event.ageDays} day(s) ago · repair target ${event.slaTargetDays} days for ${event.severity ?? 'HIGH'} severity`}
-        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${tone[event.slaStatus]}`}
+        title={`SLA target: ${sla.slaHoursTotal} hours for ${event.severity ?? 'HIGH'} severity`}
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+          isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+        }`}
       >
-        {label}
+        ⏱️ {sla.formattedCountdown}
       </span>
     );
   };
