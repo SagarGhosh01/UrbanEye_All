@@ -232,25 +232,34 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     const trafficLayer = trafficLayerRef.current;
     const polylines = trafficPolylinesRef.current;
 
-    // Initial fetch of congestion state
-    getCongestionState('bangalore').then(({ segments, dataSource }) => {
+    trafficLayer.clearLayers();
+    polylines.clear();
+
+    const cityTag = centerLat > 30
+      ? (centerLon > 75.6 ? 'kapurthala' : 'jalandhar')
+      : centerLat > 18
+      ? 'mumbai'
+      : 'bangalore';
+
+    // Initial fetch of congestion state for the active city
+    getCongestionState(cityTag).then(({ segments, dataSource }) => {
       setCongestionSource(dataSource);
       if (segments.length === 0) return;
       segments.forEach((seg) => {
         if (!seg.coordinates || seg.coordinates.length < 2) return;
         const latLngs = seg.coordinates.map(([lat, lng]: [number, number]) => L.latLng(lat, lng));
-        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 5 : seg.roadClass === 'secondary' ? 4 : 3;
+        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 6 : seg.roadClass === 'secondary' ? 5 : 4;
         const polyline = L.polyline(latLngs, {
           color: seg.color || '#16a34a',
           weight,
-          opacity: 0.82,
+          opacity: 0.88,
           lineJoin: 'round',
           lineCap: 'round',
         });
-        if (seg.name) {
-          const levelLabel = seg.level.replace('_', ' ');
+        if (seg.name || seg.level) {
+          const levelLabel = (seg.level || 'FREE_FLOW').replace('_', ' ');
           polyline.bindTooltip(
-            `<strong>${seg.name}</strong><br/><span style="color:${seg.color};font-weight:700">${levelLabel}</span> · Score: ${seg.score}`,
+            `<strong>${seg.name || 'Urban Traffic Corridor'}</strong><br/><span style="color:${seg.color};font-weight:700">● ${levelLabel}</span> · Score: ${seg.score}`,
             { sticky: true, className: 'traffic-tooltip' }
           );
         }
@@ -271,7 +280,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           if (tooltip) {
             const levelLabel = update.level.replace('_', ' ');
             existing.setTooltipContent(
-              `<strong>${(tooltip.getContent() as string)?.match(/<strong>(.*?)<\/strong>/)?.[1] || 'Road Segment'}</strong><br/><span style="color:${update.color};font-weight:700">${levelLabel}</span> · Score: ${update.score}`
+              `<strong>${(tooltip.getContent() as string)?.match(/<strong>(.*?)<\/strong>/)?.[1] || 'Road Segment'}</strong><br/><span style="color:${update.color};font-weight:700">● ${levelLabel}</span> · Score: ${update.score}`
             );
           }
         }
@@ -283,7 +292,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       trafficLayer.clearLayers();
       polylines.clear();
     };
-  }, []);
+  }, [centerLat, centerLon]);
 
   // Toggle traffic layer visibility
   useEffect(() => {

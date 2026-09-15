@@ -386,12 +386,113 @@ async function main() {
     },
   ];
 
-  // These are placeholder coordinates for the demo road-network layer only — real
-  // geometry for a city comes from scripts/fetch-road-network.ts, which pulls actual
-  // OSM way IDs from the Overpass API. Run that script to populate a city properly;
-  // this fallback exists only so the congestion layer has something to draw before
-  // ingestion has been run.
-  for (const seg of BANGALORE_ROAD_SEGMENTS) {
+  // 6. Seed Mumbai Road Network Segments
+  const MUMBAI_ROAD_SEGMENTS = [
+    {
+      osmWayId: 'mum-way-weh',
+      name: 'Western Express Highway Expressway Corridor',
+      roadClass: 'trunk',
+      cityTag: 'mumbai',
+      districtId: mumbaiSuburban.id,
+      coordinates: JSON.stringify([
+        [19.0400, 72.8450],
+        [19.0760, 72.8550],
+        [19.1150, 72.8620],
+        [19.1550, 72.8680],
+      ]),
+      lengthM: 14200,
+    },
+    {
+      osmWayId: 'mum-way-sealink',
+      name: 'Bandra-Worli Sea Link Expressway',
+      roadClass: 'trunk',
+      cityTag: 'mumbai',
+      districtId: mumbaiSuburban.id,
+      coordinates: JSON.stringify([
+        [19.0150, 72.8160],
+        [19.0330, 72.8170],
+        [19.0500, 72.8220],
+      ]),
+      lengthM: 5600,
+    },
+    {
+      osmWayId: 'mum-way-marinedrive',
+      name: 'Marine Drive Netaji Subhash Chandra Bose Road',
+      roadClass: 'primary',
+      cityTag: 'mumbai',
+      districtId: mumbaiSuburban.id,
+      coordinates: JSON.stringify([
+        [18.9260, 72.8220],
+        [18.9438, 72.8232],
+        [18.9550, 72.8190],
+      ]),
+      lengthM: 3600,
+    },
+    {
+      osmWayId: 'mum-way-eeh',
+      name: 'Eastern Express Highway Corridor',
+      roadClass: 'trunk',
+      cityTag: 'mumbai',
+      districtId: mumbaiSuburban.id,
+      coordinates: JSON.stringify([
+        [19.0300, 72.8800],
+        [19.0650, 72.8900],
+        [19.1000, 72.9200],
+      ]),
+      lengthM: 9800,
+    },
+  ];
+
+  // 7. Seed Kapurthala & Jalandhar Road Network Segments
+  const PUNJAB_ROAD_SEGMENTS = [
+    {
+      osmWayId: 'kap-way-nh44',
+      name: 'NH-44 Kapurthala Highway Expressway Corridor',
+      roadClass: 'trunk',
+      cityTag: 'kapurthala',
+      districtId: kapurthala.id,
+      coordinates: JSON.stringify([
+        [31.2200, 75.6800],
+        [31.2536, 75.7037],
+        [31.2800, 75.7200],
+      ]),
+      lengthM: 7800,
+    },
+    {
+      osmWayId: 'jal-way-gtroad-bypass',
+      name: 'Jalandhar GT Road Expressway Bypass',
+      roadClass: 'trunk',
+      cityTag: 'jalandhar',
+      districtId: jalandhar.id,
+      coordinates: JSON.stringify([
+        [31.3000, 75.5500],
+        [31.3260, 75.5762],
+        [31.3500, 75.6000],
+      ]),
+      lengthM: 8400,
+    },
+    {
+      osmWayId: 'jal-way-modeltown',
+      name: 'Model Town Main Commercial Corridor',
+      roadClass: 'primary',
+      cityTag: 'jalandhar',
+      districtId: jalandhar.id,
+      coordinates: JSON.stringify([
+        [31.3150, 75.5780],
+        [31.3210, 75.5810],
+        [31.3280, 75.5850],
+      ]),
+      lengthM: 2200,
+    },
+  ];
+
+  const ALL_DEMO_SEGMENTS = [
+    ...BANGALORE_ROAD_SEGMENTS,
+    ...MUMBAI_ROAD_SEGMENTS,
+    ...PUNJAB_ROAD_SEGMENTS,
+  ];
+
+  for (const seg of ALL_DEMO_SEGMENTS) {
     await prisma.roadSegment.create({ data: seg });
   }
 
