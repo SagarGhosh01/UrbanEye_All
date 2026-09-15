@@ -8,8 +8,6 @@ import { resolveImageSrc } from '../utils/imageUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
 
-import { BANGALORE_ROAD_SEGMENTS, getTrafficLevelMetadata } from '../constants/bangaloreTrafficHeatmap';
-
 interface LiveMapProps {
   events: RoadEvent[];
   centerLat: number;
@@ -21,7 +19,6 @@ interface LiveMapProps {
   activeLayerFilters?: {
     defects?: boolean;
     traffic?: boolean;
-    trafficHeatmap?: boolean;
     incidents?: boolean;
     vruSafety?: boolean;
     predictive?: boolean;
@@ -44,7 +41,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   onUpdateStatus,
   onSelectEvent,
   latestEventId,
-  activeLayerFilters = { defects: true, traffic: true, trafficHeatmap: true, incidents: true, vruSafety: true, predictive: true, heatmap: true },
+  activeLayerFilters = { defects: true, traffic: true, incidents: true, vruSafety: true, predictive: true, heatmap: true },
 }) => {
   const { isDark } = useTheme();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -54,7 +51,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const vruLayerRef = useRef<L.LayerGroup | null>(null);
   const trafficLayerRef = useRef<L.LayerGroup | null>(null);
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
-  const trafficHeatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const trafficPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const pulseCircleRef = useRef<L.CircleMarker | null>(null);
 
@@ -62,7 +58,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const [layers, setLayers] = useState({
     defects: activeLayerFilters.defects ?? true,
     traffic: activeLayerFilters.traffic ?? true,
-    trafficHeatmap: activeLayerFilters.trafficHeatmap ?? true,
     incidents: activeLayerFilters.incidents ?? true,
     vruSafety: activeLayerFilters.vruSafety ?? true,
     predictive: activeLayerFilters.predictive ?? true,
@@ -105,10 +100,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       // Heatmap spatial density layer — renders below markers
       const heatmapLayer = L.layerGroup().addTo(map);
       heatmapLayerRef.current = heatmapLayer;
-
-      // Google Maps Traffic Density Heatmap Layer
-      const trafficHeatmapLayer = L.layerGroup().addTo(map);
-      trafficHeatmapLayerRef.current = trafficHeatmapLayer;
 
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
@@ -274,75 +265,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       coreMarker.addTo(heatmapLayer);
     });
   }, [events, layers.heatmap]);
-
-  // ─── Google Maps-Style Bangalore Traffic Road Polyline Layer ───────────────
-  useEffect(() => {
-    if (!mapInstanceRef.current || !trafficHeatmapLayerRef.current) return;
-
-    const heatmapLayer = trafficHeatmapLayerRef.current;
-    heatmapLayer.clearLayers();
-
-    if (!layers.trafficHeatmap) return;
-
-    BANGALORE_ROAD_SEGMENTS.forEach((seg) => {
-      const latLngs = seg.coordinates.map(([lat, lng]) => L.latLng(lat, lng));
-      const color = seg.color;
-
-      // Outer Glow Casing Line (Google Maps Glowing Traffic Line look)
-      const glowPolyline = L.polyline(latLngs, {
-        color: color,
-        weight: 12,
-        opacity: 0.35,
-        lineJoin: 'round',
-        lineCap: 'round',
-      });
-
-      // Inner Core Traffic Line
-      const corePolyline = L.polyline(latLngs, {
-        color: color,
-        weight: 6,
-        opacity: 0.9,
-        lineJoin: 'round',
-        lineCap: 'round',
-      });
-
-      const popupContent = `
-        <div style="min-width: 230px; font-family: Inter, -apple-system, sans-serif; padding: 2px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase;">
-              🚦 ${seg.road}
-            </span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background-color: ${color}; color: #ffffff;">
-              ${seg.traffic_level} CONGESTION
-            </span>
-            <span style="font-size: 11px; font-weight: 800; color: #d97706;">
-              ${seg.congestion}% Congested
-            </span>
-          </div>
-          <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-            <strong>Vehicle Volume:</strong> ${seg.vehicle_count} vehicles/hr
-          </div>
-          <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-            <strong>Average Speed:</strong> ${seg.avg_speed} km/h
-          </div>
-          <div style="font-size: 10px; color: #64748b; margin-bottom: 6px;">
-            <strong>Last Updated:</strong> ${seg.last_updated}
-          </div>
-          <div style="font-size: 9px; font-weight: 800; color: #0284c7; background-color: #e0f2fe; border: 1px solid #7dd3fc; padding: 3px 6px; border-radius: 4px; text-align: center;">
-            🚦 DEMO TRAFFIC DATA • BANGALORE ROAD NETWORK
-          </div>
-        </div>
-      `;
-
-      corePolyline.bindPopup(popupContent);
-      glowPolyline.bindPopup(popupContent);
-
-      glowPolyline.addTo(heatmapLayer);
-      corePolyline.addTo(heatmapLayer);
-    });
-  }, [layers.trafficHeatmap]);
 
   // Update center when props change
   useEffect(() => {
@@ -599,16 +521,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
             <input
               type="checkbox"
-              checked={layers.trafficHeatmap}
-              onChange={(e) => setLayers({ ...layers, trafficHeatmap: e.target.checked })}
-              className="rounded text-teal-500 focus:ring-0"
-            />
-            <span>🚦 Traffic Heatmap</span>
-          </label>
-
-          <label className="flex items-center space-x-2 cursor-pointer text-[11px] font-medium text-slate-200">
-            <input
-              type="checkbox"
               checked={layers.incidents}
               onChange={(e) => setLayers({ ...layers, incidents: e.target.checked })}
               className="rounded text-teal-500 focus:ring-0"
@@ -719,25 +631,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Google Maps Traffic Heatmap Legend */}
-            {layers.trafficHeatmap && (
-              <div className="mt-2 pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between text-[10px] font-extrabold text-amber-300 uppercase tracking-wider mb-1.5">
-                  <span>🚦 Traffic Heatmap Density</span>
-                  <span className="text-[9px] bg-sky-950 text-sky-300 border border-sky-500/40 px-1.5 py-0.5 rounded font-mono">DEMO DATA</span>
-                </div>
-                <div className="grid grid-cols-4 gap-1 text-center text-[10px] font-bold">
-                  <div className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 py-0.5 rounded">LOW</div>
-                  <div className="bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 py-0.5 rounded">MEDIUM</div>
-                  <div className="bg-orange-500/20 text-orange-300 border border-orange-500/40 py-0.5 rounded">HIGH</div>
-                  <div className="bg-red-500/20 text-red-300 border border-red-500/40 py-0.5 rounded">SEVERE</div>
-                </div>
-                <div className="mt-1.5 text-[9px] text-slate-400 font-mono text-center">
-                  Bangalore Hotspots: LOW → MEDIUM → HIGH → SEVERE
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <button
@@ -753,16 +646,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           </button>
         )}
       </div>
-
-      {/* DEMO TRAFFIC DATA Badge Overlay (Requirement #18) */}
-      {layers.trafficHeatmap && (
-        <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 pointer-events-none">
-          <div className="bg-slate-900/90 backdrop-blur-md border border-amber-500/50 rounded-xl px-3 py-1.5 text-xs text-amber-300 font-extrabold flex items-center gap-2 shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-            <span>🚦 DEMO TRAFFIC DATA • BANGALORE FLEET</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
