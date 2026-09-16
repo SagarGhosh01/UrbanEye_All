@@ -370,6 +370,7 @@ class MainActivity : AppCompatActivity() {
                     val conf = (topPlate.confidence * 100).toInt()
                     binding.tvDetectionStatus.text = "🚨 ANPR: $plateStr ($conf%) • LOGGED"
                     binding.tvDetectionStatus.setTextColor(Color.parseColor("#dc2626"))
+                    binding.detectionBanner.visibility = View.GONE
                 } else if (roadDets.isNotEmpty()) {
                     val top = roadDets.first()
                     val typeLabel = top.type.replace("_", " ")

@@ -78,14 +78,10 @@ class OnnxRoadDefectDetector(
 
             // 2. Primary: Genuine YOLOv8 ONNX Neural Inference
             if (session != null && env != null) {
-                val yoloResults = runYoloInference(orientedBitmap)
-                if (yoloResults.isNotEmpty()) {
-                    return yoloResults
-                }
+                return runYoloInference(orientedBitmap)
             }
 
-            // 3. Fallback: Edge-spatial contrast analysis (if ONNX model yields no candidates on this frame)
-            return analyzeRoadDefectsFallback(orientedBitmap)
+            return emptyList()
         } catch (e: Exception) {
             Log.e(tag, "Defect detection error: ${e.message}", e)
             return emptyList()

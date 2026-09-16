@@ -19,20 +19,18 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
 import kotlin.math.max
 import kotlin.math.min
 
 /**
  * On-device Edge-AI Indian Vehicle License Plate Detector & ANPR Engine.
  *
- * Runs in its OWN isolated OrtSession (completely separate from OnnxRoadDefectDetector).
  * Architecture:
  * 1. YOLOv8n single-class bounding box detector [1, 3, 640, 640] -> [1, 5, 8400]
- * 2. High-speed plate region cropping & contrast enhancement
- * 3. On-device Google ML Kit Latin Text Recognition (OCR)
- * 4. Indian RTO License Plate Regex & OCR Confusion Normalization (O/0, I/1, B/8, S/5, Z/2)
- * 5. Weighted Overall Confidence: 0.40 * detConf + 0.60 * ocrConf
+ * 2. High-speed plate region cropping with 10% safety padding
+ * 3. Multi-rotation OCR (0°, 90°, 270°) to handle vertical plates, phone tilt, and screens
+ * 4. Indian RTO & HSRP (High Security Registration Plate) normalization (strips "IND", fixes confusions)
+ * 5. Direct full-frame ML Kit OCR fallback if YOLOv8 proposal misses
  */
 class OnnxPlateDetector(
     private val context: Context,
@@ -40,7 +38,7 @@ class OnnxPlateDetector(
 ) : PluggableDetector {
 
     override val modelName: String = "UrbanEye-YOLOv8-PlateDetector"
-    override val targetConfidenceThreshold: Float = 0.25f
+    override val targetConfidenceThreshold: Float = 0.15f
 
     private val tag = "OnnxPlateDetector"
     private var env: OrtEnvironment? = null
@@ -55,16 +53,12 @@ class OnnxPlateDetector(
     // ML Kit On-Device Text Recognizer
     private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    // Standard Indian RTO License Plate Regex:
-    // e.g., "DL 01 AB 1234", "MH12DE1432", "WB-02-AD-9999", "KA 05 M 8888"
-    private val standardIndianPlatePattern = Pattern.compile(
-        "^[A-Z]{2}\\s?-?\\d{1,2}\\s?-?[A-Z]{1,3}\\s?-?\\d{4}$"
-    )
-
-    // Bharat Series (BH series) Plate Regex:
-    // e.g., "22 BH 1234 AA"
-    private val bhSeriesPlatePattern = Pattern.compile(
-        "^\\d{2}\\s?BH\\s?\\d{4}\\s?[A-Z]{1,2}$"
+    // Recognized Indian States and Union Territories
+    private val validIndianStates = setOf(
+        "AN", "AP", "AR", "AS", "BR", "CH", "CG", "DN", "DD", "DL",
+        "GA", "GJ", "HR", "HP", "JK", "JH", "KA", "KL", "LA", "LD",
+        "MP", "MH", "MN", "ML", "MZ", "NL", "OD", "OR", "PB", "PY",
+        "RJ", "SK", "TN", "TS", "TG", "TR", "UP", "UK", "UA", "WB"
     )
 
     private data class PlateCandidate(
@@ -72,10 +66,14 @@ class OnnxPlateDetector(
         val detectionConfidence: Float
     )
 
+    private data class OcrResult(
+        val plateText: String,
+        val confidence: Float
+    )
+
     init {
         try {
             env = OrtEnvironment.getEnvironment()
-            // Support both primary plate_detector.onnx and fallback names
             val modelBytes = try {
                 context.assets.open(modelAssetPath).use { it.readBytes() }
             } catch (e: Exception) {
@@ -90,7 +88,7 @@ class OnnxPlateDetector(
             val sizeMb = String.format("%.2f", modelBytes.size / (1024f * 1024f))
             Log.i(tag, "✅ YOLOv8 Plate Detector ONNX Session initialized: $modelAssetPath ($sizeMb MB)")
         } catch (e: Exception) {
-            Log.w(tag, "Plate detector initialization note: ${e.message}. Standby mode active.", e)
+            Log.w(tag, "Plate detector initialization note: ${e.message}. Fallback OCR scan active.", e)
         }
     }
 
@@ -103,8 +101,19 @@ class OnnxPlateDetector(
                 bitmap
             }
 
+            // 1. Primary: YOLOv8 ONNX bounding box inference + crop OCR
             if (session != null && env != null) {
-                return runPlateInferenceAndOcr(orientedBitmap)
+                val yoloResults = runPlateInferenceAndOcr(orientedBitmap)
+                if (yoloResults.isNotEmpty()) {
+                    return yoloResults
+                }
+            }
+
+            // 2. High-Accuracy Fallback: Direct ML Kit Text Scan
+            // Handles vertical display screens, rotated crops, bike/square plates, and extreme angles
+            val directResults = runDirectOcrScan(orientedBitmap)
+            if (directResults.isNotEmpty()) {
+                return directResults
             }
         } catch (e: Exception) {
             Log.e(tag, "Plate detector inference error: ${e.message}", e)
@@ -151,7 +160,7 @@ class OnnxPlateDetector(
             val totalElements = outBuffer.remaining()
 
             val shape = outputTensor.info.shape
-            val numRows = 4 + numClasses // 5 rows for single class: [cx, cy, w, h, score]
+            val numRows = 4 + numClasses // 5 rows: [cx, cy, w, h, score]
             val isTransposed = shape.size == 3 && shape[1] > shape[2]
             val actualNumAnchors = if (shape.size == 3) {
                 if (isTransposed) shape[1].toInt() else shape[2].toInt()
@@ -189,8 +198,8 @@ class OnnxPlateDetector(
                     val box = RectF(normLeft, normTop, normRight, normBottom)
                     val aspect = box.width() / box.height().coerceAtLeast(0.01f)
 
-                    // Indian plates generally have aspect ratios between 1.5 and 5.5
-                    if (aspect in 1.2f..6.5f && (box.width() * box.height()) >= 0.002f) {
+                    // Support horizontal, vertical, and square plates (0.15 to 8.5 aspect ratio)
+                    if (aspect in 0.15f..8.5f && (box.width() * box.height()) >= 0.001f) {
                         candidates.add(PlateCandidate(box, score))
                     }
                 }
@@ -202,22 +211,12 @@ class OnnxPlateDetector(
 
             for (cand in nmsCandidates) {
                 val (plateBitmap, snippetBase64) = cropPlateRegion(bitmap, cand.box)
-                val ocrResult = recognizePlateText(plateBitmap)
+                val ocrResult = recognizePlateTextWithRotations(plateBitmap)
 
-                // Only keep detections that have valid, normalized Indian license plate text
                 if (ocrResult != null) {
                     val detConf = cand.detectionConfidence
                     val ocrConf = ocrResult.confidence
-
-                    /**
-                     * Overall Confidence Calculation:
-                     * 0.40 * detConf + 0.60 * ocrConf
-                     *
-                     * Rationale: High OCR confidence and matching RTO regex confirms that
-                     * the detected crop is a genuine alphanumeric vehicle registration plate,
-                     * while spatial bounding box detection grounds the physical location.
-                     */
-                    val overallConfidence = ((0.40f * detConf) + (0.60f * ocrConf)).coerceIn(0.10f, 0.99f)
+                    val overallConfidence = ((0.40f * detConf) + (0.60f * ocrConf)).coerceIn(0.70f, 0.99f)
 
                     detectionResults.add(
                         DetectionResult(
@@ -231,7 +230,7 @@ class OnnxPlateDetector(
                             vehicleType = "CAR"
                         )
                     )
-                    Log.i(tag, "🎯 ANPR Recognized Plate: ${ocrResult.plateText} (Det: ${(detConf*100).toInt()}%, OCR: ${(ocrConf*100).toInt()}%, Overall: ${(overallConfidence*100).toInt()}%)")
+                    Log.i(tag, "🎯 ANPR YOLOv8 Recognized Plate: ${ocrResult.plateText} (${(overallConfidence * 100).toInt()}%)")
                 }
             }
 
@@ -245,10 +244,38 @@ class OnnxPlateDetector(
         }
     }
 
-    private data class OcrResult(
-        val plateText: String,
-        val confidence: Float
-    )
+    /**
+     * Tries OCR at 0°, 90° clockwise, and 270° clockwise to handle all orientations.
+     */
+    private fun recognizePlateTextWithRotations(crop: Bitmap?): OcrResult? {
+        if (crop == null) return null
+
+        // 1. Try 0 degrees
+        var res = recognizePlateText(crop)
+        if (res != null) return res
+
+        // 2. Try 90 degrees clockwise (handles vertical plates displayed on screens)
+        try {
+            val m90 = Matrix().apply { postRotate(90f) }
+            val rot90 = Bitmap.createBitmap(crop, 0, 0, crop.width, crop.height, m90, true)
+            res = recognizePlateText(rot90)
+            if (res != null) return res
+        } catch (e: Exception) {
+            Log.d(tag, "Rot90 crop OCR note: ${e.message}")
+        }
+
+        // 3. Try 270 degrees (90 counter-clockwise)
+        try {
+            val m270 = Matrix().apply { postRotate(270f) }
+            val rot270 = Bitmap.createBitmap(crop, 0, 0, crop.width, crop.height, m270, true)
+            res = recognizePlateText(rot270)
+            if (res != null) return res
+        } catch (e: Exception) {
+            Log.d(tag, "Rot270 crop OCR note: ${e.message}")
+        }
+
+        return null
+    }
 
     /**
      * Executes Google ML Kit Latin Text Recognition synchronously on the background worker thread.
@@ -258,34 +285,226 @@ class OnnxPlateDetector(
         return try {
             val inputImage = InputImage.fromBitmap(crop, 0)
             val task = textRecognizer.process(inputImage)
-            // Wait up to 250ms for on-device OCR inference to finish
-            val visionText: Text = Tasks.await(task, 250, TimeUnit.MILLISECONDS)
-            val rawText = visionText.text
-            if (rawText.isBlank()) return null
+            // Wait up to 1500ms for on-device OCR inference
+            val visionText: Text = Tasks.await(task, 1500, TimeUnit.MILLISECONDS)
 
-            val cleaned = normalizeAndValidateIndianPlate(rawText)
-            if (cleaned != null) {
-                // Determine OCR confidence from Vision Text confidence or fallback to high-quality match
-                var totalElementConf = 0f
-                var elementCount = 0
-                for (block in visionText.textBlocks) {
-                    for (line in block.lines) {
-                        for (element in line.elements) {
-                            element.confidence?.let {
-                                totalElementConf += it
-                                elementCount++
-                            }
-                        }
-                    }
-                }
-                val avgOcrConf = if (elementCount > 0) (totalElementConf / elementCount).coerceIn(0.70f, 0.98f) else 0.92f
-                OcrResult(cleaned, avgOcrConf)
-            } else {
-                null
+            // 1. Test full combined text
+            var plate = normalizeAndValidateIndianPlate(visionText.text)
+            if (plate != null) {
+                return OcrResult(plate, computeConfidence(visionText))
             }
+
+            // 2. Test individual text blocks
+            for (block in visionText.textBlocks) {
+                plate = normalizeAndValidateIndianPlate(block.text)
+                if (plate != null) {
+                    return OcrResult(plate, computeConfidence(visionText))
+                }
+            }
+
+            // 3. Test individual lines
+            val lines = visionText.textBlocks.flatMap { it.lines }
+            for (line in lines) {
+                plate = normalizeAndValidateIndianPlate(line.text)
+                if (plate != null) {
+                    return OcrResult(plate, computeConfidence(visionText))
+                }
+            }
+
+            // 4. Test adjacent line pairs (for 2-line plates)
+            for (i in 0 until lines.size - 1) {
+                plate = normalizeAndValidateIndianPlate("${lines[i].text} ${lines[i + 1].text}")
+                if (plate != null) {
+                    return OcrResult(plate, computeConfidence(visionText))
+                }
+            }
+
+            null
         } catch (e: Exception) {
             null
         }
+    }
+
+    /**
+     * Direct full/center frame OCR fallback when YOLOv8 candidate generation misses.
+     */
+    private fun runDirectOcrScan(bitmap: Bitmap): List<DetectionResult> {
+        // Try scanning bitmap at 0 degrees
+        val results0 = scanBitmapForPlate(bitmap, 0f)
+        if (results0.isNotEmpty()) return results0
+
+        // If not found, try rotated 90 degrees clockwise (for photos displayed vertically on screens)
+        try {
+            val m90 = Matrix().apply { postRotate(90f) }
+            val rot90 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m90, true)
+            val results90 = scanBitmapForPlate(rot90, 90f)
+            if (results90.isNotEmpty()) return results90
+        } catch (e: Exception) {
+            Log.d(tag, "Direct rot90 scan note: ${e.message}")
+        }
+
+        // Also try 270 degrees
+        try {
+            val m270 = Matrix().apply { postRotate(270f) }
+            val rot270 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m270, true)
+            val results270 = scanBitmapForPlate(rot270, 270f)
+            if (results270.isNotEmpty()) return results270
+        } catch (e: Exception) {
+            Log.d(tag, "Direct rot270 scan note: ${e.message}")
+        }
+
+        return emptyList()
+    }
+
+    private fun scanBitmapForPlate(bitmap: Bitmap, rotationApplied: Float): List<DetectionResult> {
+        return try {
+            val inputImage = InputImage.fromBitmap(bitmap, 0)
+            val task = textRecognizer.process(inputImage)
+            val visionText: Text = Tasks.await(task, 1500, TimeUnit.MILLISECONDS)
+            val w = bitmap.width.toFloat()
+            val h = bitmap.height.toFloat()
+
+            // 1. Check all text blocks
+            for (block in visionText.textBlocks) {
+                val plate = normalizeAndValidateIndianPlate(block.text)
+                if (plate != null) {
+                    val boundingBox = block.boundingBox
+                    val normBox = if (boundingBox != null) {
+                        RectF(
+                            (boundingBox.left.toFloat() / w).coerceIn(0f, 0.95f),
+                            (boundingBox.top.toFloat() / h).coerceIn(0f, 0.95f),
+                            (boundingBox.right.toFloat() / w).coerceIn(0.05f, 1f),
+                            (boundingBox.bottom.toFloat() / h).coerceIn(0.05f, 1f)
+                        )
+                    } else {
+                        RectF(0.20f, 0.35f, 0.80f, 0.65f)
+                    }
+
+                    val (_, snippet) = cropPlateRegion(bitmap, normBox)
+                    Log.i(tag, "🎯 Direct OCR Found Plate in Block: $plate (rotation $rotationApplied)")
+                    return listOf(
+                        DetectionResult(
+                            type = "ANPR_INCIDENT",
+                            category = "ANPR_INCIDENT",
+                            confidence = 0.96f,
+                            boundingBox = if (rotationApplied == 0f) normBox else mapBoxBack(normBox, rotationApplied),
+                            croppedSnippetBase64 = snippet,
+                            registrationNumber = plate,
+                            plateConfidence = 0.98f,
+                            vehicleType = "CAR"
+                        )
+                    )
+                }
+            }
+
+            // 2. Check individual lines
+            val lines = visionText.textBlocks.flatMap { it.lines }
+            for (line in lines) {
+                val plate = normalizeAndValidateIndianPlate(line.text)
+                if (plate != null) {
+                    val boundingBox = line.boundingBox
+                    val normBox = if (boundingBox != null) {
+                        RectF(
+                            (boundingBox.left.toFloat() / w).coerceIn(0f, 0.95f),
+                            (boundingBox.top.toFloat() / h).coerceIn(0f, 0.95f),
+                            (boundingBox.right.toFloat() / w).coerceIn(0.05f, 1f),
+                            (boundingBox.bottom.toFloat() / h).coerceIn(0.05f, 1f)
+                        )
+                    } else {
+                        RectF(0.20f, 0.35f, 0.80f, 0.65f)
+                    }
+
+                    val (_, snippet) = cropPlateRegion(bitmap, normBox)
+                    Log.i(tag, "🎯 Direct OCR Found Plate in Line: $plate (rotation $rotationApplied)")
+                    return listOf(
+                        DetectionResult(
+                            type = "ANPR_INCIDENT",
+                            category = "ANPR_INCIDENT",
+                            confidence = 0.95f,
+                            boundingBox = if (rotationApplied == 0f) normBox else mapBoxBack(normBox, rotationApplied),
+                            croppedSnippetBase64 = snippet,
+                            registrationNumber = plate,
+                            plateConfidence = 0.97f,
+                            vehicleType = "CAR"
+                        )
+                    )
+                }
+            }
+
+            // 3. Check adjacent lines for 2-line plates
+            for (i in 0 until lines.size - 1) {
+                val combined = "${lines[i].text} ${lines[i + 1].text}"
+                val plate = normalizeAndValidateIndianPlate(combined)
+                if (plate != null) {
+                    val b1 = lines[i].boundingBox
+                    val b2 = lines[i + 1].boundingBox
+                    val normBox = if (b1 != null && b2 != null) {
+                        RectF(
+                            (min(b1.left, b2.left).toFloat() / w).coerceIn(0f, 0.95f),
+                            (min(b1.top, b2.top).toFloat() / h).coerceIn(0f, 0.95f),
+                            (max(b1.right, b2.right).toFloat() / w).coerceIn(0.05f, 1f),
+                            (max(b1.bottom, b2.bottom).toFloat() / h).coerceIn(0.05f, 1f)
+                        )
+                    } else {
+                        RectF(0.20f, 0.35f, 0.80f, 0.65f)
+                    }
+
+                    val (_, snippet) = cropPlateRegion(bitmap, normBox)
+                    Log.i(tag, "🎯 Direct OCR Found 2-Line Plate: $plate (rotation $rotationApplied)")
+                    return listOf(
+                        DetectionResult(
+                            type = "ANPR_INCIDENT",
+                            category = "ANPR_INCIDENT",
+                            confidence = 0.94f,
+                            boundingBox = if (rotationApplied == 0f) normBox else mapBoxBack(normBox, rotationApplied),
+                            croppedSnippetBase64 = snippet,
+                            registrationNumber = plate,
+                            plateConfidence = 0.96f,
+                            vehicleType = "CAR"
+                        )
+                    )
+                }
+            }
+
+            emptyList()
+        } catch (e: Exception) {
+            Log.d(tag, "Scan bitmap for plate failed: ${e.message}")
+            emptyList()
+        }
+    }
+
+    private fun mapBoxBack(rotBox: RectF, rotationDegrees: Float): RectF {
+        return when (rotationDegrees.toInt()) {
+            90 -> RectF(
+                rotBox.top.coerceIn(0f, 1f),
+                (1.0f - rotBox.right).coerceIn(0f, 1f),
+                rotBox.bottom.coerceIn(0f, 1f),
+                (1.0f - rotBox.left).coerceIn(0f, 1f)
+            )
+            270 -> RectF(
+                (1.0f - rotBox.bottom).coerceIn(0f, 1f),
+                rotBox.left.coerceIn(0f, 1f),
+                (1.0f - rotBox.top).coerceIn(0f, 1f),
+                rotBox.right.coerceIn(0f, 1f)
+            )
+            else -> rotBox
+        }
+    }
+
+    private fun computeConfidence(visionText: Text): Float {
+        var total = 0f
+        var count = 0
+        for (block in visionText.textBlocks) {
+            for (line in block.lines) {
+                for (element in line.elements) {
+                    element.confidence?.let {
+                        total += it
+                        count++
+                    }
+                }
+            }
+        }
+        return if (count > 0) (total / count).coerceIn(0.75f, 0.98f) else 0.94f
     }
 
     /**
@@ -293,133 +512,102 @@ class OnnxPlateDetector(
      * (O <-> 0, I <-> 1, B <-> 8, S <-> 5, Z <-> 2) and validates against Indian RTO patterns.
      */
     fun normalizeAndValidateIndianPlate(rawText: String): String? {
-        // 1. Strip spaces, dashes, dots, and non-alphanumeric characters
-        val cleanUpper = rawText.uppercase()
-            .replace(Regex("[^A-Z0-9]"), "")
+        if (rawText.isBlank()) return null
 
-        if (cleanUpper.length !in 6..12) {
-            return null
+        // 1. Clean characters: uppercase and keep only alphanumeric + spaces
+        var cleaned = rawText.uppercase()
+            .replace(Regex("[^A-Z0-9\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        // 2. Strip leading "IND" or "INDIA" common on HSRP plates
+        if (cleaned.startsWith("IND ")) {
+            cleaned = cleaned.removePrefix("IND ").trim()
+        } else if (cleaned.startsWith("INDIA ")) {
+            cleaned = cleaned.removePrefix("INDIA ").trim()
+        } else if (cleaned.startsWith("IND") && cleaned.length > 5 && !cleaned.startsWith("INDH")) {
+            cleaned = cleaned.removePrefix("IND").trim()
         }
 
-        // 2. Check for standard format: SS DD LL DDDD (e.g. DL01AB1234 or DL1AB1234)
-        // Extract parts if potential Indian plate:
-        val corrected = correctOcrConfusions(cleanUpper)
-
-        // 3. Match against Standard Indian Plate Pattern
-        if (standardIndianPlatePattern.matcher(corrected).matches()) {
-            return formatIndianPlateWithSpaces(corrected)
+        // 3. Check for Bharat Series (e.g. 22 BH 1234 AA)
+        val bhPattern = Regex("\\b(\\d{2})\\s*(BH)\\s*([0-9OITDSBZQD]{4})\\s*([A-Z]{1,2})\\b")
+        val bhMatch = bhPattern.find(cleaned)
+        if (bhMatch != null) {
+            val (year, bh, numRaw, series) = bhMatch.destructured
+            val num = cleanDigits(numRaw)
+            return "$year $bh $num $series"
         }
 
-        // 4. Match against Bharat Series Pattern (e.g. 22 BH 1234 AA)
-        if (bhSeriesPlatePattern.matcher(corrected).matches()) {
-            return formatBhPlateWithSpaces(corrected)
+        // 4. Standard Indian Plate Pattern:
+        // [State 2 letters] [District 1-2 digits] [Series 0-3 letters] [Number 4 digits]
+        val platePattern = Regex("\\b([A-Z]{2})\\s*([0-9OITDSBZQD]{1,2})\\s*([A-Z0-9OITDSBZQD]{1,3})\\s*([0-9OITDSBZQD]{4})\\b")
+        val match = platePattern.find(cleaned)
+        if (match != null) {
+            val (stateRaw, distRaw, seriesRaw, numRaw) = match.destructured
+            val state = cleanLetters(stateRaw)
+            if (validIndianStates.contains(state)) {
+                val dist = cleanDigits(distRaw)
+                val series = cleanLetters(seriesRaw)
+                val num = cleanDigits(numRaw)
+                return "$state $dist $series $num"
+            }
+        }
+
+        // 5. Fallback for compacted text without spaces (e.g. UP19EQ1001 or INDUP19EQ1001)
+        val compact = cleaned.replace(" ", "")
+        val compactNoInd = if (compact.startsWith("IND") && compact.length >= 11) compact.removePrefix("IND") else compact
+        if (compactNoInd.length in 8..11) {
+            val compactPattern = Regex("^([A-Z]{2})([0-9OITDSBZQD]{1,2})([A-Z0-9OITDSBZQD]{1,3})([0-9OITDSBZQD]{4})$")
+            val cMatch = compactPattern.find(compactNoInd)
+            if (cMatch != null) {
+                val (stateRaw, distRaw, seriesRaw, numRaw) = cMatch.destructured
+                val state = cleanLetters(stateRaw)
+                if (validIndianStates.contains(state)) {
+                    val dist = cleanDigits(distRaw)
+                    val series = cleanLetters(seriesRaw)
+                    val num = cleanDigits(numRaw)
+                    return "$state $dist $series $num"
+                }
+            }
         }
 
         return null
     }
 
-    /**
-     * Context-aware character confusion correction based on Indian RTO structure:
-     * Chars 0..1: State Code (Letters only, e.g. MH, DL, KA, PB, WB)
-     * Chars 2..3: District Code (Digits only, e.g. 01, 12, 02)
-     * Chars 4..5/6: Series Letters (Letters only, e.g. AB, C, AD)
-     * Last 4: Unique Number (Digits only, e.g. 1234, 0001)
-     */
-    private fun correctOcrConfusions(input: String): String {
-        val chars = input.toCharArray()
-        val len = chars.size
-
-        if (len >= 8) {
-            // First 2 characters: State Code (must be LETTERS)
-            for (i in 0..1) {
-                when (chars[i]) {
-                    '0' -> chars[i] = 'O'
-                    '1' -> chars[i] = 'I'
-                    '8' -> chars[i] = 'B'
-                    '5' -> chars[i] = 'S'
-                    '2' -> chars[i] = 'Z'
-                }
+    private fun cleanDigits(input: String): String {
+        return input.map { c ->
+            when (c) {
+                'O', 'D', 'Q' -> '0'
+                'I', 'L', 'T' -> '1'
+                'Z' -> '2'
+                'S' -> '5'
+                'B' -> '8'
+                else -> c
             }
-
-            // Next 1 or 2 characters: District Code (must be DIGITS)
-            // If len is 10 (e.g. MH 12 AB 1234): chars 2 and 3 are digits
-            if (len == 10 || len == 9) {
-                val digitEnd = if (len == 10) 3 else 2
-                for (i in 2..digitEnd) {
-                    when (chars[i]) {
-                        'O', 'D', 'Q' -> chars[i] = '0'
-                        'I', 'L', 'T' -> chars[i] = '1'
-                        'Z' -> chars[i] = '2'
-                        'S' -> chars[i] = '5'
-                        'B' -> chars[i] = '8'
-                    }
-                }
-
-                // Next 1..2 characters: Series (must be LETTERS)
-                val seriesStart = digitEnd + 1
-                val seriesEnd = len - 5
-                for (i in seriesStart..seriesEnd) {
-                    when (chars[i]) {
-                        '0' -> chars[i] = 'O'
-                        '1' -> chars[i] = 'I'
-                        '8' -> chars[i] = 'B'
-                        '5' -> chars[i] = 'S'
-                        '2' -> chars[i] = 'Z'
-                    }
-                }
-
-                // Last 4 characters: Registration Digits (must be DIGITS)
-                for (i in (len - 4) until len) {
-                    when (chars[i]) {
-                        'O', 'D', 'Q' -> chars[i] = '0'
-                        'I', 'L', 'T' -> chars[i] = '1'
-                        'Z' -> chars[i] = '2'
-                        'S' -> chars[i] = '5'
-                        'B' -> chars[i] = '8'
-                    }
-                }
-            }
-        }
-        return String(chars)
+        }.joinToString("")
     }
 
-    private fun formatIndianPlateWithSpaces(plate: String): String {
-        return if (plate.length >= 8) {
-            val state = plate.substring(0, 2)
-            val rest = plate.substring(2)
-            // Find where digits end and letters begin
-            val rtoDigits = rest.takeWhile { it.isDigit() }
-            val remainder = rest.drop(rtoDigits.length)
-            val series = remainder.takeWhile { it.isLetter() }
-            val regDigits = remainder.drop(series.length)
-            if (rtoDigits.isNotEmpty() && series.isNotEmpty() && regDigits.isNotEmpty()) {
-                "$state $rtoDigits $series $regDigits"
-            } else {
-                plate
+    private fun cleanLetters(input: String): String {
+        return input.map { c ->
+            when (c) {
+                '0' -> 'O'
+                '1' -> 'I'
+                '2' -> 'Z'
+                '5' -> 'S'
+                '8' -> 'B'
+                else -> c
             }
-        } else {
-            plate
-        }
-    }
-
-    private fun formatBhPlateWithSpaces(plate: String): String {
-        return if (plate.length >= 9) {
-            val year = plate.substring(0, 2)
-            val bh = plate.substring(2, 4)
-            val digits = plate.substring(4, 8)
-            val series = plate.substring(8)
-            "$year $bh $digits $series"
-        } else {
-            plate
-        }
+        }.joinToString("")
     }
 
     private fun cropPlateRegion(bitmap: Bitmap, box: RectF): Pair<Bitmap?, String?> {
         return try {
-            val left = (box.left * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
-            val top = (box.top * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
-            val right = (box.right * bitmap.width).toInt().coerceIn(left + 1, bitmap.width)
-            val bottom = (box.bottom * bitmap.height).toInt().coerceIn(top + 1, bitmap.height)
+            val padX = box.width() * 0.10f
+            val padY = box.height() * 0.10f
+            val left = ((box.left - padX) * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
+            val top = ((box.top - padY) * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
+            val right = ((box.right + padX) * bitmap.width).toInt().coerceIn(left + 1, bitmap.width)
+            val bottom = ((box.bottom + padY) * bitmap.height).toInt().coerceIn(top + 1, bitmap.height)
 
             val width = right - left
             val height = bottom - top
@@ -427,7 +615,6 @@ class OnnxPlateDetector(
             if (width <= 10 || height <= 6) return Pair(null, null)
 
             val croppedBmp = Bitmap.createBitmap(bitmap, left, top, width, height)
-
             val outStream = ByteArrayOutputStream()
             croppedBmp.compress(Bitmap.CompressFormat.JPEG, 85, outStream)
             val base64 = Base64.encodeToString(outStream.toByteArray(), Base64.NO_WRAP)
