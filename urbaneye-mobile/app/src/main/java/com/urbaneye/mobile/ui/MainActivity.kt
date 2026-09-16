@@ -108,7 +108,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnDismissPairing.setOnClickListener {
             userDismissedPairingOverlay = true
             binding.pairingOverlay.visibility = View.GONE
-            Toast.makeText(this, "Automated Bus CCTV Mode Active. Mounting camera facing road.", Toast.LENGTH_SHORT).show()
+            if (pairingManager.getActiveSessionId() == null) {
+                Toast.makeText(this, "Camera preview active. AI Capture is locked until device is paired via Web Portal.", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Automated Bus CCTV Mode Active. Mounting camera facing road.", Toast.LENGTH_SHORT).show()
+            }
         }
 
         binding.btnShowPinOverlay.setOnClickListener {
@@ -164,12 +168,16 @@ class MainActivity : AppCompatActivity() {
                         binding.tvPairingStatus.text = "Awaiting District Head confirmation..."
                         binding.tvBusLabel.text = "PAIRING REQUIRED"
                         binding.pbPairing.visibility = View.VISIBLE
+                        binding.tvDetectionStatus.text = "🔒 Capture Locked: Enter PIN in Web Portal"
+                        binding.tvDetectionStatus.setTextColor(Color.parseColor("#EAB308"))
                     }
                     is PairingState.Paired -> {
                         binding.pairingOverlay.visibility = View.GONE
                         val districtInfo = if (state.districtName != null) " • ${state.districtName}" else ""
                         binding.tvBusLabel.text = "${state.busLabel}$districtInfo"
                         binding.tvBusLabel.setBackgroundColor(Color.parseColor("#3310B981"))
+                        binding.tvDetectionStatus.text = "🟢 Dual AI: Scanning Road Defect + ANPR..."
+                        binding.tvDetectionStatus.setTextColor(Color.parseColor("#64748B"))
                         Toast.makeText(this@MainActivity, "Bus CCTV Paired: ${state.busLabel}", Toast.LENGTH_SHORT).show()
                     }
                     is PairingState.Error -> {
@@ -178,6 +186,8 @@ class MainActivity : AppCompatActivity() {
                         }
                         binding.tvPairingStatus.text = state.message
                         binding.pbPairing.visibility = View.GONE
+                        binding.tvDetectionStatus.text = "⚠️ Unpaired: ${state.message}"
+                        binding.tvDetectionStatus.setTextColor(Color.parseColor("#EF4444"))
                     }
                     else -> {}
                 }
@@ -258,6 +268,27 @@ class MainActivity : AppCompatActivity() {
             latestBitmap = bitmap
             latestRotationDegrees = rotationDegrees
 
+            // STRICT PAIRING GATE: Gated against capture and transmission until officially paired
+            val activeSessionId = pairingManager.getActiveSessionId()
+            if (activeSessionId == null) {
+                runOnUiThread {
+                    binding.overlayView.setDetections(emptyList())
+                    binding.tvDetectionStatus.text = "🔒 Capture Locked: Enter PIN in Web Portal to pair"
+                    binding.tvDetectionStatus.setTextColor(Color.parseColor("#EAB308"))
+                    binding.detectionBanner.visibility = View.GONE
+                    binding.tvFps.text = "AI: Idle (Unpaired)"
+
+                    val tel = locationTracker.currentTelemetry
+                    binding.tvGpsStatus.text = String.format(
+                        "GPS: %.4f, %.4f (%d km/h)",
+                        tel.latitude,
+                        tel.longitude,
+                        tel.speedKmh.toInt()
+                    )
+                }
+                return
+            }
+
             // 1. Primary Cadence: Road Defect Detection (Phase 1 Core)
             val roadStartTime = SystemClock.elapsedRealtime()
             val rawDetections = roadDetector.detect(bitmap, rotationDegrees)
@@ -282,12 +313,12 @@ class MainActivity : AppCompatActivity() {
                         val plateResults = plateDetector.detect(plateBitmap, rotationDegrees)
                         if (plateResults.isNotEmpty()) {
                             activePlateDetections = plateResults
-                            val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
+                            val pairedSessionId = pairingManager.getActiveSessionId() ?: return@execute
                             val tel = locationTracker.currentTelemetry
 
                             for (plate in plateResults) {
                                 eventSyncManager.dispatchIncidentEvent(
-                                    deviceSessionId = activeSessionId,
+                                    deviceSessionId = pairedSessionId,
                                     category = "ANPR_INCIDENT",
                                     confidence = plate.confidence,
                                     lat = tel.latitude,
@@ -371,7 +402,6 @@ class MainActivity : AppCompatActivity() {
             }
 
             // 4. Auto-transmit Confirmed Road Defects
-            val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
             if (confirmedEvents.isNotEmpty()) {
                 for (det in confirmedEvents) {
                     if (det.confidence >= roadDetector.targetConfidenceThreshold) {
@@ -419,6 +449,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun triggerManualPotholeTest() {
+        val activeSessionId = pairingManager.getActiveSessionId()
+        if (activeSessionId == null) {
+            Toast.makeText(this, "🔒 Pairing Required! Please pair this device using the 6-digit PIN in UrbanEye Web Command Center first.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val bmp = latestBitmap ?: Bitmap.createBitmap(320, 240, Bitmap.Config.ARGB_8888).apply {
             eraseColor(Color.DKGRAY)
         }
@@ -429,7 +465,6 @@ class MainActivity : AppCompatActivity() {
         val diameterDisplay = if (testResult.estimatedDiameterCm != null) " • Ø ${testResult.estimatedDiameterCm} cm (₹${testResult.estimatedRepairCost})" else ""
         Toast.makeText(this, "⚡ Test Defect Transmitted$diameterDisplay (Long press for ANPR test)", Toast.LENGTH_SHORT).show()
 
-        val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
         val tel = locationTracker.currentTelemetry
         eventSyncManager.dispatchDetectionEvent(
             deviceSessionId = activeSessionId,
@@ -448,6 +483,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun triggerManualPlateTest() {
+        val activeSessionId = pairingManager.getActiveSessionId()
+        if (activeSessionId == null) {
+            Toast.makeText(this, "🔒 Pairing Required! Please pair this device using the 6-digit PIN in UrbanEye Web Command Center first.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val testResult = DetectionResult(
             type = "ANPR_INCIDENT",
             category = "ANPR_INCIDENT",
@@ -463,7 +504,6 @@ class MainActivity : AppCompatActivity() {
         binding.overlayView.setDetections(listOf(testResult))
         Toast.makeText(this, "🚨 ANPR Incident Transmitted: DL 01 AB 1234", Toast.LENGTH_SHORT).show()
 
-        val activeSessionId = pairingManager.getActiveSessionId() ?: "demo-session-kapurthala"
         val tel = locationTracker.currentTelemetry
         eventSyncManager.dispatchIncidentEvent(
             deviceSessionId = activeSessionId,
