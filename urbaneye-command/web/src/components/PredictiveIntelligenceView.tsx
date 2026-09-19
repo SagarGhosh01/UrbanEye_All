@@ -124,15 +124,23 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
       <div className="p-5 rounded-2xl bg-[#10233D] border border-teal-500/30 space-y-4 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-400/30 text-xs font-mono font-bold uppercase mb-1">
-              <Zap className="w-3.5 h-3.5 text-amber-300" />
-              <span>Pavement Health Index (PHI) Engine</span>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-400/30 text-xs font-mono font-bold uppercase">
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span>Pavement Health Index (PHI) Engine</span>
+              </div>
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live Telemetry
+              </span>
             </div>
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-teal-400" />
-              15 / 30 / 60-Minute &amp; 30-Day Infrastructure Decay Forecasting
+              15 / 30 / 60-Minute & 30-Day Infrastructure Decay Forecasting
             </h3>
-            <p className="text-xs text-slate-300">AI degradation decay modeling, sub-base structural scoring, and bottleneck prediction</p>
+            <p className="text-xs text-slate-300">
+              AI degradation decay modeling, sub-base structural scoring & bottleneck prediction {lastSyncTime ? `• Synced ${lastSyncTime}` : ''}
+            </p>
           </div>
 
           {/* Timeframe Selector */}
@@ -172,8 +180,8 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
           <div className="bg-slate-900/90 p-3.5 rounded-xl border border-teal-500/40 flex items-center justify-between">
             <div>
               <div className="text-[10px] font-extrabold text-teal-300 uppercase tracking-wider">Pavement Health Index</div>
-              <div className="text-2xl font-black text-teal-400 mt-0.5">82.4 <span className="text-xs font-normal text-slate-400">/ 100</span></div>
-              <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">State: Good / Satisfactory</div>
+              <div className="text-2xl font-black text-teal-400 mt-0.5">{phi.pavementHealthIndex} <span className="text-xs font-normal text-slate-400">/ 100</span></div>
+              <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">State: {phi.phiState}</div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-xs border border-teal-500/40">
               PHI
@@ -183,7 +191,7 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
           <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
             <div>
               <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">30-Day Decay Forecast</div>
-              <div className="text-2xl font-black text-amber-400 mt-0.5">-14.2% <span className="text-xs font-normal text-slate-400">drop</span></div>
+              <div className="text-2xl font-black text-amber-400 mt-0.5">{phi.decayForecastPct}% <span className="text-xs font-normal text-slate-400">drop</span></div>
               <div className="text-[10px] text-amber-300 font-semibold mt-0.5">If unrepaired by Day 30</div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs border border-amber-500/40">
@@ -194,7 +202,7 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
           <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
             <div>
               <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sub-base Compaction</div>
-              <div className="text-2xl font-black text-blue-400 mt-0.5">88.6%</div>
+              <div className="text-2xl font-black text-blue-400 mt-0.5">{phi.subBaseCompaction}%</div>
               <div className="text-[10px] text-blue-300 font-semibold mt-0.5">Structural Base Infill</div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-xs border border-blue-500/40">
@@ -205,7 +213,7 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
           <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
             <div>
               <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Prevented Loss</div>
-              <div className="text-xl font-black text-emerald-400 mt-0.5">₹4.85 Lakhs</div>
+              <div className="text-xl font-black text-emerald-400 mt-0.5">₹{phi.preventedLossLakhs} Lakhs</div>
               <div className="text-[10px] text-emerald-300 font-semibold mt-0.5">Early PWD Interventions</div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs border border-emerald-500/40">
