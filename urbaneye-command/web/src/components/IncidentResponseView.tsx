@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IncidentRecord, TrackedVehicle, AlertStatus, IncidentCategory } from '../types';
 import { intelligenceService } from '../services/intelligenceService';
+import { getSocket } from '../services/socket';
 import { AlertTriangle, Car, ShieldAlert, Eye, Search, CheckCircle2, Clock, MapPin, Navigation, FileText, ChevronRight, X } from 'lucide-react';
 
 interface IncidentResponseViewProps {
@@ -11,9 +12,9 @@ interface IncidentResponseViewProps {
 export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ districtId, onSelectOnMap }) => {
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [summary, setSummary] = useState({
-    totalIncidentsToday: 4,
-    pendingAlerts: 2,
-    plateDetectionRatePercent: 75,
+    totalIncidentsToday: 28,
+    pendingAlerts: 6,
+    plateDetectionRatePercent: 92,
     activeTrackedVehicles: 14,
   });
   const [selectedIncident, setSelectedIncident] = useState<IncidentRecord | null>(null);
@@ -23,6 +24,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
   const [searchQuery, setSearchQuery] = useState('');
   const [authorityNotes, setAuthorityNotes] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
 
   // Police Wanted Vehicle Watchlist State
   const [hotlistPlates, setHotlistPlates] = useState<string[]>(['KA-01-AB-1234', 'MH-12-DE-5678', 'PB-09-X-9988']);
@@ -70,24 +72,77 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
   };
 
   useEffect(() => {
-    loadData();
-  }, [districtId, filterCategory, filterStatus]);
+    let isMounted = true;
 
-  const loadData = async () => {
-    const res = await intelligenceService.getIncidents(
-      districtId,
-      filterStatus !== 'ALL' ? (filterStatus as AlertStatus) : undefined,
-      filterCategory !== 'ALL' ? filterCategory : undefined
-    );
-    if (res.status === 'SUCCESS') {
-      setIncidents(res.incidents || []);
-      if (res.summary) setSummary(res.summary);
-    }
-    const tracksRes = await intelligenceService.getTrackedVehicles(searchQuery);
-    if (tracksRes.status === 'SUCCESS') {
-      setTrackedVehicles(tracksRes.tracks || []);
-    }
-  };
+    const loadData = async () => {
+      try {
+        const res = await intelligenceService.getIncidents(
+          districtId,
+          filterStatus !== 'ALL' ? (filterStatus as AlertStatus) : undefined,
+          filterCategory !== 'ALL' ? filterCategory : undefined
+        );
+        if (!isMounted) return;
+        if (res.status === 'SUCCESS') {
+          setIncidents(res.incidents || []);
+          if (res.summary) setSummary(res.summary);
+        }
+        const tracksRes = await intelligenceService.getTrackedVehicles(searchQuery);
+        if (!isMounted) return;
+        if (tracksRes.status === 'SUCCESS') {
+          setTrackedVehicles(tracksRes.tracks || []);
+        }
+        setLastSyncTime(new Date().toLocaleTimeString());
+      } catch (err) {
+        console.warn('Error fetching live incident tracking data:', err);
+      }
+    };
+
+    loadData();
+
+    // 4-second continuous polling interval for live real-time tracking
+    const interval = setInterval(() => {
+      loadData();
+    }, 4000);
+
+    // Socket.IO real-time instant alerts and trajectory updates
+    const socket = getSocket();
+    const handleNewIncident = (newInc: IncidentRecord) => {
+      setIncidents((prev) => [newInc, ...prev.filter((i) => i.id !== newInc.id)]);
+      setSummary((prev) => ({
+        ...prev,
+        totalIncidentsToday: prev.totalIncidentsToday + 1,
+        pendingAlerts: prev.pendingAlerts + 1,
+      }));
+    };
+
+    const handleStatusChange = (data: { id: string; status: AlertStatus; authorityNotes?: string }) => {
+      setIncidents((prev) =>
+        prev.map((i) =>
+          i.id === data.id
+            ? { ...i, status: data.status, authorityNotes: data.authorityNotes || i.authorityNotes }
+            : i
+        )
+      );
+    };
+
+    const handleTrackUpdate = (data: { tracks: TrackedVehicle[] }) => {
+      if (data && data.tracks && Array.isArray(data.tracks)) {
+        setTrackedVehicles(data.tracks);
+      }
+    };
+
+    socket.on('incident:new', handleNewIncident);
+    socket.on('incident:status_change', handleStatusChange);
+    socket.on('vehicle:track_update', handleTrackUpdate);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      socket.off('incident:new', handleNewIncident);
+      socket.off('incident:status_change', handleStatusChange);
+      socket.off('vehicle:track_update', handleTrackUpdate);
+    };
+  }, [districtId, filterCategory, filterStatus, searchQuery]);
 
   const handleUpdateStatus = async (id: string, newStatus: AlertStatus) => {
     setUpdatingId(id);
@@ -96,7 +151,6 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
     if (selectedIncident && selectedIncident.id === id) {
       setSelectedIncident({ ...selectedIncident, status: newStatus, authorityNotes });
     }
-    loadData();
   };
 
   const filteredIncidents = incidents.filter((inc) => {
@@ -204,11 +258,19 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
         <div className="lg:col-span-2 p-5 rounded-2xl bg-[#10233D] border border-slate-800 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Car className="w-5 h-5 text-teal-400" />
-                Vehicle Tracker & ANPR Intelligence Feed
-              </h3>
-              <p className="text-xs text-slate-400">Live ANPR plate recognition, speed tracking & wanted vehicle detection</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Car className="w-5 h-5 text-teal-400" />
+                  Vehicle Tracker & ANPR Intelligence Feed
+                </h3>
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live ANPR Stream
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Real-time optical plate recognition, speed tracking & wanted vehicle alerts {lastSyncTime ? `• Last sync ${lastSyncTime}` : ''}
+              </p>
             </div>
             
             <div className="flex items-center gap-2">
@@ -636,16 +698,29 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Snapshot Display */}
               <div className="aspect-video bg-slate-900 rounded-xl border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
-                <Car className="w-12 h-12 text-slate-600 mb-2" />
-                <span className="text-xs text-slate-400 font-mono">Camera Frame Snippet</span>
-                <span className="text-[10px] text-teal-400 font-mono mt-1">Bus Sensor: {selectedIncident.busLabel}</span>
-                
-                {/* Simulated Bounding Box Overlay */}
-                <div className="absolute top-4 left-6 right-6 bottom-6 border-2 border-red-500/80 rounded flex items-start p-1">
-                  <span className="bg-red-500 text-white font-mono text-[9px] px-1 rounded">
-                    {selectedIncident.vehicleType} ({(selectedIncident.confidence * 100).toFixed(0)}%)
-                  </span>
+                {selectedIncident.imageSnippet ? (
+                  <img
+                    src={selectedIncident.imageSnippet}
+                    alt={selectedIncident.plateText || 'Vehicle Snapshot'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
+                    <Car className="w-12 h-12 text-slate-600 mb-2" />
+                    <span className="text-xs text-slate-400 font-mono">Camera Frame Snippet</span>
+                    <span className="text-[10px] text-teal-400 font-mono mt-1">Bus Sensor: {selectedIncident.busLabel}</span>
+                    
+                    {/* Simulated Bounding Box Overlay */}
+                    <div className="absolute top-4 left-6 right-6 bottom-6 border-2 border-red-500/80 rounded flex items-start p-1">
+                      <span className="bg-red-500 text-white font-mono text-[9px] px-1 rounded">
+                        {selectedIncident.vehicleType} ({(selectedIncident.confidence * 100).toFixed(0)}%)
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur text-[9px] font-mono text-slate-300 border border-white/10">
+                  CAM-{selectedIncident.busLabel?.slice(-3) || 'REC'} • {selectedIncident.vehicleType}
                 </div>
               </div>
 
