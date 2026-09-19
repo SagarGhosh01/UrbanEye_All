@@ -17,6 +17,7 @@ import { IncidentResponseView } from './components/IncidentResponseView';
 import { SafetyIntelligenceView } from './components/SafetyIntelligenceView';
 import { PredictiveIntelligenceView } from './components/PredictiveIntelligenceView';
 import { CitizenReportView } from './components/CitizenReportView';
+import { RoadMitrChatbot } from './components/RoadMitrChatbot';
 import { Login } from './pages/Login';
 import { LandingPage } from './pages/LandingPage';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -29,6 +30,7 @@ export const App: React.FC = () => {
     <ThemeProvider>
       <LanguageProvider>
         <AppInner />
+        <RoadMitrChatbot />
       </LanguageProvider>
     </ThemeProvider>
   );
