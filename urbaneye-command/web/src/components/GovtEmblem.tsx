@@ -5,16 +5,16 @@ interface GovtEmblemProps {
   size?: number;
 }
 
-export const GovtEmblem: React.FC<GovtEmblemProps> = ({ className = '', size = 56 }) => {
+export const GovtEmblem: React.FC<GovtEmblemProps> = ({ className = '', size = 52 }) => {
   return (
     <div 
-      className={`relative flex items-center justify-center shrink-0 bg-white rounded-full p-0.5 border border-slate-300 shadow-sm ${className}`} 
+      className={`relative flex items-center justify-center shrink-0 bg-white rounded-lg p-1 border border-amber-300 shadow-sm ${className}`} 
       style={{ width: size, height: size }}
     >
       <img
-        src="/srims_seal_logo.png?v=3"
-        alt="SRIMS Official Government Seal"
-        className="w-full h-full object-contain rounded-full mix-blend-multiply"
+        src="/emblem.png?v=5"
+        alt="State Emblem of India"
+        className="w-full h-full object-contain mix-blend-multiply"
         onError={(e) => {
           (e.target as HTMLImageElement).src = '/emblem.svg';
         }}
