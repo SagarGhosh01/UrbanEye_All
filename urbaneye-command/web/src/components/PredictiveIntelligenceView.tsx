@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CongestionForecastData, RecurringHotspot, UrbanRecommendation } from '../types';
 import { intelligenceService } from '../services/intelligenceService';
+import { getSocket } from '../services/socket';
 import { Sparkles, TrendingUp, AlertCircle, Wrench, Navigation, CheckCircle2, ArrowRight, ShieldAlert, Clock, MapPin, Zap } from 'lucide-react';
+
+interface PHIMetrics {
+  pavementHealthIndex: number;
+  phiState: string;
+  decayForecastPct: number;
+  subBaseCompaction: number;
+  preventedLossLakhs: number;
+}
 
 interface PredictiveIntelligenceViewProps {
   districtId?: string;
@@ -15,15 +24,22 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
   const [executingId, setExecutingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeTimeframe, setActiveTimeframe] = useState<'min15' | 'min30' | 'min60'>('min15');
+  const [phi, setPhi] = useState<PHIMetrics>({
+    pavementHealthIndex: 82.4,
+    phiState: 'Good / Satisfactory',
+    decayForecastPct: -14.2,
+    subBaseCompaction: 88.6,
+    preventedLossLakhs: 4.85,
+  });
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
 
-  useEffect(() => {
-    loadData();
-  }, [districtId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const forecastRes = await intelligenceService.getCongestionForecast(districtId);
     if (forecastRes.status === 'SUCCESS' && forecastRes.forecast) {
       setForecast(forecastRes.forecast);
+      if (forecastRes.phi) {
+        setPhi(forecastRes.phi);
+      }
     }
     const hotspotsRes = await intelligenceService.getRecurringHotspots(districtId);
     if (hotspotsRes.status === 'SUCCESS') {
@@ -33,7 +49,41 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
     if (recsRes.status === 'SUCCESS') {
       setRecommendations(recsRes.recommendations || []);
     }
-  };
+    setLastSyncTime(new Date().toLocaleTimeString());
+  }, [districtId]);
+
+  // Initial load + 5-second polling
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, [loadData]);
+
+  // Socket.IO real-time updates
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const onForecastUpdate = (payload: any) => {
+      if (payload.forecast) setForecast(payload.forecast);
+      if (payload.phi) setPhi(payload.phi);
+      setLastSyncTime(new Date().toLocaleTimeString());
+    };
+
+    const onRecDispatched = (payload: any) => {
+      setRecommendations(prev =>
+        prev.map(r => r.id === payload.id ? { ...r, status: 'DISPATCHED' as const } : r)
+      );
+    };
+
+    socket.on('predictive:forecast_update', onForecastUpdate);
+    socket.on('recommendation:dispatched', onRecDispatched);
+
+    return () => {
+      socket.off('predictive:forecast_update', onForecastUpdate);
+      socket.off('recommendation:dispatched', onRecDispatched);
+    };
+  }, []);
 
   const handleExecuteRec = async (rec: UrbanRecommendation) => {
     setExecutingId(rec.id);
