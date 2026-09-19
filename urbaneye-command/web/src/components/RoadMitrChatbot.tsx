@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Bot, Send, X, MessageSquare, AlertCircle, Phone, MapPin, 
-  Sparkles, ShieldCheck, ChevronRight, HelpCircle, RefreshCw, Headset
-} from 'lucide-react';
+import { Headset, Send, X, Phone, AlertCircle, RefreshCw, Globe, Check, Copy } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface Message {
@@ -14,74 +11,67 @@ interface Message {
 }
 
 export const RoadMitrChatbot: React.FC = () => {
-  const { language, t } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const hindiStyle = { fontFamily: "'Noto Sans Devanagari', sans-serif" };
 
-  const initialMessages: Message[] = [
+  const getInitialMessages = (lang: string): Message[] => [
     {
-      id: 'msg-1',
+      id: 'msg-welcome',
       sender: 'bot',
-      text: language === 'HI' 
-        ? 'नमस्कार! मैं Road Mitr (सड़क मित्र) हूँ — भारत सरकार एवं NHAI का AI सड़क सहायता रोबोट। मैं आपकी क्या सहायता कर सकता हूँ?'
-        : 'Namaste! I am Road Mitr — Official AI Road & Highway Infrastructure Assistant for Govt. of India / NHAI. How can I assist you today?',
+      text: lang === 'HI'
+        ? 'नमस्कार! मैं Road Mitr (सड़क मित्र) हूँ — NHAI का AI सहायक। मैं आपकी सहायता कैसे कर सकता हूँ?'
+        : 'Namaste! I am Road Mitr — NHAI AI Assistant. How can I assist you today?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      quickReplies: language === 'HI' ? [
-        { label: '🚨 सड़क क्षति की रिपोर्ट करें', action: 'REPORT_DEFECT' },
-        { label: '📞 हेल्पलाइन 1033 कनेक्ट करें', action: 'HELPLINE' },
-        { label: '🗺️ राष्ट्रीय राजमार्ग स्थिति', action: 'ROAD_STATUS' },
-        { label: '📋 शिकायत स्थिति देखें', action: 'TRACK_STATUS' },
+      quickReplies: lang === 'HI' ? [
+        { label: '🚨 रिपोर्ट दर्ज करें', action: 'REPORT_DEFECT' },
+        { label: '📞 हेल्पलाइन 1033', action: 'HELPLINE' },
+        { label: '📋 शिकायत स्थिति', action: 'TRACK_STATUS' },
       ] : [
-        { label: '🚨 Report Pothole / Defect', action: 'REPORT_DEFECT' },
-        { label: '📞 Emergency Helpline 1033', action: 'HELPLINE' },
-        { label: '🗺️ Highway Road Health', action: 'ROAD_STATUS' },
-        { label: '📋 Track Complaint Status', action: 'TRACK_STATUS' },
+        { label: '🚨 Report Defect', action: 'REPORT_DEFECT' },
+        { label: '📞 Helpline 1033', action: 'HELPLINE' },
+        { label: '📋 Track Status', action: 'TRACK_STATUS' },
       ]
     }
   ];
 
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(language));
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isTyping]);
 
   const generateBotReply = (userText: string, actionKey?: string): string => {
     const textLower = userText.toLowerCase();
 
     if (actionKey === 'REPORT_DEFECT' || textLower.includes('report') || textLower.includes('pothole') || textLower.includes('गड्ढा') || textLower.includes('रिर्पोट')) {
       return language === 'HI'
-        ? 'सड़क क्षति रिपोर्ट दर्ज करने के लिए:\n1. ऊपरी मेनू में "नागरिक सेवा पोर्टल" पर क्लिक करें।\n2. अपनी फोटो/कैमरा सेंसर अपलोड करें।\n3. जीपीएस ऑटो-लोकेशन से स्थान दर्ज होगा और निकटतम एनएचएआई निरीक्षक को कार्य आदेश प्रेषित होगा।'
-        : 'To report a road defect or pothole:\n1. Click "Citizen Portal" in the top navigation bar.\n2. Upload or stream live defect camera feed.\n3. Automatic GPS pinpointing assigns work orders to the nearest NHAI field inspector within 4 hours.';
+        ? 'सड़क क्षति रिपोर्ट करने के लिए ऊपरी मेनू में "Citizen Reporter" पर जाएँ या फोटो अपलोड करें। GPS स्थान दर्ज कर निकटतम अधिकारी को सूचित किया जाएगा।'
+        : 'To report a road defect or pothole, click "Citizen Reporter" in the top menu or upload a image. GPS location auto-assigns field inspectors.';
     }
 
-    if (actionKey === 'HELPLINE' || textLower.includes('1033') || textLower.includes('emergency') || textLower.includes('helpline') || textLower.includes('आपतकालीन')) {
+    if (actionKey === 'HELPLINE' || textLower.includes('1033') || textLower.includes('emergency') || textLower.includes('helpline') || textLower.includes('आपातकाल')) {
       return language === 'HI'
-        ? '🚨 राष्ट्रीय राजमार्ग 24x7 टोल-फ्री आपातकालीन हेल्पलाइन:\n📞 टोल फ्री कॉल: 1033\nदुर्घटना, एम्बुलेंस आवश्यकता या क्रेन सहायता के लिए 1033 पर तुरंत डायल करें।'
-        : '🚨 National Highways Emergency Patrol Helpline:\n📞 Toll Free: 1033 (24x7 Active)\nCall 1033 for immediate highway ambulance dispatch, accident support, or vehicle towing assistance.';
-    }
-
-    if (actionKey === 'ROAD_STATUS' || textLower.includes('status') || textLower.includes('highway') || textLower.includes('राजमार्ग') || textLower.includes('स्वास्थ्य')) {
-      return language === 'HI'
-        ? '📊 SRIMS पोर्टल वर्तमान में 14,500+ किमी राष्ट्रीय राजमार्गों और शहरी गलियारों की 24x7 निरंतर निगरानी कर रहा है। औसत AI सटीकता दर 98.4% है।'
-        : '📊 SRIMS Portal is actively monitoring 14,500+ KM of National Highways with 98.4% AI accuracy across 15 active state transit sectors.';
+        ? '📞 राष्ट्रीय राजमार्ग टोल-फ्री हेल्पलाइन: 1033 (24x7)। दुर्घटना या क्रेन सहायता के लिए डायल करें।'
+        : '📞 National Highway Toll-Free Helpline: 1033 (24x7 Active). Call for accident or towing emergency.';
     }
 
     if (actionKey === 'TRACK_STATUS' || textLower.includes('track') || textLower.includes('complaint') || textLower.includes('स्थिति')) {
       return language === 'HI'
-        ? 'अपनी शिकायत की स्थिति जाँचने के लिए अपनी शिकायत आईडी दर्ज करें (उदा. URB-2026-8891) या डैशबोर्ड के "मुद्दे एवं शिकायतें" टैब पर जाएं।'
-        : 'To track complaint status, enter your Incident Reference ID (e.g. URB-2026-8891) or check the "Issues & Complaints" registry tab on the command dashboard.';
+        ? 'शिकायत की स्थिति के लिए अपनी रेफरेंस आईडी दर्ज करें (उदा. URB-2026-9481) या डैशबोर्ड तालिका देखें।'
+        : 'To track your complaint, enter your Reference ID (e.g. URB-2026-9481) or check the Defects Table on the dashboard.';
     }
 
     return language === 'HI'
-      ? 'धन्यवाद! आपका संदेश SRIMS AI कंट्रोल सिस्टम में प्राप्त हुआ है। अधिक विवरण के लिए 1033 डायल करें या पोर्टल के विभिन्न मॉड्यूल का चयन करें।'
-      : 'Thank you! Your query has been logged into SRIMS AI Surveillance System. For urgent assistance call Toll Free 1033 or select modules from the navigation bar.';
+      ? `आपका संदेश "${userText}" प्राप्त हुआ। त्वरित सहायता के लिए 1033 डायल करें।`
+      : `Thank you for your message regarding "${userText}". For urgent help call Toll Free 1033.`;
   };
 
   const handleSendMessage = (textToSend?: string, actionKey?: string) => {
@@ -100,15 +90,14 @@ export const RoadMitrChatbot: React.FC = () => {
     setIsTyping(true);
 
     setTimeout(() => {
-      const replyText = generateBotReply(text, actionKey);
       const botMsg: Message = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        text: replyText,
+        text: generateBotReply(text, actionKey),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         quickReplies: language === 'HI' ? [
           { label: '🚨 रिपोर्ट दर्ज करें', action: 'REPORT_DEFECT' },
-          { label: '📞 1033 हेल्पलाइन', action: 'HELPLINE' }
+          { label: '📞 हेल्पलाइन 1033', action: 'HELPLINE' }
         ] : [
           { label: '🚨 Report Defect', action: 'REPORT_DEFECT' },
           { label: '📞 Helpline 1033', action: 'HELPLINE' }
@@ -116,107 +105,120 @@ export const RoadMitrChatbot: React.FC = () => {
       };
       setMessages((prev) => [...prev, botMsg]);
       setIsTyping(false);
-    }, 700);
+    }, 500);
+  };
+
+  const handleCopyText = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-5 right-5 z-50 font-sans select-none">
       
-      {/* 1. Floating Avatar Launcher Button (Exact match with user screenshot: "Road Mitr") */}
+      {/* 1. CLEAN, SMALL & NORMAL FLOATING LAUNCHER BUTTON */}
       {!isOpen && (
         <button
-          onClick={() => setIsIsOpenTrue()}
-          className="group relative flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none"
-          title="Open Road Mitr AI Assistant"
+          onClick={() => setIsOpen(true)}
+          className="flex items-center space-x-2 bg-[#005F9E] hover:bg-[#004C8C] text-white px-3.5 py-2.5 rounded-full shadow-lg border border-white/30 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
+          title="Open Road Mitr Assistant"
         >
-          {/* Badge Halo Pulse Ring */}
-          <div className="absolute -inset-1 bg-blue-500/30 rounded-full blur-sm group-hover:bg-blue-600/50 transition"></div>
-
-          {/* Official Road Mitr Custom Shape Button */}
-          <div className="relative bg-[#005F9E] text-white px-4 py-2.5 rounded-full shadow-2xl border-2 border-white flex flex-col items-center min-w-[110px]">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-1 text-white border border-white/30">
-              <Headset className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-black tracking-wide leading-none text-white font-sans">
-              Road Mitr
-            </span>
-            <span className="text-[9px] text-amber-300 font-bold mt-0.5" style={hindiStyle}>
-              सड़क मित्र (AI 24x7)
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Headset className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex flex-col text-left pr-1">
+            <span className="text-xs font-bold leading-tight">Road Mitr</span>
+            <span className="text-[10px] text-amber-300 font-semibold leading-none mt-0.5" style={hindiStyle}>
+              सड़क मित्र (24x7)
             </span>
           </div>
         </button>
       )}
 
-      {/* Helper function toggle setter */}
-      {/* 2. Interactive Chat Modal Window */}
+      {/* 2. CLEAN & NORMAL CHAT WINDOW */}
       {isOpen && (
-        <div className="w-[360px] sm:w-[400px] h-[520px] bg-white rounded-2xl shadow-2xl border border-blue-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="w-[330px] sm:w-[350px] h-[450px] sm:h-[470px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
           
           {/* Header */}
-          <div className="bg-[#002244] text-white px-4 py-3 border-b border-amber-500/40 flex items-center justify-between">
+          <div className="bg-[#003366] text-white px-3.5 py-2.5 flex items-center justify-between shadow-sm">
             <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-full bg-[#005F9E] border border-amber-400 text-white flex items-center justify-center shrink-0 shadow-inner">
-                <Headset className="w-5 h-5 text-white" />
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0">
+                <Headset className="w-4 h-4 text-white" />
               </div>
               <div>
                 <div className="flex items-center space-x-1.5">
-                  <h3 className="text-sm font-black text-white tracking-wide">Road Mitr</h3>
-                  <span className="bg-emerald-500 w-2 h-2 rounded-full animate-pulse"></span>
-                  <span className="text-[10px] bg-emerald-900/80 text-emerald-200 px-1.5 py-0.2 rounded font-mono">ONLINE</span>
+                  <h3 className="text-xs font-bold tracking-wide">Road Mitr</h3>
+                  <span className="text-[9px] bg-emerald-500/30 text-emerald-200 px-1.5 py-0.2 rounded font-mono">24x7 AI</span>
                 </div>
-                <p className="text-[10px] text-gray-300" style={hindiStyle}>
-                  सड़क मित्र | Govt. AI Virtual Assistant
-                </p>
+                <p className="text-[10px] text-gray-300" style={hindiStyle}>सड़क मित्र</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-1">
               <button
-                onClick={() => setMessages(initialMessages)}
-                className="p-1.5 text-gray-300 hover:text-amber-400 hover:bg-white/10 rounded transition"
+                onClick={toggleLanguage}
+                className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 text-amber-300 rounded text-[10px] font-bold transition flex items-center space-x-1"
+                title="Switch Language"
+              >
+                <Globe className="w-3 h-3" />
+                <span>{language === 'EN' ? 'HI' : 'EN'}</span>
+              </button>
+              <button
+                onClick={() => setMessages(getInitialMessages(language))}
+                className="p-1 text-gray-300 hover:text-amber-300 rounded transition"
                 title="Reset Chat"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-gray-300 hover:text-white hover:bg-white/10 rounded transition"
-                title="Close Chat"
+                className="p-1 text-gray-300 hover:text-white rounded transition"
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Messages Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50 text-xs">
+          {/* Chat Messages Feed */}
+          <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50 text-xs">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[85%] p-3 rounded-2xl shadow-xs whitespace-pre-wrap leading-relaxed ${
+                  className={`max-w-[88%] p-2.5 rounded-xl leading-normal text-xs ${
                     msg.sender === 'user'
                       ? 'bg-[#003366] text-white rounded-br-none font-medium'
-                      : 'bg-white text-gray-800 border border-slate-200 rounded-bl-none shadow-sm'
+                      : 'bg-white text-gray-800 border border-slate-200 rounded-bl-none shadow-2xs'
                   }`}
                 >
-                  {msg.text}
+                  <p className="whitespace-pre-wrap">{msg.text}</p>
                 </div>
-                
-                <span className="text-[9px] text-gray-400 mt-1 px-1">
-                  {msg.timestamp}
-                </span>
 
-                {/* Quick Reply Actions */}
+                <div className="flex items-center space-x-1 px-1 mt-0.5 text-[9px] text-gray-400">
+                  <span>{msg.timestamp}</span>
+                  {msg.sender === 'bot' && (
+                    <button
+                      onClick={() => handleCopyText(msg.id, msg.text)}
+                      className="hover:text-gray-600 transition"
+                      title="Copy text"
+                    >
+                      {copiedId === msg.id ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5" />}
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Reply Chips */}
                 {msg.quickReplies && (
-                  <div className="flex flex-wrap gap-1.5 mt-2 max-w-[90%]">
+                  <div className="flex flex-wrap gap-1.5 mt-2 max-w-[95%]">
                     {msg.quickReplies.map((qr, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSendMessage(qr.label, qr.action)}
-                        className="text-[11px] bg-blue-50 hover:bg-blue-100 text-[#003366] border border-blue-200 px-2.5 py-1 rounded-full font-semibold transition"
+                        className="text-[10px] bg-white hover:bg-blue-50 text-[#003366] border border-blue-200 px-2 py-1 rounded-md font-semibold transition shadow-2xs"
                       >
                         {qr.label}
                       </button>
@@ -226,31 +228,32 @@ export const RoadMitrChatbot: React.FC = () => {
               </div>
             ))}
 
-            {/* Typing Indicator */}
+            {/* Typing Dots */}
             {isTyping && (
-              <div className="flex items-center space-x-1.5 bg-white border border-slate-200 p-2.5 rounded-2xl rounded-bl-none max-w-[100px]">
-                <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></span>
-                <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+              <div className="flex items-center space-x-1 bg-white border border-slate-200 p-2 rounded-xl rounded-bl-none max-w-[70px]">
+                <span className="w-1.5 h-1.5 bg-[#003366] rounded-full animate-bounce"></span>
+                <span className="w-1.5 h-1.5 bg-[#003366] rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                <span className="w-1.5 h-1.5 bg-[#003366] rounded-full animate-bounce [animation-delay:0.4s]"></span>
               </div>
             )}
+
             <div ref={chatEndRef} />
           </div>
 
-          {/* Quick Helper Pill Strip */}
-          <div className="bg-slate-100 border-t border-slate-200 px-3 py-1.5 flex items-center space-x-2 overflow-x-auto text-[10px]">
+          {/* Helper Pills */}
+          <div className="bg-slate-100 border-t border-slate-200 px-2.5 py-1.5 flex items-center space-x-1.5 text-[10px] overflow-x-auto no-scrollbar">
             <button
               onClick={() => handleSendMessage('1033', 'HELPLINE')}
-              className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold flex items-center space-x-1 shrink-0 border border-red-200"
+              className="bg-red-50 hover:bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center space-x-1 shrink-0"
             >
-              <Phone className="w-3 h-3" />
+              <Phone className="w-3 h-3 text-red-600" />
               <span>Call 1033</span>
             </button>
             <button
               onClick={() => handleSendMessage('Report defect', 'REPORT_DEFECT')}
-              className="bg-blue-100 text-[#003366] px-2 py-0.5 rounded-full font-bold flex items-center space-x-1 shrink-0 border border-blue-200"
+              className="bg-blue-50 hover:bg-blue-100 text-[#003366] px-2 py-0.5 rounded font-bold border border-blue-200 flex items-center space-x-1 shrink-0"
             >
-              <AlertCircle className="w-3 h-3" />
+              <AlertCircle className="w-3 h-3 text-[#003366]" />
               <span>Report Defect</span>
             </button>
           </div>
@@ -261,22 +264,22 @@ export const RoadMitrChatbot: React.FC = () => {
               e.preventDefault();
               handleSendMessage();
             }}
-            className="p-3 bg-white border-t border-slate-200 flex items-center space-x-2"
+            className="p-2 bg-white border-t border-slate-200 flex items-center space-x-1.5"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={language === 'HI' ? 'सड़क मित्र से प्रश्न पूछें...' : 'Ask Road Mitr anything...'}
-              className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#003366]"
+              placeholder={language === 'HI' ? 'सड़क मित्र से पूछें...' : 'Ask Road Mitr...'}
+              className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#003366]"
             />
             <button
               type="submit"
               disabled={!input.trim()}
-              className="p-2 bg-[#003366] hover:bg-[#002244] disabled:opacity-50 text-white rounded-xl transition shadow-sm"
-              title="Send Message"
+              className="p-1.5 bg-[#003366] hover:bg-[#002244] disabled:opacity-40 text-white rounded-lg transition"
+              title="Send"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3.5 h-3.5" />
             </button>
           </form>
 
@@ -285,10 +288,6 @@ export const RoadMitrChatbot: React.FC = () => {
 
     </div>
   );
-
-  function setIsIsOpenTrue() {
-    setIsOpen(true);
-  }
 };
 
 export default RoadMitrChatbot;
