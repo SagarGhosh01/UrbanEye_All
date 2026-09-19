@@ -6,19 +6,64 @@ interface GovtEmblemProps {
 }
 
 export const GovtEmblem: React.FC<GovtEmblemProps> = ({ className = '', size = 52 }) => {
+  const hindiStyle = { fontFamily: "'Noto Sans Devanagari', 'Segoe UI', sans-serif" };
+
   return (
     <div 
-      className={`relative flex items-center justify-center shrink-0 bg-white rounded-lg p-1 border border-amber-300 shadow-sm ${className}`} 
+      className={`relative flex items-center justify-center shrink-0 bg-[#FFFBF0] rounded-full p-1 border-2 border-amber-400 shadow-sm ${className}`} 
       style={{ width: size, height: size }}
     >
-      <img
-        src="/emblem.png?v=5"
-        alt="State Emblem of India"
-        className="w-full h-full object-contain mix-blend-multiply"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = '/emblem.svg';
-        }}
-      />
+      <svg
+        width={size - 8}
+        height={size - 8}
+        viewBox="0 0 100 100"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full"
+      >
+        {/* Outer Circular Ring */}
+        <circle cx="50" cy="50" r="47" stroke="#003366" strokeWidth="3" fill="#FFFBF0" />
+        <circle cx="50" cy="50" r="43" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="3 2" />
+
+        {/* Ashoka Lion Capital Vector Silhouette */}
+        <g fill="#003366">
+          {/* Central Lion Head & Crown */}
+          <path d="M50 14 C46 14 43 17 43 21 C43 23 44 25 45 27 C43 29 42 32 42 35 C42 37 44 39 46 40 L46 47 L54 47 L54 40 C56 39 58 37 58 35 C58 32 57 29 55 27 C56 25 57 23 57 21 C57 17 54 14 50 14 Z" />
+          
+          {/* Left Lion Silhouette */}
+          <path d="M38 24 C35 24 33 26 33 29 C33 31 34 33 35 34 C33 36 32 39 32 42 C32 44 34 46 36 47 L44 47 L44 41 C41 40 39 38 39 35 Z" opacity="0.9" />
+
+          {/* Right Lion Silhouette */}
+          <path d="M62 24 C65 24 67 26 67 29 C67 31 66 33 65 34 C67 36 68 39 68 42 C68 44 66 46 64 47 L56 47 L56 41 C59 40 61 38 61 35 Z" opacity="0.9" />
+
+          {/* Abacus Base Platform */}
+          <rect x="28" y="48" width="44" height="6" rx="1.5" fill="#003366" />
+          <rect x="30" y="55" width="40" height="3" rx="1" fill="#D4AF37" />
+
+          {/* Ashoka Chakra 24-Spoke Wheel */}
+          <circle cx="50" cy="65" r="7" stroke="#003366" strokeWidth="1.5" fill="none" />
+          <circle cx="50" cy="65" r="1.5" fill="#003366" />
+          <line x1="50" y1="58" x2="50" y2="72" stroke="#003366" strokeWidth="1" />
+          <line x1="43" y1="65" x2="57" y2="65" stroke="#003366" strokeWidth="1" />
+          <line x1="45" y1="60" x2="55" y2="70" stroke="#003366" strokeWidth="0.8" />
+          <line x1="45" y1="70" x2="55" y2="60" stroke="#003366" strokeWidth="0.8" />
+        </g>
+
+        {/* Devanagari Motto: सत्यमेव जयते */}
+        <text
+          x="50"
+          y="84"
+          textAnchor="middle"
+          fill="#003366"
+          fontSize="8.5"
+          fontWeight="900"
+          fontFamily="'Noto Sans Devanagari', Arial, sans-serif"
+          letterSpacing="0.2"
+          style={hindiStyle}
+        >
+          सत्यमेव जयते
+        </text>
+      </svg>
     </div>
   );
 };
