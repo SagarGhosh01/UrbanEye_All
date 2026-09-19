@@ -150,17 +150,17 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
-          {/* Camera & Photo Upload Button (Only visible for Citizen Reporters) */}
+          {/* Live Camera Button (Only visible for Citizen Reporters) */}
           {onOpenLiveCamera && user?.role === 'CITIZEN_REPORTER' && (
             <button
               type="button"
               onClick={onOpenLiveCamera}
               className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition active:scale-95 shrink-0"
-              title="Open Camera / Upload Photo for Citizen Defect Report"
-              aria-label="Open Camera or Upload Photo"
+              title="Open Live AI Camera for Citizen Defect Report"
+              aria-label="Open Live AI Camera"
             >
               <Camera className="w-3.5 h-3.5 shrink-0 text-white" />
-              <span className="hidden sm:inline">Camera / Upload Photo</span>
+              <span className="hidden sm:inline">Live AI Camera</span>
             </button>
           )}
 

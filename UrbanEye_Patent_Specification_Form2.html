@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FORM 2 - PROVISIONAL SPECIFICATION - UrbanEye</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 20mm 20mm 20mm;
+  }
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    line-height: 1.6;
+    color: #111;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 25px;
+    background: #fff;
+  }
+  .header-box {
+    border: 2px solid #000;
+    padding: 15px;
+    text-align: center;
+    margin-bottom: 25px;
+  }
+  .header-box h1 {
+    font-size: 16pt;
+    margin: 0 0 5px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .header-box h2 {
+    font-size: 13pt;
+    margin: 0 0 5px 0;
+    font-weight: normal;
+  }
+  .header-box h3 {
+    font-size: 11pt;
+    margin: 0;
+    font-weight: bold;
+    color: #333;
+  }
+  .meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  .meta-table td {
+    padding: 6px 10px;
+    border: 1px solid #777;
+    font-size: 11pt;
+  }
+  .meta-table td.label {
+    font-weight: bold;
+    width: 32%;
+    background: #f7f7f7;
+  }
+  h2.section-title {
+    font-size: 13pt;
+    text-transform: uppercase;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    margin-top: 25px;
+    margin-bottom: 12px;
+  }
+  p, li {
+    font-size: 11pt;
+    text-align: justify;
+  }
+  ol, ul {
+    padding-left: 25px;
+  }
+  .code-block {
+    background: #f4f4f4;
+    border-left: 3px solid #333;
+    padding: 8px 12px;
+    font-family: Consolas, monospace;
+    font-size: 9.5pt;
+    margin: 10px 0;
+  }
+  .stamp-box {
+    display: inline-block;
+    border: 1px dashed #444;
+    padding: 8px 15px;
+    font-size: 9pt;
+    margin-top: 15px;
+    background: #fafafa;
+  }
+  .signature-area {
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+    page-break-inside: avoid;
+  }
+  .sig-block {
+    width: 45%;
+    border-top: 1px solid #000;
+    padding-top: 5px;
+    font-size: 10pt;
+    text-align: center;
+  }
+  @media print {
+    body { padding: 0; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="no-print" style="background:#e0f2fe;border:1px solid #0284c7;color:#0369a1;padding:12px;margin-bottom:20px;border-radius:6px;font-family:sans-serif;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
+  <span><strong>📄 Provisional Patent Document:</strong> Press <code>Ctrl + P</code> (or Cmd + P) and choose <strong>"Save as PDF"</strong> to generate your <strong>&lt; 500 KB PDF</strong> upload.</span>
+  <button onclick="window.print()" style="background:#0284c7;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold;">Save as PDF</button>
+</div>
+
+<div class="header-box">
+  <h1>FORM 2</h1>
+  <h2>THE PATENTS ACT, 1970 (39 of 1970)</h2>
+  <h2>&amp; THE PATENT RULES, 2003</h2>
+  <h3>PROVISIONAL SPECIFICATION</h3>
+  <div style="font-size:10pt;margin-top:5px;">(See Section 10 and Rule 13)</div>
+</div>
+
+<table class="meta-table">
+  <tr>
+    <td class="label">1. TITLE OF THE INVENTION</td>
+    <td><strong>A SYSTEM AND METHOD FOR LOAD-ADAPTIVE DUAL-CADENCE EDGE ARTIFICIAL INTELLIGENCE ROAD DEFECT DETECTION, CIPHER-GATED SENSOR TELEMETRY, AND DYNAMIC MUNICIPAL INFRASTRUCTURE ASSET MANAGEMENT</strong></td>
+  </tr>
+  <tr>
+    <td class="label">2. APPLICANT(S)</td>
+    <td><strong>SAGAR GHOSH &amp; URBANEYE TEAM</strong><br>Nationality: Indian</td>
+  </tr>
+  <tr>
+    <td class="label">3. PREAMBLE TO THE DESCRIPTION</td>
+    <td><strong>PROVISIONAL SPECIFICATION:</strong> The following specification describes the invention.</td>
+  </tr>
+</table>
+
+<h2 class="section-title">FIELD OF THE INVENTION</h2>
+<p>
+The present invention relates generally to intelligent transportation systems (ITS), distributed edge computing, and automated computer vision infrastructure maintenance. More particularly, the present invention relates to an edge-to-cloud cyber-physical system that concurrently executes high-throughput neural pavement defect extraction and throttled automatic number plate recognition (ANPR), while cryptographically gating cloud telemetry transmission to protect citizen privacy and optimize municipal budget allocation.
+</p>
+
+<h2 class="section-title">BACKGROUND OF THE INVENTION AND PRIOR ART DEFICIENCIES</h2>
+<p>
+Municipal road inspection has traditionally depended on manual visual audits, dedicated profiling vans equipped with expensive laser crack measurement systems (LCMS costing over $100,000 per unit), or uncalibrated smartphone crowdsourcing. Existing approaches suffer from severe technical drawbacks:
+</p>
+<ol>
+  <li><strong>Edge Thermal Bottlenecks:</strong> Running multiple deep neural models simultaneously (e.g. YOLO pavement segmentation and OCR for license plates) on mobile edge devices results in severe thermal throttling, frame rate drops, and hardware shutdown.</li>
+  <li><strong>Unbounded Telemetry and Surveillance Risks:</strong> Edge devices mounted on municipal transit fleets typically record continuous video feeds without authentication, raising severe citizen surveillance and data leakage concerns in public transit corridors.</li>
+  <li><strong>Fleet Spatial Ingestion Redundancy:</strong> Hundreds of transit buses traversing identical corridors record the same road hazard repeatedly, leading to database degradation and distorted municipal work-order queues.</li>
+</ol>
+
+<h2 class="section-title">OBJECTS OF THE PRESENT INVENTION</h2>
+<p>
+The primary object of the present invention is to provide a unified, ultra-low-cost, high-precision edge-AI transit sensor and command system that solves edge thermal limits, guarantees privacy-compliant telemetry gating, and models municipal infrastructure degradation in real-time.
+</p>
+
+<h2 class="section-title">SUMMARY AND KEY TECHNICAL NOVELTIES</h2>
+<p>The invention introduces four core patentable technical architectures:</p>
+<ol>
+  <li><strong>Load-Adaptive Dual-Cadence Edge Inference Engine:</strong> A decoupled multi-thread architecture that decouples primary road defect inference (8–12 FPS) from secondary ANPR OCR inference. Latency on the primary thread dynamically throttles the OCR polling cadence from 180 ms to 400 ms during sustained processing loads, maintaining 100% video fluidness.</li>
+  <li><strong>Zero-Telemetry Ephemeral Cipher-Gated Ingestion Handshake:</strong> A physical pairing protocol where camera hardware executes purely local viewfinder preview without capturing, inferring, or transmitting telemetry until verified by an authoritative district administrator via an out-of-band 6-digit ephemeral PIN.</li>
+  <li><strong>Multi-Angle Rotation OCR with HSRP Normalization:</strong> Context-aware character confusion correction matrix (resolving O/0, I/1, B/8, S/5, Z/2) combined with multi-orientation projective normalization (0°, 90°, 270°) and automatic HSRP "IND" prefix stripping.</li>
+  <li><strong>Spatio-Temporal Cluster Deduplication and Schedule of Rates (SoR) Costing:</strong> Micro-geofenced clustering (15–25m decay envelope) that eliminates multi-bus duplicate hazard logging, paired with a perspective ground-scale equation that computes physical diameter and converts defect geometry into municipal repair cost estimates (calibrated to Indian PWD/NHAI standards).</li>
+</ol>
+
+<h2 class="section-title">DETAILED TECHNICAL DESCRIPTION</h2>
+<p>
+The edge device incorporates an on-device ONNX Runtime inference engine executing a multi-class YOLOv8 neural network. The operational sequence is as follows:
+</p>
+<div class="code-block">
+1. Hardware Camera Feed Initialization &rarr; Local Surface Provider (No capture).
+2. Ephemeral PIN Request &rarr; Command Center Handshake (/api/bus-sessions/request-pin).
+3. State Verification Polling &rarr; Awaiting District Head Authorization.
+4. Paired State Transition &rarr; Unlock Edge Inference &amp; GPS Telemetry Ingestion.
+5. Primary Defect Thread [Fast Cadence: ~90ms] &harr; Secondary ANPR Thread [Adaptive: 180-400ms].
+6. Multi-Frame Temporal Tracker IoU Matching &rarr; Persistence Confirmation.
+7. Geo-Tagged Event Dispatch &rarr; Server-Side Micro-Geofence Deduplication.
+8. Road Quality Index (RQI) &amp; Traffic Heatmap Aggregation on Polyline Topologies.
+</div>
+
+<h2 class="section-title">ABSTRACT</h2>
+<p>
+A load-adaptive dual-cadence edge-computing system and method for automated municipal infrastructure surveillance. The system operates on edge mobile sensors mounted on public transit fleets to concurrently extract pavement surface hazards and vehicle identifiers. A primary neural inference thread executes real-time road defect detection, while a secondary background thread executes throttled ANPR text recognition with dynamic load-adaptive polling. Capture and cloud ingestion are strictly hardware-gated until unlocked via an out-of-band ephemeral key pairing protocol with a central command center. Server-side spatio-temporal micro-geofencing deduplicates multi-fleet hazard logs and computes automated municipal repair cost forecasts.
+</p>
+
+<div class="stamp-box">
+  <strong>STATUS:</strong> PROVISIONAL PATENT SPECIFICATION READY FOR FILING<br>
+  <strong>JURISDICTION:</strong> INDIAN PATENT OFFICE (IPO) / PATENT COOPERATION TREATY (PCT)<br>
+  <strong>REFERENCE ID:</strong> URBANEYE/PAT/2026/01
+</div>
+
+<div class="signature-area">
+  <div class="sig-block">
+    <br><br>
+    <strong>SAGAR GHOSH</strong><br>
+    Lead Inventor / Applicant
+  </div>
+  <div class="sig-block">
+    <br><br>
+    <strong>DATE: September 16, 2026</strong><br>
+    New Delhi / Bengaluru, India
+  </div>
+</div>
+
+</body>
+</html>

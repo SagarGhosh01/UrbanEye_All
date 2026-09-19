@@ -20,7 +20,6 @@ import {
   Info,
   ShieldCheck,
   ImageIcon,
-  Upload,
 } from 'lucide-react';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { deduplicationService } from '../services/deduplicationService';
@@ -386,22 +385,6 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
     speakAlert('Flagged detection as false positive.');
   };
 
-
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const imgData = event.target?.result as string;
-      if (imgData) {
-        captureAndTransmit(imgData);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   /**
    * Gives the detector something to classify: an uploaded still if one was supplied,
    * otherwise the live video element. Returns null when neither is available.
@@ -668,13 +651,13 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-extrabold text-xs sm:text-sm tracking-tight truncate flex items-center gap-1.5">
-                <span>Citizen Defect Camera & Photo Uploader</span>
+                <span>Citizen Defect Camera Scanner</span>
                 <span className="text-[8px] bg-teal-500/20 text-teal-300 px-1.5 py-0.5 rounded font-mono font-bold uppercase">
-                  MANUAL INGEST
+                  LIVE SENSOR
                 </span>
               </h3>
               <p className="text-[10px] text-slate-300 truncate">
-                Capture or Upload Road Defect Photos for Authority Verification
+                Real-Time AI Road Defect Detection & Authority Ingestion
               </p>
             </div>
           </div>
@@ -962,17 +945,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             </div>
           )}
 
-          {/* Action Execution Bar - Manual Control */}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept="image/*"
-            className="hidden"
-          />
-
-          {/* Manual capture and photo upload buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* Action Execution Bar - Manual Capture */}
+          <div className="w-full">
             <button
               type="button"
               onClick={() => captureAndTransmit()}
@@ -981,16 +955,6 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             >
               <Camera className="w-4 h-4 text-white shrink-0" />
               <span className="truncate">{isCapturing ? 'Ingesting Photo...' : 'Take & Ingest Photo'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isCapturing}
-              className="w-full py-2.5 px-4 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 active:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-            >
-              <Upload className="w-4 h-4 text-teal-400 shrink-0" />
-              <span className="truncate">Upload Photo from Device</span>
             </button>
           </div>
 
