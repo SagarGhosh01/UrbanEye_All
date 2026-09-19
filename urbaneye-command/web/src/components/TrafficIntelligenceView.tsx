@@ -56,6 +56,7 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routesLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   // Auto-polling telemetry every 5s so data changes with time live
   useEffect(() => {
@@ -136,14 +137,20 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      const tileUrl = isDark
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-
-      L.tileLayer(tileUrl, {
+      // OpenStreetMap high-contrast tile layer (100% free, no API key required, zero watermark)
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
+
+      tileLayerRef.current = tileLayer;
+
+      if (isDark) {
+        const container = tileLayer.getContainer();
+        if (container) {
+          container.style.filter = 'brightness(0.68) invert(100%) contrast(1.25) hue-rotate(190deg) saturate(0.35)';
+        }
+      }
 
       const layerGroup = L.layerGroup().addTo(map);
       routesLayerGroupRef.current = layerGroup;
@@ -154,6 +161,14 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
       }, 200);
     } else {
       mapInstanceRef.current.setView(initialCenter, 13);
+      if (tileLayerRef.current) {
+        const container = tileLayerRef.current.getContainer();
+        if (container) {
+          container.style.filter = isDark
+            ? 'brightness(0.68) invert(100%) contrast(1.25) hue-rotate(190deg) saturate(0.35)'
+            : 'none';
+        }
+      }
       setTimeout(() => {
         mapInstanceRef.current?.invalidateSize();
       }, 150);
