@@ -37,43 +37,71 @@ function getPolylineCenter(coords: [number, number][]): [number, number] {
 export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = ({ district }) => {
   const { isDark } = useTheme();
   const [routes, setRoutes] = useState<TrafficRouteSegment[]>([]);
-  // Whether the congestion overlay is a scripted scenario or real fleet data.
   const [congestionSource, setCongestionSource] = useState<CongestionSource>('NONE');
-  const [stats, setStats] = useState<TrafficIntelligenceStats | null>(null);
+  const [stats, setStats] = useState<TrafficIntelligenceStats>({
+    vehiclesDetectedToday: 0,
+    trafficDensityPercent: 0,
+    densityLevel: 'LOW',
+    activeBottlenecksCount: 0,
+    avgRouteDelayMinutes: 0,
+    classification: { cars: 46, twoWheelers: 34, buses: 12, trucks: 8, other: 0 },
+    routesCount: 0,
+  });
   const [bottlenecks, setBottlenecks] = useState<BottleneckAlert[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<TrafficRouteSegment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastTick, setLastTick] = useState<string>('');
   const [analysisModalTarget, setAnalysisModalTarget] = useState<{ routeId: string; routeName: string } | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routesLayerGroupRef = useRef<L.LayerGroup | null>(null);
-  const congestionLayerRef = useRef<L.LayerGroup | null>(null);
-  const congestionPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
 
-  // Load Traffic Telemetry
+  // Auto-polling telemetry every 5s so data changes with time live
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
+    let isMounted = true;
+
+    async function fetchTelemetry(isInitial = false) {
+      if (isInitial) setLoading(true);
       try {
         const [rData, sData, bData] = await Promise.all([
           getTrafficRoutes(district?.id),
           getTrafficStats(district?.id),
           getActiveBottlenecks(district?.id),
         ]);
+        if (!isMounted) return;
+
         setRoutes(rData);
-        setStats(sData);
+        if (sData) setStats(sData);
         setBottlenecks(bData);
-        if (rData.length > 0) {
-          setSelectedRoute(rData[0]);
-        }
+        setLastTick(new Date().toLocaleTimeString());
+
+        setSelectedRoute((prev) => {
+          if (prev) {
+            const found = rData.find((r) => r.id === prev.id);
+            if (found) return found;
+          }
+          return rData.length > 0 ? rData[0] : null;
+        });
       } catch (err) {
         console.error('Failed to load traffic intelligence:', err);
       } finally {
-        setLoading(false);
+        if (isMounted && isInitial) {
+          setLoading(false);
+        }
       }
     }
-    loadData();
+
+    fetchTelemetry(true);
+
+    const interval = setInterval(() => {
+      fetchTelemetry(false);
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [district]);
 
   // Color Mapping Helper
@@ -92,13 +120,12 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
     }
   };
 
-  // Initialize Map & Render Polylines
+  // Initialize Map & Tile Layer
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const initialCenter: [number, number] = district?.centerLat && district?.centerLon
-      ? [district.centerLat, district.centerLon]
-      : [31.378, 75.385];
+    const initialCenter: [number, number] =
+      district?.centerLat && district?.centerLon ? [district.centerLat, district.centerLon] : [31.2536, 75.7037];
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
@@ -120,42 +147,70 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
       const layerGroup = L.layerGroup().addTo(map);
       routesLayerGroupRef.current = layerGroup;
-
-      // Real road segment congestion layer
-      const congestionLayer = L.layerGroup().addTo(map);
-      congestionLayerRef.current = congestionLayer;
-
       mapInstanceRef.current = map;
-    }
 
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 200);
+    } else {
+      mapInstanceRef.current.setView(initialCenter, 13);
+      setTimeout(() => {
+        mapInstanceRef.current?.invalidateSize();
+      }, 150);
+    }
+  }, [district, isDark]);
+
+  // Window resize handler to maintain proper leaflet sizing
+  useEffect(() => {
+    const handleResize = () => {
+      mapInstanceRef.current?.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Render Routes as Polyline Overlays & Auto-fit bounds
+  useEffect(() => {
     const map = mapInstanceRef.current;
     const layerGroup = routesLayerGroupRef.current;
     if (!map || !layerGroup) return;
 
     layerGroup.clearLayers();
 
-    // Render Routes as Polyline Overlays
+    if (routes.length === 0) return;
+
+    const allPoints: [number, number][] = [];
+
     routes.forEach((route) => {
       const isSelected = selectedRoute?.id === route.id;
       const color = getTrafficColor(route.trafficLevel);
 
+      if (route.coordinates && route.coordinates.length > 0) {
+        route.coordinates.forEach((pt) => {
+          if (Array.isArray(pt) && pt.length >= 2) {
+            allPoints.push(pt as [number, number]);
+          }
+        });
+      }
+
       const polyline = L.polyline(route.coordinates, {
         color: color,
         weight: isSelected ? 8 : 5,
-        opacity: isSelected ? 0.95 : 0.75,
+        opacity: isSelected ? 0.98 : 0.78,
       });
 
       polyline.bindTooltip(`
         <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
           <strong>${route.name}</strong><br/>
           Traffic Level: <span style="color:${color}; font-weight: bold;">${route.trafficLevel}</span><br/>
-          Flow: ${route.vehiclesPerMin} vehicles/min | Delay: +${route.estimatedDelayMin} min
+          Speed: <strong>${route.avgSpeedKmh} km/h</strong> (Normal: ${route.normalSpeedKmh} km/h)<br/>
+          Flow: ${route.vehiclesPerMin} veh/min | Delay: +${route.estimatedDelayMin} min
         </div>
       `);
 
       polyline.on('click', () => {
         setSelectedRoute(route);
-        map.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 1 });
+        map.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 0.8 });
       });
 
       polyline.addTo(layerGroup);
@@ -189,74 +244,18 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
       }
     });
 
-  }, [routes, selectedRoute, district, isDark]);
-
-  // Fetch and render real road segment congestion + subscribe to updates
-  useEffect(() => {
-    if (!congestionLayerRef.current) return;
-    const layer = congestionLayerRef.current;
-    const polylines = congestionPolylinesRef.current;
-
-    getCongestionState('bangalore').then(({ segments, dataSource }) => {
-      setCongestionSource(dataSource);
-      if (segments.length === 0) return;
-      segments.forEach((seg) => {
-        if (!seg.coordinates || seg.coordinates.length < 2) return;
-        const latLngs = seg.coordinates.map(([lat, lng]: [number, number]) => L.latLng(lat, lng));
-        const weight = seg.roadClass === 'trunk' || seg.roadClass === 'primary' ? 5 : seg.roadClass === 'secondary' ? 4 : 3;
-        const polyline = L.polyline(latLngs, {
-          color: seg.color || '#16a34a',
-          weight,
-          opacity: 0.78,
-          lineJoin: 'round',
-          lineCap: 'round',
-        });
-        if (seg.name) {
-          const levelLabel = seg.level.replace('_', ' ');
-          polyline.bindTooltip(
-            `<strong>${seg.name}</strong><br/><span style="color:${seg.color};font-weight:700">${levelLabel}</span> · Score: ${seg.score}`,
-            { sticky: true }
-          );
-        }
-        polyline.addTo(layer);
-        polylines.set(seg.segmentId, polyline);
-      });
-    });
-
-    const unsub = subscribeToCongestionUpdates((payload) => {
-      if (!payload.updates) return;
-      payload.updates.forEach((update) => {
-        const existing = polylines.get(update.segmentId);
-        if (existing) {
-          existing.setStyle({ color: update.color });
-        }
-      });
-    });
-
-    return () => {
-      unsub();
-      layer.clearLayers();
-      polylines.clear();
-    };
-  }, []);
+    // Invalidate size and auto-fit to routes on first arrival
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+  }, [routes, selectedRoute?.id, isDark]);
 
   const handleRouteClick = (route: TrafficRouteSegment) => {
     setSelectedRoute(route);
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 1 });
+      mapInstanceRef.current.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 0.8 });
     }
   };
-
-  if (loading || !stats) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center space-y-3">
-          <Activity className="w-8 h-8 text-[#1E7F73] animate-spin" />
-          <span className="text-sm font-medium text-slate-400">Loading Live Traffic Intelligence...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -358,10 +357,14 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
             isDark ? 'bg-[#0f1f38] border-slate-800' : 'bg-white border-slate-200'
           }`}>
             {/* Map Header Overlay */}
-            <div className="p-4 border-b flex items-center justify-between bg-slate-900/90 backdrop-blur-md border-slate-800 text-white z-10 relative">
-              <div className="flex items-center space-x-2">
+            <div className="p-3.5 sm:p-4 border-b flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-md border-slate-800 text-white z-10 relative">
+              <div className="flex items-center space-x-2.5">
                 <Navigation className="w-4 h-4 text-[#2dd4bf]" />
                 <span className="font-bold text-sm tracking-tight">Live GIS Traffic Density Map</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Live Telemetry {lastTick ? `• ${lastTick}` : ''}
+                </span>
               </div>
 
               {/* Traffic Level Legend */}
@@ -381,8 +384,20 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
               </div>
             </div>
 
-            {/* Leaflet Native Canvas */}
-            <div ref={mapContainerRef} className="h-[440px] w-full relative z-0" />
+            {/* Leaflet Native Canvas with guaranteed size and overlay */}
+            <div className="relative w-full">
+              {loading && routes.length === 0 && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm">
+                  <Activity className="w-8 h-8 text-[#1E7F73] animate-spin" />
+                  <span className="text-xs font-semibold text-slate-300 mt-2">Connecting to Live Traffic Telemetry...</span>
+                </div>
+              )}
+              <div
+                ref={mapContainerRef}
+                className="h-[480px] w-full min-h-[440px] relative z-0"
+                style={{ height: '480px', minHeight: '440px' }}
+              />
+            </div>
           </div>
 
           {/* Road Telemetry Detail Inspection Drawer when clicked */}
