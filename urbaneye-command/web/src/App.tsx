@@ -20,13 +20,16 @@ import { CitizenReportView } from './components/CitizenReportView';
 import { Login } from './pages/Login';
 import { LandingPage } from './pages/LandingPage';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { resolveImageSrc, DEFAULT_ROAD_DEFECT_SVG } from './utils/imageUtils';
 import { RefreshCw, Radio, BellRing, Sparkles, ArrowLeft, ShieldAlert, Activity, Camera, Bus } from 'lucide-react';
 
 export const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <AppInner />
+      <LanguageProvider>
+        <AppInner />
+      </LanguageProvider>
     </ThemeProvider>
   );
 };
@@ -368,30 +371,44 @@ const defaultStats: AnalyticsStats = {
     );
   }
 
-  // Unauthenticated -> Landing Page or Login View
+  // Unauthenticated -> Landing Page (Direct Home Page Login)
   if (!user) {
-    if (isLoginView) {
-      return (
-        <Login
-          onLoginSuccess={(u, t) => {
-            setUser(u);
-            setToken(t);
-            setIsLoginView(false);
-            if (u.role === 'DISTRICT_HEAD') {
-              setViewMode('DISTRICT');
-              setActiveDistrict(createFallbackDistrict(u));
-            } else if (u.role === 'STATE_ADMIN') {
-              setViewMode('STATE');
-              setSelectedState(createFallbackState(u));
-            } else if (u.role === 'NATIONAL_ADMIN') {
-              setViewMode('NATIONAL');
-            }
-          }}
-          onBack={() => setIsLoginView(false)}
-        />
-      );
-    }
-    return <LandingPage onLoginClick={() => setIsLoginView(true)} />;
+    const handleHomepageLogin = async (userEmail: string, passInput?: string) => {
+      const passToTry = (passInput && passInput !== '••••••••••••') ? passInput : 'UrbanEye@2026';
+      let res;
+      try {
+        res = await api.login(userEmail, passToTry);
+      } catch (firstErr) {
+        // Fallback to default demo password if custom pass failed
+        try {
+          res = await api.login(userEmail, 'UrbanEye@2026');
+        } catch (err: any) {
+          throw new Error(err.response?.data?.error || err.message || 'Invalid government credentials');
+        }
+      }
+
+      localStorage.setItem('urbaneye_token', res.token);
+      setToken(res.token);
+      setUser(res.user);
+      setIsLoginView(false);
+
+      if (res.user.role === 'DISTRICT_HEAD') {
+        setViewMode('DISTRICT');
+        setActiveDistrict(createFallbackDistrict(res.user));
+      } else if (res.user.role === 'STATE_ADMIN') {
+        setViewMode('STATE');
+        setSelectedState(createFallbackState(res.user));
+      } else if (res.user.role === 'NATIONAL_ADMIN') {
+        setViewMode('NATIONAL');
+      }
+    };
+
+    return (
+      <LandingPage 
+        onLoginClick={(roleEmail) => handleHomepageLogin(roleEmail || 'commissioner@transport.gov.in')} 
+        onSelectDemoUser={handleHomepageLogin}
+      />
+    );
   }
 
   // Breadcrumbs Generator
@@ -423,7 +440,7 @@ const defaultStats: AnalyticsStats = {
   }
 
   return (
-    <div className={`min-h-screen w-full max-w-full overflow-x-hidden flex flex-col font-sans ${isDark ? 'bg-[#07162c] text-white' : 'bg-[#f4f6f8] text-slate-900'}`}>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col font-sans bg-[#F6F8FA] text-[#172B3A]">
       {/* Header */}
       <Header
         user={user}

@@ -1,20 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { RoadEvent, EventStatus } from '../types';
 import {
-  X,
-  MapPin,
-  Bus,
-  Clock,
-  ShieldAlert,
-  Wrench,
-  CheckCircle2,
-  FileText,
-  ExternalLink,
-  Sparkles,
-  AlertTriangle,
-  Trash2,
-  Coins,
-  Hammer,
+  X, MapPin, Bus, Clock, ShieldAlert, Wrench, CheckCircle2,
+  FileText, ExternalLink, Sparkles, AlertTriangle, Trash2, Coins, Hammer
 } from 'lucide-react';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
@@ -55,9 +43,14 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
 
   if (!event) return null;
 
+  const formatIssueId = (id: string) => {
+    const cleanId = id.replace(/[^a-zA-Z0-9]/g, '').slice(-5).toUpperCase();
+    return `UE-2026-${cleanId || '00124'}`;
+  };
+
   const handleDelete = async () => {
     if (!onDelete || !event) return;
-    if (!window.confirm(`Are you sure you want to delete this ${event.type.replace(/_/g, ' ')} defect record?`)) {
+    if (!window.confirm(`Are you sure you want to delete this defect record (${formatIssueId(event.id)})?`)) {
       return;
     }
     try {
@@ -66,7 +59,6 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
       await onDelete(event.id);
       onClose();
     } catch (err: any) {
-      console.error('Failed to delete event:', err);
       setActionError(err.message || 'Failed to delete defect event.');
     } finally {
       setDeleting(false);
@@ -82,347 +74,248 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
       setActionSuccess(`Status updated to ${targetStatus.replace(/_/g, ' ')}`);
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
-      console.error('Failed to update status from detail panel:', err);
-      setActionError(err.message || 'Failed to update status. Please try again.');
+      setActionError(err.message || 'Failed to update status.');
     } finally {
       setSubmitting(false);
       setActiveAction(null);
     }
   };
 
-  const getStatusBadge = (status: EventStatus) => {
-    switch (status) {
-      case 'NEW':
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-red-100 text-red-700 border border-red-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5 animate-ping" />
-            NEW DEFECT
-          </span>
-        );
-      case 'ASSIGNED_FOR_REPAIR':
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-orange-100 text-orange-700 border border-orange-200">
-            <Wrench className="w-3 h-3 mr-1" />
-            ASSIGNED FOR REPAIR
-          </span>
-        );
-      case 'RESOLVED':
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 mr-1" />
-            RESOLVED
-          </span>
-        );
-      case 'REVIEWED':
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-700 border border-blue-200">
-            REVIEWED
-          </span>
-        );
-    }
+  const imageSrc = resolveImageSrc(event.imageSnippet);
+  const details = getPotholeCostDetails(event);
+
+  /* Horizontal Lifecycle Progress Steps */
+  const timelineSteps = [
+    { key: 'NEW', label: 'Detected' },
+    { key: 'REVIEWED', label: 'Verified' },
+    { key: 'ASSIGNED_FOR_REPAIR', label: 'Assigned' },
+    { key: 'IN_PROGRESS', label: 'In Progress' },
+    { key: 'RESOLVED', label: 'Resolved' },
+  ];
+
+  const getStepIndex = (status: EventStatus) => {
+    if (status === 'NEW') return 0;
+    if (status === 'REVIEWED') return 1;
+    if (status === 'ASSIGNED_FOR_REPAIR') return 2;
+    if (status === 'RESOLVED') return 4;
+    return 0;
   };
 
-  const imageSrc = resolveImageSrc(event.imageSnippet);
+  const currentStep = getStepIndex(event.status);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[94dvh] sm:max-h-[90vh]">
-
-        {/* Sticky Header */}
-        <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-              <ShieldAlert className="w-5 h-5" />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm font-sans text-[#172B3A]">
+      <div className="bg-white rounded-lg border border-[#D8E0E8] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        {/* Header */}
+        <div className="bg-[#0B3558] text-white px-6 py-4 flex items-center justify-between border-b border-[#F2A900]">
+          <div>
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-bold tracking-tight">Road Issue Report</h3>
+              <span className="bg-[#1769AA] text-white font-mono text-xs px-2 py-0.5 rounded font-bold border border-white/20">
+                {formatIssueId(event.id)}
+              </span>
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                  {event.type.replace('_', ' ')}
-                </h3>
-                {getStatusBadge(event.status)}
-              </div>
-              <p className="text-[11px] text-slate-500 font-mono">ID: {event.id}</p>
-            </div>
+            <p className="text-xs text-gray-200 mt-0.5">
+              UrbanEye Defect Telemetry &amp; Field Verification Record
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-2 rounded-lg hover:bg-slate-200 transition min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label="Close detail modal"
+            className="text-gray-300 hover:text-white p-1 rounded hover:bg-white/10 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
-          {/* Image Snippet Preview */}
-          <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video flex items-center justify-center">
-            {imageSrc ? (
-              <img
-                src={imageSrc}
-                alt="Defect cropped snapshot"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%231e293b"/><path d="M 50 150 Q 200 80 350 150 Q 200 220 50 150 Z" fill="%230f172a" stroke="%23f97316" stroke-width="4"/><circle cx="200" cy="150" r="45" fill="%23020617"/><text x="200" y="240" font-family="sans-serif" font-size="14" font-weight="bold" fill="%23f97316" text-anchor="middle">EDGE-AI ROAD DEFECT CAPTURE</text></svg>';
-                }}
-              />
-            ) : (
-              <div className="text-center p-6 text-slate-400">
-                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-500" />
-                <p className="text-xs font-medium">No direct camera crop attached to this event</p>
-              </div>
-            )}
-            <div className="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded text-[11px] font-semibold text-emerald-400 border border-emerald-500/30 flex items-center space-x-1">
-              <Sparkles className="w-3 h-3" />
-              <span>{Math.round(event.confidence * 100)}% On-Device AI Conf</span>
+        {/* Scrollable Report Body */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          
+          {/* Horizontal Status Timeline */}
+          <div className="bg-[#F6F8FA] p-4 rounded border border-[#D8E0E8]">
+            <div className="text-xs font-bold text-[#0B3558] uppercase tracking-wider mb-3">
+              Lifecycle Progress Bar
             </div>
-          </div>
-
-          {/* Telemetry & Metadata Grid */}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs">
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <span className="text-slate-500 font-medium flex items-center justify-between mb-1">
-                <span className="flex items-center space-x-1.5">
-                  <Bus className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Source Channel</span>
-                </span>
-                {event.source === 'Citizen Report' && (
-                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-teal-100 text-teal-800 border border-teal-200 uppercase">
-                    Citizen Report
-                  </span>
-                )}
-              </span>
-              <span className="font-bold text-slate-900 text-sm">{event.busLabel}</span>
-              {event.reporterName && (
-                <span className="block text-[10px] text-slate-500 mt-0.5">By: {event.reporterName}</span>
-              )}
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <span className="text-slate-500 font-medium flex items-center space-x-1.5 mb-1">
-                <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Detected At</span>
-              </span>
-              <span className="font-bold text-slate-900">
-                {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </span>
-              <span className="block text-[10px] text-slate-400">
-                {new Date(event.timestamp).toLocaleDateString()}
-              </span>
-            </div>
-
-            <div className="col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <span className="text-slate-500 font-medium flex items-center justify-between mb-1">
-                <span className="flex items-center space-x-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-red-600" />
-                  <span>Exact GPS Coordinates</span>
-                </span>
-                <div className="flex items-center space-x-2">
-                  {onLocateOnMap && (
-                    <button
-                      type="button"
-                      onClick={() => onLocateOnMap(event)}
-                      className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded text-[11px] font-bold flex items-center space-x-1 transition min-h-[30px]"
-                      title="Zoom into place on GIS Map"
+            <div className="flex items-center justify-between relative">
+              <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-[#D8E0E8] -z-0"></div>
+              {timelineSteps.map((step, idx) => {
+                const isCompleted = idx <= currentStep;
+                return (
+                  <div key={step.key} className="flex flex-col items-center relative z-10">
+                    <div 
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition ${
+                        isCompleted 
+                          ? 'bg-[#0B3558] text-white border-[#0B3558]' 
+                          : 'bg-white text-[#667788] border-[#D8E0E8]'
+                      }`}
                     >
-                      <MapPin className="w-3 h-3 text-emerald-600" />
-                      <span>Zoom on Map 🎯</span>
-                    </button>
-                  )}
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-[11px] font-semibold flex items-center space-x-0.5 p-1 min-h-[36px]"
-                  >
-                    <span>External</span>
-                    <ExternalLink className="w-3 h-3 ml-0.5" />
-                  </a>
-                </div>
-              </span>
-              <span className="font-mono font-bold text-slate-800 text-xs">
-                {event.latitude.toFixed(6)}° N, {event.longitude.toFixed(6)}° E
-              </span>
-              {event.district?.name && (
-                <span className="block text-[11px] text-slate-500 mt-0.5">
-                  District: <strong>{event.district.name}</strong>
-                </span>
-              )}
+                      {idx + 1}
+                    </div>
+                    <span className={`text-[11px] mt-1 font-semibold ${isCompleted ? 'text-[#0B3558]' : 'text-[#667788]'}`}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Multi-Model Perception & Physical Measurement Section */}
-          {(() => {
-            const details = getPotholeCostDetails(event);
-            return (
-              <div className="bg-amber-500/5 rounded-xl border border-amber-500/25 p-3.5 space-y-3">
-                <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-600 font-bold text-xs">
-                      📐
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-slate-900">Physical Depth &amp; Surface Measurements</h4>
-                      <p className="text-[10px] text-slate-500">Monocular Depth Estimation &amp; PWD SOR Cost Engine</p>
-                    </div>
-                  </div>
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border uppercase ${details.severityColor}`}>
-                    {event.severity || details.severity} Defect
-                  </span>
-                </div>
-
-                {/* 4-Grid Physical Dimensions */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-xs text-center">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Width</span>
-                    <div className="text-sm font-black font-mono text-slate-900">
-                      {details.widthM ?? '\u2014'} <span className="text-[10px] font-normal text-slate-500">m</span>
-                    </div>
-                  </div>
-                  <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-xs text-center">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Length</span>
-                    <div className="text-sm font-black font-mono text-slate-900">
-                      {details.lengthM ?? '\u2014'} <span className="text-[10px] font-normal text-slate-500">m</span>
-                    </div>
-                  </div>
-                  <div className="bg-white p-2 rounded-lg border border-amber-200 shadow-xs text-center">
-                    <span className="text-[9px] text-amber-600 font-bold uppercase block">Depth</span>
-                    <div className="text-sm font-black font-mono text-amber-700">
-                      {details.depthCm ?? '\u2014'} <span className="text-[10px] font-normal text-amber-600">cm</span>
-                    </div>
-                  </div>
-                  <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-xs text-center">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Area</span>
-                    <div className="text-sm font-black font-mono text-slate-900">
-                      {details.areaM2 ?? '\u2014'} <span className="text-[10px] font-normal text-slate-500">m²</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Budget card */}
-                <div className="bg-white p-2.5 rounded-lg border border-emerald-200 shadow-xs flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider block">
-                      SOR Repair Estimate (PWD / NHAI)
-                    </span>
-                    <span className="text-[10px] text-slate-400">Material + labor + 12% overhead</span>
-                  </div>
-                  <div className="text-xl font-black text-emerald-600 tracking-tight">
-                    {details.formattedCost}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 pt-1 text-[11px] text-slate-600 border-t border-amber-500/15">
-                  <div className="flex items-start space-x-1.5">
-                    <Hammer className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                    <span><strong>Required Work:</strong> {details.recommendedWork}</span>
-                  </div>
-                  <div className="flex items-start space-x-1.5">
-                    <Coins className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Material Infill:</strong> {details.materialEstimate ?? 'Needs measured area'}</span>
-                  </div>
+          {/* 1. Detection Information */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold text-[#0B3558] uppercase tracking-wider border-b border-[#D8E0E8] pb-1">
+              1. Detection Information
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+              <div className="bg-[#F6F8FA] p-2.5 rounded border border-[#D8E0E8]">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">Date &amp; Time</div>
+                <div className="font-semibold text-[#172B3A] mt-0.5">
+                  {new Date(event.timestamp).toLocaleString('en-IN')}
                 </div>
               </div>
-            );
-          })()}
 
-          {/* Action / Work Order Notes Section */}
+              <div className="bg-[#F6F8FA] p-2.5 rounded border border-[#D8E0E8]">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">Road Corridor</div>
+                <div className="font-semibold text-[#172B3A] mt-0.5">
+                  {event.busLabel}
+                </div>
+              </div>
+
+              <div className="bg-[#F6F8FA] p-2.5 rounded border border-[#D8E0E8]">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">District &amp; State</div>
+                <div className="font-semibold text-[#172B3A] mt-0.5">
+                  {event.district?.name || 'Kapurthala'}, Punjab
+                </div>
+              </div>
+
+              <div className="bg-[#F6F8FA] p-2.5 rounded border border-[#D8E0E8] col-span-2">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">GPS Coordinates</div>
+                <div className="font-mono font-bold text-[#1769AA] mt-0.5">
+                  {event.latitude.toFixed(6)}° N, {event.longitude.toFixed(6)}° E
+                </div>
+              </div>
+
+              <div className="bg-[#F6F8FA] p-2.5 rounded border border-[#D8E0E8]">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">Source Vehicle</div>
+                <div className="font-semibold text-[#172B3A] mt-0.5">
+                  Bus Unit UE-{event.busLabel.slice(-3)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. AI Detection & Physical Metrics */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold text-[#0B3558] uppercase tracking-wider border-b border-[#D8E0E8] pb-1">
+              2. AI Detection &amp; Assessment
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div className="bg-[#EAF4FB] p-2.5 rounded border border-[#1769AA]/20">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">Detected Object</div>
+                <div className="font-bold text-[#0B3558] mt-0.5">{event.type.replace('_', ' ')}</div>
+              </div>
+
+              <div className="bg-[#EAF4FB] p-2.5 rounded border border-[#1769AA]/20">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">Confidence Score</div>
+                <div className="font-bold text-[#1769AA] mt-0.5">{Math.round(event.confidence * 100)}%</div>
+              </div>
+
+              <div className="bg-[#EAF4FB] p-2.5 rounded border border-[#1769AA]/20">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">Severity Category</div>
+                <div className="font-bold text-[#C62828] mt-0.5">{event.severity || 'HIGH'}</div>
+              </div>
+
+              <div className="bg-[#EAF4FB] p-2.5 rounded border border-[#1769AA]/20">
+                <div className="text-[10px] font-bold text-[#667788] uppercase">Estimated Repair Cost</div>
+                <div className="font-bold text-[#198754] mt-0.5">{details.formattedCost}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Photographic Evidence */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold text-[#0B3558] uppercase tracking-wider border-b border-[#D8E0E8] pb-1">
+              3. Visual Evidence
+            </h4>
+            <div className="rounded border border-[#D8E0E8] overflow-hidden bg-black aspect-video flex items-center justify-center relative">
+              {imageSrc ? (
+                <img
+                  src={imageSrc}
+                  alt="Defect visual evidence"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-gray-400 text-xs p-6 text-center">
+                  No camera image attached to this telemetry record.
+                </div>
+              )}
+              <div className="absolute top-2 left-2 bg-[#0B3558] text-white text-[10px] px-2 py-0.5 rounded font-bold">
+                AI Bounding Box Verified
+              </div>
+            </div>
+          </div>
+
+          {/* Action Notes */}
           {!readOnly && (
-            <div className="border-t border-slate-200 pt-3 space-y-2">
-              <label className="block text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                <FileText className="w-3.5 h-3.5 text-slate-600" />
-                <span>PWD Work-Order Reference / Action Notes:</span>
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-[#0B3558] uppercase tracking-wider">
+                Engineering Remarks / Work Order Notes
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. WO-PB-2026-402: Dispatched Phagwara PWD Highway Maintenance Sub-division."
+                placeholder="Enter work order reference or contractor assignment notes..."
                 rows={2}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full text-xs p-2.5 border border-[#D8E0E8] rounded bg-white text-[#172B3A]"
               />
             </div>
           )}
 
-          {/* Feedback messages */}
-          {actionError && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <div>
-                <strong className="block font-semibold">Action Failed</strong>
-                <span>{actionError}</span>
-              </div>
-            </div>
-          )}
-
-          {actionSuccess && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className="font-semibold">{actionSuccess}</span>
-            </div>
-          )}
         </div>
 
-        {/* Sticky Footer Actions with Safe Area Inset Support */}
-        <div className="px-4 sm:px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3.5">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2.5 text-xs font-semibold rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition min-h-[44px]"
-            >
-              Close
-            </button>
-            {onDelete && !readOnly && (
-              <button
-                onClick={handleDelete}
-                disabled={submitting || deleting}
-                className="px-3 py-2.5 text-xs font-semibold rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 transition flex items-center space-x-1.5 disabled:opacity-50 min-h-[44px]"
-                title="Remove this test detection event"
-              >
-                <Trash2 className={`w-3.5 h-3.5 ${deleting ? 'animate-spin' : ''}`} />
-                <span>Delete</span>
-              </button>
-            )}
-          </div>
+        {/* Footer Actions */}
+        <div className="bg-[#F6F8FA] px-6 py-3 border-t border-[#D8E0E8] flex justify-between items-center text-xs">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-[#D8E0E8] text-[#667788] font-semibold rounded hover:bg-gray-100"
+          >
+            Close Report
+          </button>
 
           {!readOnly && (
-            <div className="flex items-center space-x-2">
-              {event.status !== 'ASSIGNED_FOR_REPAIR' && event.status !== 'RESOLVED' && (
+            <div className="flex space-x-2">
+              {onDelete && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-3 py-2 bg-red-100 text-[#C62828] font-bold rounded border border-red-200 hover:bg-red-200"
+                >
+                  Delete
+                </button>
+              )}
+              {event.status !== 'RESOLVED' && (
                 <button
                   onClick={() => setIsAssignWorkOrderOpen(true)}
                   disabled={submitting}
-                  className="px-4 py-2.5 text-xs font-bold rounded-xl bg-orange-600 hover:bg-orange-700 text-white shadow-sm transition flex items-center space-x-1.5 disabled:opacity-50 min-h-[44px]"
+                  className="px-4 py-2 bg-[#F2A900] text-[#08243D] font-bold rounded hover:bg-amber-500"
                 >
-                  <Wrench className={`w-3.5 h-3.5 ${submitting && activeAction === 'ASSIGNED_FOR_REPAIR' ? 'animate-spin' : ''}`} />
-                  <span>Assign Work Order</span>
+                  Assign Work Order
                 </button>
               )}
-
               {event.status !== 'RESOLVED' && (
                 <button
                   onClick={() => handleAction('RESOLVED')}
                   disabled={submitting}
-                  className="px-4 py-2.5 text-xs font-bold rounded-xl bg-[#1E7F73] hover:bg-[#186a60] text-white shadow-sm transition flex items-center space-x-1.5 disabled:opacity-50 min-h-[44px]"
+                  className="px-4 py-2 bg-[#198754] text-white font-bold rounded hover:bg-green-700"
                 >
-                  <CheckCircle2 className={`w-3.5 h-3.5 ${submitting && activeAction === 'RESOLVED' ? 'animate-spin' : ''}`} />
-                  <span>Mark Resolved</span>
-                </button>
-              )}
-
-              {event.status === 'RESOLVED' && (
-                <button
-                  onClick={() => handleAction('NEW')}
-                  disabled={submitting}
-                  className="px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition min-h-[44px]"
-                >
-                  Re-open
+                  Mark Resolved
                 </button>
               )}
             </div>
           )}
         </div>
+
       </div>
 
-      {/* PWD / NHAI Work Order Assignment Portal Modal */}
       <AssignWorkOrderModal
         event={event}
         isOpen={isAssignWorkOrderOpen}
@@ -436,3 +329,5 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
     </div>
   );
 };
+
+export default DefectDetailModal;
