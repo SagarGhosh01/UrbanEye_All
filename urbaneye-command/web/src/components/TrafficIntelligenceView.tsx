@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.heat';
 import { TrafficRouteSegment, BottleneckAlert, TrafficIntelligenceStats, District, SegmentCongestionState, CongestionSource } from '../types';
 import { getTrafficRoutes, getTrafficStats, getActiveBottlenecks } from '../services/trafficService';
 import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
@@ -36,6 +37,7 @@ function getPolylineCenter(coords: [number, number][]): [number, number] {
 
 export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = ({ district }) => {
   const { isDark } = useTheme();
+  const [mapMode, setMapMode] = useState<'POLYLINE' | 'HEATMAP'>('POLYLINE');
   const [routes, setRoutes] = useState<TrafficRouteSegment[]>([]);
   const [congestionSource, setCongestionSource] = useState<CongestionSource>('NONE');
   const [stats, setStats] = useState<TrafficIntelligenceStats>({
@@ -56,6 +58,7 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routesLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const heatLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   // Auto-polling telemetry every 5s so data changes with time live
@@ -154,6 +157,8 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
       const layerGroup = L.layerGroup().addTo(map);
       routesLayerGroupRef.current = layerGroup;
+      const heatGroup = L.layerGroup().addTo(map);
+      heatLayerGroupRef.current = heatGroup;
       mapInstanceRef.current = map;
 
       setTimeout(() => {
@@ -188,82 +193,100 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
   useEffect(() => {
     const map = mapInstanceRef.current;
     const layerGroup = routesLayerGroupRef.current;
-    if (!map || !layerGroup) return;
+    const heatGroup = heatLayerGroupRef.current;
+    if (!map || !layerGroup || !heatGroup) return;
 
     layerGroup.clearLayers();
+    heatGroup.clearLayers();
 
     if (routes.length === 0) return;
 
-    const allPoints: [number, number][] = [];
-
-    routes.forEach((route) => {
-      const isSelected = selectedRoute?.id === route.id;
-      const color = getTrafficColor(route.trafficLevel);
-
-      if (route.coordinates && route.coordinates.length > 0) {
-        route.coordinates.forEach((pt) => {
-          if (Array.isArray(pt) && pt.length >= 2) {
-            allPoints.push(pt as [number, number]);
-          }
-        });
-      }
-
-      const polyline = L.polyline(route.coordinates, {
-        color: color,
-        weight: isSelected ? 8 : 5,
-        opacity: isSelected ? 0.98 : 0.78,
+    if (mapMode === 'HEATMAP') {
+      const heatPoints: [number, number, number][] = [];
+      routes.forEach((route) => {
+        const intensity = route.trafficLevel === 'SEVERE' ? 1.0 : route.trafficLevel === 'HEAVY' ? 0.7 : route.trafficLevel === 'MODERATE' ? 0.4 : 0.1;
+        if (route.coordinates && route.coordinates.length > 0) {
+          route.coordinates.forEach((pt) => {
+            if (Array.isArray(pt) && pt.length >= 2) {
+              heatPoints.push([pt[0], pt[1], intensity]);
+            }
+          });
+        }
       });
+      // @ts-ignore
+      L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 14 }).addTo(heatGroup);
+    } else {
+      const allPoints: [number, number][] = [];
 
-      polyline.bindTooltip(`
-        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
-          <strong>${route.name}</strong><br/>
-          Traffic Level: <span style="color:${color}; font-weight: bold;">${route.trafficLevel}</span><br/>
-          Speed: <strong>${route.avgSpeedKmh} km/h</strong> (Normal: ${route.normalSpeedKmh} km/h)<br/>
-          Flow: ${route.vehiclesPerMin} veh/min | Delay: +${route.estimatedDelayMin} min
-        </div>
-      `);
+      routes.forEach((route) => {
+        const isSelected = selectedRoute?.id === route.id;
+        const color = getTrafficColor(route.trafficLevel);
 
-      polyline.on('click', () => {
-        setSelectedRoute(route);
-        map.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 0.8 });
-      });
+        if (route.coordinates && route.coordinates.length > 0) {
+          route.coordinates.forEach((pt) => {
+            if (Array.isArray(pt) && pt.length >= 2) {
+              allPoints.push(pt as [number, number]);
+            }
+          });
+        }
 
-      polyline.addTo(layerGroup);
-
-      // Render Active Bottleneck Pulse Marker
-      if (route.bottleneckStatus === 'ACTIVE') {
-        const center = getPolylineCenter(route.coordinates);
-        const icon = L.divIcon({
-          className: 'custom-bottleneck-marker',
-          html: `<div style="position: relative; display: flex; items-center: center; justify-content: center;">
-            <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #ef4444; opacity: 0.6; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2px solid #ffffff; color: white; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(220,38,38,0.5);">⚠</div>
-          </div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
+        const polyline = L.polyline(route.coordinates, {
+          color: color,
+          weight: isSelected ? 8 : 5,
+          opacity: isSelected ? 0.98 : 0.78,
         });
 
-        const marker = L.marker(center, { icon });
-        marker.bindPopup(`
-          <div style="font-family: sans-serif; padding: 2px;">
-            <strong style="color: #dc2626;">⚠ ACTIVE BOTTLENECK</strong><br/>
-            <span>${route.name} (${route.junctionTag})</span><br/>
-            Speed: ${route.avgSpeedKmh} km/h (Normal: ${route.normalSpeedKmh} km/h)<br/>
-            <strong>Delay: +${route.estimatedDelayMin} min</strong>
+        polyline.bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+            <strong>${route.name}</strong><br/>
+            Traffic Level: <span style="color:${color}; font-weight: bold;">${route.trafficLevel}</span><br/>
+            Speed: <strong>${route.avgSpeedKmh} km/h</strong> (Normal: ${route.normalSpeedKmh} km/h)<br/>
+            Flow: ${route.vehiclesPerMin} veh/min | Delay: +${route.estimatedDelayMin} min
           </div>
         `);
-        marker.on('click', () => {
+
+        polyline.on('click', () => {
           setSelectedRoute(route);
+          map.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 0.8 });
         });
-        marker.addTo(layerGroup);
-      }
-    });
+
+        polyline.addTo(layerGroup);
+
+        // Render Active Bottleneck Pulse Marker
+        if (route.bottleneckStatus === 'ACTIVE') {
+          const center = getPolylineCenter(route.coordinates);
+          const icon = L.divIcon({
+            className: 'custom-bottleneck-marker',
+            html: `<div style="position: relative; display: flex; items-center: center; justify-content: center;">
+              <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #ef4444; opacity: 0.6; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2px solid #ffffff; color: white; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(220,38,38,0.5);">⚠</div>
+            </div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+          });
+
+          const marker = L.marker(center, { icon });
+          marker.bindPopup(`
+            <div style="font-family: sans-serif; padding: 2px;">
+              <strong style="color: #dc2626;">⚠ ACTIVE BOTTLENECK</strong><br/>
+              <span>${route.name} (${route.junctionTag})</span><br/>
+              Speed: ${route.avgSpeedKmh} km/h (Normal: ${route.normalSpeedKmh} km/h)<br/>
+              <strong>Delay: +${route.estimatedDelayMin} min</strong>
+            </div>
+          `);
+          marker.on('click', () => {
+            setSelectedRoute(route);
+          });
+          marker.addTo(layerGroup);
+        }
+      });
+    }
 
     // Invalidate size and auto-fit to routes on first arrival
     setTimeout(() => {
       map.invalidateSize();
     }, 150);
-  }, [routes, selectedRoute?.id, isDark]);
+  }, [routes, selectedRoute?.id, isDark, mapMode]);
 
   const handleRouteClick = (route: TrafficRouteSegment) => {
     setSelectedRoute(route);
@@ -376,10 +399,33 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
               <div className="flex items-center space-x-2.5">
                 <Navigation className="w-4 h-4 text-[#1769AA]" />
                 <span className="font-bold text-sm tracking-tight">Live GIS Traffic Density Map</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mr-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                   Live Telemetry {lastTick ? `• ${lastTick}` : ''}
                 </span>
+
+                <div className="flex bg-[#EAF4FB] p-0.5 rounded-lg border border-[#1769AA]/20 ml-2 hidden sm:flex">
+                  <button
+                    onClick={() => setMapMode('POLYLINE')}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
+                      mapMode === 'POLYLINE' 
+                        ? 'bg-[#1769AA] text-white shadow-sm' 
+                        : 'text-[#0B3558] hover:bg-[#1769AA]/10'
+                    }`}
+                  >
+                    Routes
+                  </button>
+                  <button
+                    onClick={() => setMapMode('HEATMAP')}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
+                      mapMode === 'HEATMAP' 
+                        ? 'bg-[#1769AA] text-white shadow-sm' 
+                        : 'text-[#0B3558] hover:bg-[#1769AA]/10'
+                    }`}
+                  >
+                    Heatmap
+                  </button>
+                </div>
               </div>
 
               {/* Traffic Level Legend */}
