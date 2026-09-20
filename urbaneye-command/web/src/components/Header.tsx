@@ -81,10 +81,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Language Switcher & Prototype Badge */}
+        {/* Right: Language Switcher */}
         <div className="flex items-center space-x-1.5 shrink-0 text-xs">
           <span className="hidden lg:inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded border border-amber-400/30 uppercase tracking-wider">
-            <Sparkles className="w-2.5 h-2.5 text-amber-400" /> Prototype / Hackathon Demo
+            <Sparkles className="w-2.5 h-2.5 text-amber-400" /> Command Center Live
           </span>
 
           {/* Accessibility Font Size Resizer (Desktop) */}
@@ -133,9 +133,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </h1>
                 <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
                   GOVT. OF INDIA
-                </span>
-                <span className="bg-amber-100 text-[#003366] text-[8px] font-bold px-1.5 py-0.5 rounded border border-amber-200">
-                  PROTOTYPE
                 </span>
               </div>
             </div>
@@ -222,7 +219,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="lg:hidden bg-[#001730] text-white px-4 py-3 border-t border-amber-500/40 space-y-2 text-xs">
           <div className="flex items-center justify-between pb-2 border-b border-blue-900/60">
             <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-              PROTOTYPE DEMO PORTAL • {user.role.replace('_', ' ')}
+              OFFICIAL COMMAND PORTAL • {user.role.replace('_', ' ')}
             </span>
             <span className="text-[10px] text-gray-400">SRIMS v3.4</span>
           </div>

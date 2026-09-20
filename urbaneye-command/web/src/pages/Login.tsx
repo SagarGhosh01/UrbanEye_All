@@ -212,7 +212,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
 
       {/* Footer strip */}
       <div className="bg-[#08243D] text-gray-300 text-[11px] py-2 px-4 text-center border-t border-[#F2A900]">
-        SRIMS — Public Infrastructure Technology Prototype | © 2026 SRIMS
+        SRIMS — Public Infrastructure Technology System | © 2026 SRIMS
       </div>
 
     </div>

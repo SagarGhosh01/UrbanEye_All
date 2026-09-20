@@ -67,7 +67,7 @@ export const GovtFooter: React.FC = () => {
               <li><a href="#contact" className="hover:text-[#F2A900] transition">Contact &amp; Feedback</a></li>
             </ul>
             <div className="pt-2 text-gray-400 text-[11px]">
-              Public Infrastructure Technology Prototype
+              Public Infrastructure Technology Platform
             </div>
           </div>
 
@@ -77,7 +77,7 @@ export const GovtFooter: React.FC = () => {
       {/* Bottom Bar */}
       <div className="bg-[#0B3558] py-3 border-t border-gray-800 text-xs text-gray-300">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-          <p>SRIMS — Public Infrastructure Technology Prototype | © 2026 SRIMS</p>
+          <p>SRIMS — Public Infrastructure Technology System | © 2026 SRIMS</p>
           <div className="flex space-x-6 text-[11px] text-gray-400">
             <span>Last Updated: {currentDate}</span>
           </div>

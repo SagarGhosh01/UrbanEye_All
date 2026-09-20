@@ -125,9 +125,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSelect
                 <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
                   GOVT. OF INDIA
                 </span>
-                <span className="bg-amber-100 text-[#003366] text-[8px] font-bold px-1.5 py-0.5 rounded border border-amber-200">
-                  PROTOTYPE
-                </span>
               </div>
             </div>
           </div>
