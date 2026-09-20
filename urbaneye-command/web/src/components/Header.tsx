@@ -119,37 +119,22 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 2. Main Header Bar */}
-      <div className="bg-white py-2.5 px-3 sm:px-6 md:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 max-w-full">
+      <div className="bg-white py-2 px-3 sm:px-6 md:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 max-w-full">
         
-        {/* Left Side: Emblem + Integrated Brand & Title */}
-        <div className="flex items-center justify-between sm:justify-start min-w-0 flex-1 space-x-3">
-          {/* Emblem */}
-          <div className="shrink-0">
-            <GovtEmblem size={44} />
-          </div>
-
-          {/* Desktop Vertical Divider */}
-          <div className="hidden sm:block h-10 w-px bg-gray-200 shrink-0"></div>
-
-          {/* Brand Title & Subtitle Group */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-black text-[#003366] tracking-tight leading-none">
-                {t('gov.title')}
-              </h1>
-              <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
-                GOVT. OF INDIA
-              </span>
-            </div>
-            
-            {/* Desktop Subtitle & Ministry */}
-            <div className="hidden sm:block mt-0.5">
-              <h2 className="text-xs font-bold text-gray-900 leading-snug">
-                {t('gov.subtitle')}
-              </h2>
-              <p className="text-[10px] text-gray-500 leading-tight truncate" style={hindiStyle}>
-                {t('gov.ministry')}
-              </p>
+        {/* Row 1: Brand & User Profile */}
+        <div className="flex items-center justify-between w-full sm:w-auto min-w-0 space-x-2">
+          {/* Emblem & Brand Title */}
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <GovtEmblem size={38} />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-black text-[#003366] tracking-tight leading-none">
+                  {t('gov.title')}
+                </h1>
+                <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                  GOVT. OF INDIA
+                </span>
+              </div>
             </div>
           </div>
 
@@ -176,42 +161,42 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Mobile-Only Subtitle Row */}
-        <div className="sm:hidden w-full text-[#002244] border-t border-gray-100 pt-1.5">
-          <h2 className="text-[11px] font-bold text-gray-800 leading-snug">
+        {/* Subtitle Row - Full Width on Mobile, Inline on Desktop */}
+        <div className="w-full sm:flex-1 sm:max-w-xl text-[#002244] border-t sm:border-t-0 border-gray-100 pt-1 sm:pt-0">
+          <h2 className="text-[11px] sm:text-xs font-bold text-gray-800 leading-snug break-words">
             {t('gov.subtitle')}
           </h2>
-          <p className="text-[9px] text-gray-500 leading-tight truncate mt-0.5" style={hindiStyle}>
+          <p className="text-[9px] sm:text-[10px] text-gray-500 leading-tight truncate mt-0.5" style={hindiStyle}>
             {t('gov.ministry')}
           </p>
         </div>
 
-        {/* Right Side Cards for Tablet & Desktop */}
-        <div className="hidden sm:flex items-center space-x-3 shrink-0">
+        {/* Right Controls for Tablet & Desktop */}
+        <div className="hidden sm:flex items-center space-x-2 shrink-0">
           {/* Emergency Highway Helpline Pill Card */}
-          <div className="hidden lg:flex items-center space-x-2.5 bg-blue-50/80 px-3 py-1.5 rounded-xl border border-blue-200 shadow-xs hover:border-blue-300 transition">
+          <div className="hidden lg:flex items-center space-x-2.5 bg-blue-50/80 px-3 py-1.5 rounded-lg border border-blue-200">
             <div className="w-7 h-7 rounded-full bg-blue-100 text-[#003366] flex items-center justify-center shrink-0">
               <Phone className="w-3.5 h-3.5 text-[#003366]" />
             </div>
             <div>
-              <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">Emergency Highway Helpline</div>
-              <div className="text-xs font-black text-[#003366]">1033 (24x7 Toll Free)</div>
+              <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">Highway Helpline</div>
+              <div className="text-xs font-black text-[#003366]">1033 (24x7)</div>
             </div>
           </div>
 
           {/* Security Standard Card */}
-          <div className="hidden lg:flex items-center space-x-2.5 bg-emerald-50/80 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-xs hover:border-emerald-300 transition">
+          <div className="hidden lg:flex items-center space-x-2.5 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-200">
             <div className="w-7 h-7 rounded-full bg-emerald-100 text-[#138808] flex items-center justify-center shrink-0">
               <Shield className="w-3.5 h-3.5 text-[#138808]" />
             </div>
             <div>
-              <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">Security Standard</div>
-              <div className="text-xs font-black text-[#138808]">NIC Certified Portal</div>
+              <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">Security</div>
+              <div className="text-xs font-black text-[#138808]">NIC Certified</div>
             </div>
           </div>
 
           {/* User Account Controls */}
-          <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 shadow-xs hover:bg-gray-100/80 transition">
+          <div className="flex items-center space-x-2 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-200 shadow-xs">
             <div className="text-left text-xs min-w-0">
               <div className="font-bold text-[#003366] text-xs truncate">{user.name}</div>
               <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">{user.role.replace('_', ' ')}</div>

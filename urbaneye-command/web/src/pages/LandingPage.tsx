@@ -111,55 +111,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSelect
       </div>
 
       {/* 2. Main Portal Header */}
-      <header className="bg-white border-b shadow-xs py-2.5 px-3 sm:px-6 md:px-8 w-full max-w-full overflow-hidden">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 max-w-full">
+      <header className="bg-white border-b shadow-xs py-2 px-3 sm:px-6 md:px-8 w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 max-w-full">
           
-          {/* Left Side: Emblem + Integrated Brand & Title */}
-          <div className="flex items-center justify-between sm:justify-start min-w-0 flex-1 space-x-3">
-            {/* Emblem */}
-            <div className="shrink-0">
-              <GovtEmblem size={44} />
-            </div>
-
-            {/* Desktop Vertical Divider */}
-            <div className="hidden sm:block h-10 w-px bg-gray-200 shrink-0"></div>
-
-            {/* Brand Title & Subtitle Group */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
+          {/* Row 1: Emblem & SRIMS Title */}
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <GovtEmblem size={38} />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-black text-[#003366] tracking-tight leading-none">
                   {t('gov.title')}
                 </h1>
-                <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
                   GOVT. OF INDIA
                 </span>
-              </div>
-              
-              {/* Desktop Subtitle & Ministry */}
-              <div className="hidden sm:block mt-0.5">
-                <h2 className="text-xs font-bold text-gray-900 leading-snug">
-                  {t('gov.subtitle')}
-                </h2>
-                <p className="text-[10px] text-gray-500 leading-tight truncate" style={hindiStyle}>
-                  {t('gov.ministry')}
-                </p>
               </div>
             </div>
           </div>
 
-          {/* Mobile-Only Subtitle Row */}
-          <div className="sm:hidden w-full text-[#002244] border-t border-gray-100 pt-1.5">
-            <h2 className="text-[11px] font-bold text-gray-800 leading-snug">
+          {/* Row 2: Subtitle & Ministry Info */}
+          <div className="w-full sm:flex-1 sm:max-w-xl text-[#002244] border-t sm:border-t-0 border-gray-100 pt-1 sm:pt-0">
+            <h2 className="text-[11px] sm:text-xs font-bold text-gray-800 leading-snug break-words">
               {t('gov.subtitle')}
             </h2>
-            <p className="text-[9px] text-gray-500 leading-tight truncate mt-0.5" style={hindiStyle}>
+            <p className="text-[9px] sm:text-[10px] text-gray-500 leading-tight truncate mt-0.5" style={hindiStyle}>
               {t('gov.ministry')}
             </p>
           </div>
 
           {/* Right Cards for Tablet & Desktop */}
-          <div className="hidden sm:flex items-center space-x-3 text-xs shrink-0">
-            <div className="flex items-center space-x-2.5 bg-blue-50/80 px-3 py-1.5 rounded-xl border border-blue-200 shadow-xs hover:border-blue-300 transition">
+          <div className="hidden lg:flex items-center space-x-3 text-xs shrink-0">
+            <div className="flex items-center space-x-2.5 bg-blue-50/80 px-3 py-1.5 rounded-lg border border-blue-200">
               <div className="w-7 h-7 rounded-full bg-blue-100 text-[#003366] flex items-center justify-center shrink-0">
                 <Phone className="w-3.5 h-3.5 text-[#003366]" />
               </div>
@@ -169,7 +151,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSelect
               </div>
             </div>
 
-            <div className="flex items-center space-x-2.5 bg-emerald-50/80 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-xs hover:border-emerald-300 transition">
+            <div className="flex items-center space-x-2.5 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-200">
               <div className="w-7 h-7 rounded-full bg-emerald-100 text-[#138808] flex items-center justify-center shrink-0">
                 <Shield className="w-3.5 h-3.5 text-[#138808]" />
               </div>
