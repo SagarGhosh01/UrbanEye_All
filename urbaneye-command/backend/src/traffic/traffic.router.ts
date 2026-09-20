@@ -144,8 +144,8 @@ async function buildSegments(districtId?: string): Promise<SegmentSummary[]> {
   }
 
   // ─── Real OSM Road Network with Dynamic Time-Varying Traffic ──────────────────
-  let targetDistrict = districtId ? await prisma.district.findUnique({ where: { id: districtId } }) : null;
-  if (!targetDistrict) {
+  let targetDistrict = districtId && districtId !== 'INDIA' ? await prisma.district.findUnique({ where: { id: districtId } }) : null;
+  if (!targetDistrict && districtId !== 'INDIA') {
     targetDistrict =
       (await prisma.district.findFirst({ where: { name: { contains: 'Kapurthala' } } })) ||
       (await prisma.district.findFirst());
@@ -161,14 +161,14 @@ async function buildSegments(districtId?: string): Promise<SegmentSummary[]> {
   }
 
   let roadSegments = await prisma.roadSegment.findMany({
-    where: whereClause,
+    where: districtId === 'INDIA' ? {} : whereClause,
     orderBy: { createdAt: 'asc' },
-    take: 50,
+    take: districtId === 'INDIA' ? 15000 : 500,
   });
 
-  if (roadSegments.length === 0) {
+  if (roadSegments.length === 0 && districtId !== 'INDIA') {
     roadSegments = await prisma.roadSegment.findMany({
-      take: 40,
+      take: 400,
     });
   }
 

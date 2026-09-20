@@ -414,14 +414,34 @@ export const NationalOverviewView: React.FC<NationalOverviewViewProps> = ({
               Live state-level telemetry synthesized from continuous bus edge-AI inference.
             </p>
           </div>
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="min-h-[40px] px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-600 bg-slate-700 hover:bg-slate-600 text-slate-200 transition flex items-center space-x-1.5 self-start sm:self-auto shadow-sm active:scale-95"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Sync National Feed</span>
-          </button>
+          <div className="flex items-center space-x-2 self-start sm:self-auto">
+            <button
+              onClick={() => {
+                if (onSelectDistrict) {
+                  onSelectDistrict({
+                    id: 'INDIA',
+                    code: 'IND',
+                    name: 'Pan-India Interactive',
+                    stateId: 'india',
+                    centerLat: 22.8,
+                    centerLon: 79.5,
+                  });
+                }
+              }}
+              className="min-h-[40px] px-3.5 py-2 text-xs font-semibold rounded-lg border border-teal-600 bg-[#1E7F73] hover:bg-[#186a60] text-white transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>National Traffic Heatmap</span>
+            </button>
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="min-h-[40px] px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-600 bg-slate-700 hover:bg-slate-600 text-slate-200 transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Sync</span>
+            </button>
+          </div>
         </div>
 
         {/* 2x2 on Mobile, 4-col on Desktop */}

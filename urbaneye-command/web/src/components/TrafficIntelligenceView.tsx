@@ -201,21 +201,7 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
     if (routes.length === 0) return;
 
-    if (mapMode === 'HEATMAP') {
       const heatPoints: [number, number, number][] = [];
-      routes.forEach((route) => {
-        const intensity = route.trafficLevel === 'SEVERE' ? 1.0 : route.trafficLevel === 'HEAVY' ? 0.7 : route.trafficLevel === 'MODERATE' ? 0.4 : 0.1;
-        if (route.coordinates && route.coordinates.length > 0) {
-          route.coordinates.forEach((pt) => {
-            if (Array.isArray(pt) && pt.length >= 2) {
-              heatPoints.push([pt[0], pt[1], intensity]);
-            }
-          });
-        }
-      });
-      // @ts-ignore
-      L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 14 }).addTo(heatGroup);
-    } else {
       const allPoints: [number, number][] = [];
 
       routes.forEach((route) => {
@@ -226,14 +212,18 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
           route.coordinates.forEach((pt) => {
             if (Array.isArray(pt) && pt.length >= 2) {
               allPoints.push(pt as [number, number]);
+              if (mapMode === 'HEATMAP') {
+                 const intensity = route.trafficLevel === 'SEVERE' ? 1.0 : route.trafficLevel === 'HEAVY' ? 0.7 : route.trafficLevel === 'MODERATE' ? 0.4 : 0.1;
+                 heatPoints.push([pt[0], pt[1], intensity]);
+              }
             }
           });
         }
 
         const polyline = L.polyline(route.coordinates, {
           color: color,
-          weight: isSelected ? 8 : 5,
-          opacity: isSelected ? 0.98 : 0.78,
+          weight: mapMode === 'HEATMAP' ? 20 : (isSelected ? 8 : 5),
+          opacity: mapMode === 'HEATMAP' ? 0.0 : (isSelected ? 0.98 : 0.78),
         });
 
         polyline.bindTooltip(`
@@ -252,8 +242,8 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
         polyline.addTo(layerGroup);
 
-        // Render Active Bottleneck Pulse Marker
-        if (route.bottleneckStatus === 'ACTIVE') {
+        // Render Active Bottleneck Pulse Marker (skip if Heatmap to keep it clean)
+        if (route.bottleneckStatus === 'ACTIVE' && mapMode !== 'HEATMAP') {
           const center = getPolylineCenter(route.coordinates);
           const icon = L.divIcon({
             className: 'custom-bottleneck-marker',
@@ -280,7 +270,16 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
           marker.addTo(layerGroup);
         }
       });
-    }
+
+      if (mapMode === 'HEATMAP') {
+        // @ts-ignore
+        L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 14 }).addTo(heatGroup);
+      }
+
+      if (allPoints.length > 0 && !selectedRoute && district?.id === 'INDIA') {
+        // Automatically zoom out to India if it's the India view
+        map.setView([22.0, 79.0], 5);
+      }
 
     // Invalidate size and auto-fit to routes on first arrival
     setTimeout(() => {

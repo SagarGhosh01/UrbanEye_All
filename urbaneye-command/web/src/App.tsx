@@ -419,14 +419,14 @@ const defaultStats: AnalyticsStats = {
       label: 'National Overview (All India)',
       onClick: viewMode !== 'NATIONAL' ? () => setViewMode('NATIONAL') : undefined,
     });
-    if (selectedState && viewMode !== 'NATIONAL') {
+    if (selectedState && viewMode !== 'NATIONAL' && activeDistrict?.id !== 'INDIA') {
       breadcrumbs.push({
         label: selectedState.name,
         onClick: viewMode === 'DISTRICT' ? () => setViewMode('STATE') : undefined,
       });
     }
     if (activeDistrict && viewMode === 'DISTRICT') {
-      breadcrumbs.push({ label: activeDistrict.name });
+      breadcrumbs.push({ label: activeDistrict.id === 'INDIA' ? 'Pan-India Interactive Heatmap' : activeDistrict.name });
     }
   } else if (user.role === 'STATE_ADMIN') {
     breadcrumbs.push({
