@@ -465,12 +465,6 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
               <div className="flex items-center space-x-2.5">
                 <Navigation className="w-4 h-4 text-[#1769AA]" />
                 <span className="font-bold text-sm tracking-tight">Live GIS Traffic Density Map</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mr-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  Live Telemetry {lastTick ? `• ${lastTick}` : ''}
-                </span>
-
-
               </div>
 
               {/* Traffic Level Legend */}
