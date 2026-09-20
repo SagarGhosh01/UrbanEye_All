@@ -195,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 3. Horizontal Navigation Bar */}
       <nav className="bg-[#003366] text-white px-4 md:px-8 border-t border-amber-500">
-        <div className="flex items-center space-x-1 overflow-x-auto scrollbar-none py-1">
+        <div className="flex items-center space-x-1 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
