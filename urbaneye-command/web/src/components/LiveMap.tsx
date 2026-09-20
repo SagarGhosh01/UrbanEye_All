@@ -84,17 +84,60 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             const poly = L.polyline(seg.coordinates, {
               color: color,
               weight: 6,
-              opacity: 0.82,
+              opacity: 0.85,
               lineCap: 'round',
               lineJoin: 'round',
             });
+
             poly.bindTooltip(`
               <div style="font-family:sans-serif;font-size:11px;padding:2px;">
                 <strong>${seg.name || 'Road Segment'}</strong><br/>
-                Traffic Congestion: <span style="color:${color};font-weight:bold;">${seg.level}</span><br/>
-                Speed: <strong>${seg.avgSpeedKmh} km/h</strong>
+                Traffic Level: <span style="color:${color};font-weight:bold;">${seg.level}</span> | <strong>${seg.avgSpeedKmh || 40} km/h</strong><br/>
+                <em>Click road for full details</em>
               </div>
             `);
+
+            const popupContent = `
+              <div style="font-family: Inter, system-ui, sans-serif; padding: 4px; min-width: 230px; color: #172B3A;">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 8px;">
+                  <h4 style="font-size: 13px; font-weight: 800; color: #0B3558; margin: 0; line-height: 1.2;">
+                    ${seg.name || 'Urban Road Corridor'}
+                  </h4>
+                  <span style="font-size: 9px; font-weight: 800; background: ${color}22; color: ${color}; border: 1px solid ${color}44; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+                    ${seg.level}
+                  </span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 8px;">
+                  <div style="background: #F8FAFC; padding: 6px; border-radius: 6px; border: 1px solid #E2E8F0;">
+                    <span style="color: #64748B; font-size: 9px; display: block; font-weight: 700; text-transform: uppercase;">AVG SPEED</span>
+                    <strong style="color: #0F172A; font-size: 13px;">${seg.avgSpeedKmh || 40} <span style="font-size: 10px; font-weight: 500;">km/h</span></strong>
+                  </div>
+                  <div style="background: #F8FAFC; padding: 6px; border-radius: 6px; border: 1px solid #E2E8F0;">
+                    <span style="color: #64748B; font-size: 9px; display: block; font-weight: 700; text-transform: uppercase;">VEHICLE FLOW</span>
+                    <strong style="color: #0F172A; font-size: 13px;">${seg.vehicleCountPerHour || 1800} <span style="font-size: 10px; font-weight: 500;">veh/hr</span></strong>
+                  </div>
+                </div>
+
+                <div style="font-size: 11px; color: #334155; margin-bottom: 8px; line-height: 1.5; background: #F1F5F9; padding: 6px 8px; border-radius: 6px;">
+                  <div>🛣️ <strong>Road Class:</strong> <span style="text-transform: capitalize;">${seg.roadClass || 'Primary Corridor'}</span></div>
+                  <div>📍 <strong>Location Tag:</strong> ${(seg.cityTag || 'urban').toUpperCase()}</div>
+                  <div>📊 <strong>Congestion Density:</strong> ${seg.score || 45}/100</div>
+                  <div>⏱️ <strong>Estimated Delay:</strong> +${seg.level === 'SEVERE' ? 14 : seg.level === 'HEAVY' ? 8 : seg.level === 'MODERATE' ? 3 : 0} mins</div>
+                </div>
+              </div>
+            `;
+
+            poly.bindPopup(popupContent);
+
+            poly.on('mouseover', () => {
+              poly.setStyle({ weight: 10, opacity: 1.0 });
+            });
+
+            poly.on('mouseout', () => {
+              poly.setStyle({ weight: 6, opacity: 0.85 });
+            });
+
             poly.addTo(trafficLayer);
           }
         });

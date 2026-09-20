@@ -268,14 +268,38 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
         lineJoin: 'round',
       });
 
-      polyline.bindTooltip(`
-        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
-          <strong>${route.name}</strong><br/>
-          Traffic Level: <span style="color:${color}; font-weight: bold;">${route.trafficLevel}</span><br/>
-          Speed: <strong>${route.avgSpeedKmh} km/h</strong> (Normal: ${route.normalSpeedKmh} km/h)<br/>
-          Flow: ${route.vehiclesPerMin} veh/min | Delay: +${route.estimatedDelayMin} min
+      const polylinePopup = `
+        <div style="font-family: Inter, system-ui, sans-serif; padding: 4px; min-width: 240px; color: #172B3A;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 8px;">
+            <h4 style="font-size: 13px; font-weight: 800; color: #0B3558; margin: 0; line-height: 1.2;">
+              ${route.name}
+            </h4>
+            <span style="font-size: 9px; font-weight: 800; background: ${color}22; color: ${color}; border: 1px solid ${color}44; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+              ${route.trafficLevel}
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 8px;">
+            <div style="background: #F8FAFC; padding: 6px; border-radius: 6px; border: 1px solid #E2E8F0;">
+              <span style="color: #64748B; font-size: 9px; display: block; font-weight: 700; text-transform: uppercase;">CURRENT SPEED</span>
+              <strong style="color: #0F172A; font-size: 13px;">${route.avgSpeedKmh} <span style="font-size: 10px; font-weight: 500;">km/h</span></strong>
+            </div>
+            <div style="background: #F8FAFC; padding: 6px; border-radius: 6px; border: 1px solid #E2E8F0;">
+              <span style="color: #64748B; font-size: 9px; display: block; font-weight: 700; text-transform: uppercase;">DESIGN SPEED</span>
+              <strong style="color: #0F172A; font-size: 13px;">${route.normalSpeedKmh} <span style="font-size: 10px; font-weight: 500;">km/h</span></strong>
+            </div>
+          </div>
+
+          <div style="font-size: 11px; color: #334155; margin-bottom: 8px; line-height: 1.5; background: #F1F5F9; padding: 6px 8px; border-radius: 6px;">
+            <div>🚦 <strong>Junction Tag:</strong> ${route.junctionTag}</div>
+            <div>🏎️ <strong>Vehicle Flow:</strong> ${route.vehiclesPerMin * 60} veh/hr</div>
+            <div>⏱️ <strong>Estimated Delay:</strong> +${route.estimatedDelayMin} min</div>
+            <div>🚌 <strong>Monitored By:</strong> ${route.detectedByBuses?.[0] || 'Bus Fleet Telemetry'}</div>
+          </div>
         </div>
-      `);
+      `;
+
+      polyline.bindPopup(polylinePopup);
 
       polyline.on('click', () => {
         setSelectedRoute(route);
