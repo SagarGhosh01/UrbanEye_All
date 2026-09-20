@@ -121,35 +121,35 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
       )}
 
       {/* Pavement Health Index (PHI) & 30-Day Degradation Forecasting Header */}
-      <div className="p-5 rounded-2xl bg-white border border-[#D8E0E8] space-y-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-6 rounded-3xl bg-gradient-to-br from-white to-blue-50/50 border border-blue-100 space-y-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-400/30 text-xs font-mono font-bold uppercase">
-                <Zap className="w-3.5 h-3.5 text-amber-300" />
-                <span>Pavement Health Index (PHI) Engine</span>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm text-[11px] font-bold uppercase tracking-wider">
+                <Zap className="w-3.5 h-3.5 text-yellow-300" />
+                <span>Pavement Health Index Engine</span>
               </div>
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                 Live Telemetry
               </span>
             </div>
-            <h3 className="text-lg font-bold text-[#172B3A] flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-teal-600" />
-              15 / 30 / 60-Minute & 30-Day Infrastructure Decay Forecasting
+            <h3 className="text-xl sm:text-2xl font-black text-[#0B3558] flex items-center gap-2.5 tracking-tight">
+              <TrendingUp className="w-6 h-6 text-blue-500" />
+              15 / 30 / 60-Minute & 30-Day Infrastructure Forecasting
             </h3>
-            <p className="text-xs text-[#667788]">
+            <p className="text-sm text-[#667788] mt-1 font-medium">
               AI degradation decay modeling, sub-base structural scoring & bottleneck prediction {lastSyncTime ? `• Synced ${lastSyncTime}` : ''}
             </p>
           </div>
 
           {/* Timeframe Selector */}
-          <div className="flex items-center p-1 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8] text-xs">
+          <div className="flex items-center p-1.5 rounded-xl bg-white border border-blue-100 text-sm shadow-sm">
             <button
               type="button"
               onClick={() => setActiveTimeframe('min15')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition ${
-                activeTimeframe === 'min15' ? 'bg-[#1769AA] text-white shadow-sm' : 'text-[#667788] hover:text-[#172B3A]'
+              className={`px-4 py-2 rounded-lg font-bold transition-all duration-300 ${
+                activeTimeframe === 'min15' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md scale-105' : 'text-[#667788] hover:text-[#172B3A] hover:bg-blue-50'
               }`}
             >
               +15 Mins
@@ -157,8 +157,8 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
             <button
               type="button"
               onClick={() => setActiveTimeframe('min30')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition ${
-                activeTimeframe === 'min30' ? 'bg-[#1769AA] text-white shadow-sm' : 'text-[#667788] hover:text-[#172B3A]'
+              className={`px-4 py-2 rounded-lg font-bold transition-all duration-300 ${
+                activeTimeframe === 'min30' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md scale-105' : 'text-[#667788] hover:text-[#172B3A] hover:bg-blue-50'
               }`}
             >
               +30 Mins
@@ -166,8 +166,8 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
             <button
               type="button"
               onClick={() => setActiveTimeframe('min60')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition ${
-                activeTimeframe === 'min60' ? 'bg-[#1769AA] text-white shadow-sm' : 'text-[#667788] hover:text-[#172B3A]'
+              className={`px-4 py-2 rounded-lg font-bold transition-all duration-300 ${
+                activeTimeframe === 'min60' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md scale-105' : 'text-[#667788] hover:text-[#172B3A] hover:bg-blue-50'
               }`}
             >
               +60 Mins
@@ -176,79 +176,84 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
         </div>
 
         {/* Pavement Health Index Metric Banner */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
-          <div className="bg-[#F6F8FA] p-3.5 rounded-xl border border-[#D8E0E8] flex items-center justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          <div className="bg-white p-4 rounded-2xl border border-blue-100 border-l-4 border-l-teal-500 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex items-center justify-between group">
             <div>
-              <div className="text-[10px] font-extrabold text-teal-600 uppercase tracking-wider">Pavement Health Index</div>
-              <div className="text-2xl font-black text-teal-700 mt-0.5">{phi.pavementHealthIndex} <span className="text-xs font-normal text-[#667788]">/ 100</span></div>
-              <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">State: {phi.phiState}</div>
+              <div className="text-[10px] font-extrabold text-teal-600 uppercase tracking-wider mb-1">Pavement Health Index</div>
+              <div className="text-3xl font-black text-[#0B3558]">{phi.pavementHealthIndex} <span className="text-sm font-bold text-[#667788]">/ 100</span></div>
+              <div className="text-xs text-teal-600 font-bold mt-1">State: {phi.phiState}</div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-xs border border-teal-200">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100 text-teal-600 flex items-center justify-center font-black text-sm border border-teal-200 shadow-inner group-hover:scale-110 transition-transform">
               PHI
             </div>
           </div>
 
-          <div className="bg-[#F6F8FA] p-3.5 rounded-xl border border-[#D8E0E8] flex items-center justify-between">
+          <div className="bg-white p-4 rounded-2xl border border-blue-100 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex items-center justify-between group">
             <div>
-              <div className="text-[10px] font-extrabold text-[#667788] uppercase tracking-wider">30-Day Decay Forecast</div>
-              <div className="text-2xl font-black text-amber-600 mt-0.5">{phi.decayForecastPct}% <span className="text-xs font-normal text-[#667788]">drop</span></div>
-              <div className="text-[10px] text-amber-600 font-semibold mt-0.5">If unrepaired by Day 30</div>
+              <div className="text-[10px] font-extrabold text-[#667788] uppercase tracking-wider mb-1">30-Day Decay Forecast</div>
+              <div className="text-3xl font-black text-amber-600">{phi.decayForecastPct}% <span className="text-sm font-bold text-[#667788]">drop</span></div>
+              <div className="text-xs text-amber-600 font-bold mt-1">If unrepaired by Day 30</div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs border border-amber-200">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600 flex items-center justify-center font-black text-xl border border-amber-200 shadow-inner group-hover:scale-110 transition-transform">
               📉
             </div>
           </div>
 
-          <div className="bg-[#F6F8FA] p-3.5 rounded-xl border border-[#D8E0E8] flex items-center justify-between">
+          <div className="bg-white p-4 rounded-2xl border border-blue-100 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex items-center justify-between group">
             <div>
-              <div className="text-[10px] font-extrabold text-[#667788] uppercase tracking-wider">Sub-base Compaction</div>
-              <div className="text-2xl font-black text-blue-600 mt-0.5">{phi.subBaseCompaction}%</div>
-              <div className="text-[10px] text-blue-600 font-semibold mt-0.5">Structural Base Infill</div>
+              <div className="text-[10px] font-extrabold text-[#667788] uppercase tracking-wider mb-1">Sub-base Compaction</div>
+              <div className="text-3xl font-black text-blue-600">{phi.subBaseCompaction}%</div>
+              <div className="text-xs text-blue-600 font-bold mt-1">Structural Base Infill</div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-200">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 flex items-center justify-center font-black text-xl border border-blue-200 shadow-inner group-hover:scale-110 transition-transform">
               🏗️
             </div>
           </div>
 
-          <div className="bg-[#F6F8FA] p-3.5 rounded-xl border border-[#D8E0E8] flex items-center justify-between">
+          <div className="bg-white p-4 rounded-2xl border border-blue-100 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex items-center justify-between group">
             <div>
-              <div className="text-[10px] font-extrabold text-[#667788] uppercase tracking-wider">Prevented Loss</div>
-              <div className="text-xl font-black text-emerald-600 mt-0.5">₹{phi.preventedLossLakhs} Lakhs</div>
-              <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Early PWD Interventions</div>
+              <div className="text-[10px] font-extrabold text-[#667788] uppercase tracking-wider mb-1">Prevented Loss</div>
+              <div className="text-2xl font-black text-emerald-600 mt-1">₹{phi.preventedLossLakhs} L</div>
+              <div className="text-xs text-emerald-600 font-bold mt-1.5">Early PWD Interventions</div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs border border-emerald-200">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 flex items-center justify-center font-black text-xl border border-emerald-200 shadow-inner group-hover:scale-110 transition-transform">
               💰
             </div>
           </div>
         </div>
 
         {currentTF && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-            <div className="p-4 rounded-xl bg-white border border-[#D8E0E8] flex items-center justify-between shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-blue-100/50">
+            <div className="p-6 rounded-2xl bg-white border border-blue-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow group">
               <div>
-                <div className="text-xs text-[#667788]">Forecasted Density</div>
-                <div className="text-2xl font-bold text-[#172B3A] mt-1">{currentTF.predictedDensityPercent}%</div>
-                <div className="text-[11px] text-teal-600 font-semibold mt-0.5">{currentTF.trafficLevel} Traffic State</div>
+                <div className="text-sm font-bold text-[#667788] uppercase tracking-wide">Forecasted Density</div>
+                <div className="text-4xl font-black text-[#0B3558] mt-2">{currentTF.predictedDensityPercent}%</div>
+                <div className="text-xs px-2.5 py-1 inline-block bg-teal-50 text-teal-700 border border-teal-200 rounded-md font-bold mt-2">
+                  {currentTF.trafficLevel} Traffic State
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-full border-4 border-teal-200 flex items-center justify-center font-bold text-xs text-teal-700 bg-teal-50">
+              <div className="w-16 h-16 rounded-full border-[5px] border-teal-400 flex items-center justify-center font-black text-lg text-teal-700 bg-teal-50 shadow-inner group-hover:rotate-12 transition-transform duration-300">
                 {currentTF.predictedDensityPercent}%
               </div>
             </div>
 
-            <div className="md:col-span-2 p-4 rounded-xl bg-white border border-[#D8E0E8] space-y-2 shadow-sm">
-              <div className="text-xs font-bold text-[#172B3A]">Predicted Bottleneck Locations:</div>
-              <div className="space-y-1.5">
+            <div className="md:col-span-2 p-5 rounded-2xl bg-white border border-blue-100 space-y-3 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-sm font-black text-[#0B3558] flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-blue-500" />
+                Predicted Bottleneck Locations:
+              </div>
+              <div className="space-y-2">
                 {currentTF.predictedBottlenecks.map((btn, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg bg-[#F6F8FA] border border-[#D8E0E8]">
-                    <span className="font-semibold text-[#172B3A]">{btn.location}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-amber-600 font-semibold">+{btn.expectedDelayMin} min delay</span>
-                      <span className="text-teal-600 font-mono text-[11px]">Conf: {(btn.confidence * 100).toFixed(0)}%</span>
+                  <div key={i} className="flex items-center justify-between text-sm p-3 rounded-xl bg-blue-50/50 border border-blue-100 hover:bg-blue-50 transition-colors">
+                    <span className="font-bold text-[#0B3558]">{btn.location}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold shadow-sm">+{btn.expectedDelayMin} min delay</span>
+                      <span className="text-blue-600 font-mono text-xs font-bold bg-white px-2 py-1 rounded shadow-sm border border-blue-100">Conf: {(btn.confidence * 100).toFixed(0)}%</span>
                       {onSelectOnMap && (
                         <button
                           type="button"
                           onClick={() => onSelectOnMap(btn.lat, btn.lon, btn.location)}
-                          className="text-xs text-[#1769AA] hover:underline font-bold"
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold shadow-sm transition-colors"
                         >
                           Locate
                         </button>
@@ -265,39 +270,42 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
       {/* Two Column Grid: Recurring Hotspots & AI SRIMS Recommendations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recurring Defect Hotspots */}
-        <div className="p-5 rounded-2xl bg-white border border-[#D8E0E8] space-y-4 shadow-sm">
+        <div className="p-6 rounded-3xl bg-white border border-blue-100 space-y-5 shadow-sm hover:shadow-md transition-shadow">
           <div>
-            <h3 className="text-md font-bold text-[#172B3A] flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-amber-600" />
-              Recurring Defect Hotspots & Priority Scoring
+            <h3 className="text-xl font-black text-[#0B3558] flex items-center gap-2 tracking-tight">
+              <Wrench className="w-5 h-5 text-amber-500" />
+              Recurring Defect Hotspots & Priority
             </h3>
-            <p className="text-xs text-[#667788]">High-frequency damage sites prioritized for capital PWD overlay</p>
+            <p className="text-sm text-[#667788] mt-1 font-medium">High-frequency damage sites prioritized for capital PWD overlay</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {hotspots.map((hs) => (
-              <div key={hs.id} className="p-4 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8] space-y-2">
+              <div key={hs.id} className="p-5 rounded-2xl bg-gradient-to-br from-white to-orange-50/30 border border-amber-100 space-y-3 hover:shadow-md transition-all group">
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-bold text-[#172B3A] leading-tight">{hs.locationName}</h4>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200">
+                  <h4 className="text-base font-black text-[#0B3558] leading-tight">{hs.locationName}</h4>
+                  <span className="px-3 py-1 rounded-lg text-xs font-black bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm">
                     Priority: {hs.maintenancePriority.toFixed(0)} / 100
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-[#667788]">30-Day Detections:</span>
-                    <span className="font-bold text-[#172B3A] ml-1.5">{hs.recurrenceCount} times</span>
+                <div className="grid grid-cols-2 gap-3 text-sm border-y border-amber-100/50 py-3">
+                  <div className="flex flex-col">
+                    <span className="text-[#667788] text-xs font-bold uppercase tracking-wider mb-0.5">30-Day Detections</span>
+                    <span className="font-black text-[#0B3558] text-lg">{hs.recurrenceCount} <span className="text-xs font-semibold text-[#667788]">times</span></span>
                   </div>
-                  <div>
-                    <span className="text-[#667788]">Defect Type:</span>
-                    <span className="font-bold text-teal-600 ml-1.5">{hs.primaryDefectType}</span>
+                  <div className="flex flex-col">
+                    <span className="text-[#667788] text-xs font-bold uppercase tracking-wider mb-0.5">Defect Type</span>
+                    <span className="font-black text-amber-600 text-lg">{hs.primaryDefectType.replace(/_/g, ' ')}</span>
                   </div>
                 </div>
 
-                <div className="p-2 rounded-lg bg-white text-xs text-[#172B3A] border border-[#D8E0E8] shadow-sm">
-                  <span className="font-bold text-amber-600">Recommended Intervention: </span>
-                  {hs.recommendedAction}
+                <div className="p-3 rounded-xl bg-white text-xs font-medium text-[#172B3A] border border-amber-200 shadow-sm flex gap-2 items-start">
+                  <div className="p-1 rounded bg-amber-100 text-amber-600 mt-0.5"><Wrench className="w-3 h-3" /></div>
+                  <div>
+                    <span className="font-bold text-amber-700 block mb-0.5">Recommended Intervention:</span>
+                    {hs.recommendedAction}
+                  </div>
                 </div>
               </div>
             ))}
@@ -305,42 +313,54 @@ export const PredictiveIntelligenceView: React.FC<PredictiveIntelligenceViewProp
         </div>
 
         {/* AI Recommendations Engine */}
-        <div className="p-5 rounded-2xl bg-white border border-[#D8E0E8] space-y-4 shadow-sm">
+        <div className="p-6 rounded-3xl bg-white border border-blue-100 space-y-5 shadow-sm hover:shadow-md transition-shadow">
           <div>
-            <h3 className="text-md font-bold text-[#172B3A] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-teal-600" />
+            <h3 className="text-xl font-black text-[#0B3558] flex items-center gap-2 tracking-tight">
+              <Sparkles className="w-5 h-5 text-blue-500" />
               AI SRIMS Recommendations Engine
             </h3>
-            <p className="text-xs text-[#667788]">Autonomous actionable work-order & traffic dispatch suggestions</p>
+            <p className="text-sm text-[#667788] mt-1 font-medium">Autonomous actionable work-order & traffic dispatch suggestions</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {recommendations.map((rec) => (
-              <div key={rec.id} className="p-4 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8] space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-bold text-[#172B3A] leading-tight">{rec.title}</h4>
-                  {getUrgencyBadge(rec.urgency)}
+              <div key={rec.id} className="p-5 rounded-2xl bg-gradient-to-br from-white to-blue-50/40 border border-blue-100 space-y-4 hover:shadow-md transition-all group">
+                <div className="flex items-start justify-between gap-3">
+                  <h4 className="text-base font-black text-[#0B3558] leading-tight">{rec.title}</h4>
+                  <div className="shrink-0 mt-0.5">{getUrgencyBadge(rec.urgency)}</div>
                 </div>
 
-                <p className="text-xs text-[#667788] leading-relaxed">{rec.description}</p>
+                <p className="text-sm text-[#4A5568] leading-relaxed font-medium">{rec.description}</p>
 
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-[#D8E0E8]">
-                  <span className="text-[#667788] font-mono">
-                    Impact: <strong className="text-teal-600">{rec.impactScore}</strong>
-                    {rec.estimatedCostINR ? ` • Est. ₹${rec.estimatedCostINR.toLocaleString('en-IN')}` : ''}
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-blue-100/50">
+                  <div className="flex items-center gap-3">
+                    <span className="bg-white px-2.5 py-1 rounded-lg border border-blue-100 text-xs shadow-sm flex flex-col">
+                      <span className="text-[9px] text-[#667788] font-bold uppercase tracking-wider">Impact Score</span>
+                      <span className="font-black text-blue-600">{rec.impactScore}</span>
+                    </span>
+                    {rec.estimatedCostINR && (
+                      <span className="bg-white px-2.5 py-1 rounded-lg border border-emerald-100 text-xs shadow-sm flex flex-col">
+                        <span className="text-[9px] text-[#667788] font-bold uppercase tracking-wider">Est. Cost</span>
+                        <span className="font-black text-emerald-600">₹{rec.estimatedCostINR.toLocaleString('en-IN')}</span>
+                      </span>
+                    )}
+                  </div>
 
                   {rec.status === 'DISPATCHED' ? (
-                    <span className="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Dispatched
+                    <span className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-400 to-emerald-500 text-white shadow-md flex items-center gap-1.5 justify-center">
+                      <CheckCircle2 className="w-4 h-4" /> Dispatched
                     </span>
                   ) : (
                     <button
                       disabled={executingId === rec.id}
                       onClick={() => handleExecuteRec(rec)}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#1769AA] hover:bg-[#104a7a] text-white flex items-center gap-1.5 shadow-sm transition active:scale-95"
+                      className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-70"
                     >
-                      <Zap className="w-3.5 h-3.5 text-yellow-300" />
+                      {executingId === rec.id ? (
+                        <Zap className="w-4 h-4 text-white animate-spin" />
+                      ) : (
+                        <Zap className="w-4 h-4 text-yellow-300" />
+                      )}
                       {rec.type === 'WORK_ORDER' ? 'Create Work Order' : 'Deploy Action'}
                     </button>
                   )}
