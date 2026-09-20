@@ -63,89 +63,103 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSelect
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
       
       {/* 1. Official Top Marquee Banner with English / Hindi Switcher */}
-      <div className="bg-[#002244] text-white py-1.5 px-4 flex flex-wrap justify-between items-center text-xs border-b border-amber-500/40 gap-2">
-        <div className="flex items-center space-x-2 overflow-hidden flex-1 min-w-[280px]">
-          <div className="bg-[#FF9933] text-black font-bold px-2 py-0.5 rounded text-[10px] tracking-wide flex items-center gap-1 shrink-0 uppercase">
-            <AlertCircle className="w-3 h-3" /> {t('announcement.title')}
+      <div className="bg-[#002244] text-white py-1 px-2.5 sm:px-4 flex items-center justify-between text-xs border-b border-amber-500/40 gap-2 max-w-full overflow-hidden">
+        
+        {/* Left: Announcement Marquee */}
+        <div className="flex items-center space-x-1.5 overflow-hidden flex-1 min-w-0">
+          <div className="bg-[#FF9933] text-black font-bold px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] tracking-wide flex items-center gap-1 shrink-0 uppercase">
+            <AlertCircle className="w-3 h-3" /> <span className="hidden sm:inline">{t('announcement.title')}</span><span className="sm:hidden">NOTICE</span>
           </div>
-          <div className="overflow-hidden whitespace-nowrap text-gray-200 text-xs flex-1">
-            <div className="inline-block animate-marquee">
+          <div className="overflow-hidden whitespace-nowrap text-gray-200 text-[11px] sm:text-xs flex-1 min-w-0">
+            <div className="inline-block animate-marquee truncate">
               🚨 {t('announcement.text')}
             </div>
           </div>
         </div>
 
-        {/* English / Hindi Language Switcher */}
-        <div className="flex items-center space-x-3 shrink-0 text-xs">
-          <div className="flex items-center bg-[#001730] px-2 py-0.5 rounded border border-blue-900/60 space-x-1 text-[11px]">
+        {/* Right: Controls */}
+        <div className="flex items-center space-x-1.5 shrink-0 text-xs">
+          {/* Accessibility Font Size Resizer (Desktop) */}
+          <div className="hidden sm:flex items-center bg-[#001730] px-1.5 py-0.5 rounded border border-blue-900/60 space-x-1 text-[10px]">
             <Type className="w-3 h-3 text-amber-400" />
             <button 
               onClick={() => setFontSize('normal')}
               className={`px-1 rounded font-bold ${fontSize === 'normal' ? 'bg-amber-400 text-black' : 'text-gray-300 hover:text-white'}`}
+              title="Standard Font Size"
             >
               A
             </button>
             <button 
               onClick={() => setFontSize('large')}
               className={`px-1 rounded font-bold ${fontSize === 'large' ? 'bg-amber-400 text-black' : 'text-gray-300 hover:text-white'}`}
+              title="Large Font Size"
             >
               A+
             </button>
           </div>
 
+          {/* English / Hindi Switch Button */}
           <button
             onClick={toggleLanguage}
-            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-3 py-1 rounded flex items-center space-x-1.5 text-xs transition shadow-sm border border-amber-300"
+            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded flex items-center space-x-1 text-[10px] sm:text-xs transition shadow-xs border border-amber-300 shrink-0"
             title="Switch Language (English / हिन्दी)"
           >
-            <Globe className="w-3.5 h-3.5 text-black" />
-            <span className="font-sans font-bold">{language === 'EN' ? 'English' : 'हिन्दी'}</span>
-            <span className="text-[10px] bg-black/20 px-1 py-0.2 rounded font-mono">
-              {language === 'EN' ? 'HI' : 'EN'}
-            </span>
+            <Globe className="w-3 h-3 text-black" />
+            <span className="font-sans font-bold text-[10px] sm:text-[11px]">{language === 'EN' ? 'EN' : 'HI'}</span>
           </button>
         </div>
       </div>
 
       {/* 2. Main Portal Header */}
-      <header className="bg-white border-b shadow-sm py-4 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <header className="bg-white border-b shadow-xs py-2 px-3 sm:px-6 md:px-8 w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 max-w-full">
           
-          {/* Emblem & SRIMS Title */}
-          <div className="flex items-center space-x-4">
-            <GovtEmblem size={52} />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black text-[#003366] tracking-tight">{t('gov.title')}</h1>
-                <span className="bg-[#138808] text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wide">
+          {/* Row 1: Emblem & SRIMS Title */}
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <GovtEmblem size={38} />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-black text-[#003366] tracking-tight leading-none">
+                  {t('gov.title')}
+                </h1>
+                <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
                   GOVT. OF INDIA
                 </span>
+                <span className="bg-amber-100 text-[#003366] text-[8px] font-bold px-1.5 py-0.5 rounded border border-amber-200">
+                  PROTOTYPE
+                </span>
               </div>
-              <h2 className="text-xs font-bold text-gray-900 leading-tight">{t('gov.subtitle')}</h2>
-              <p className="text-[10px] text-gray-500 leading-tight mt-0.5" style={hindiStyle}>
-                {t('gov.ministry')}
-              </p>
             </div>
           </div>
 
-          {/* Right Cards: Emergency Helpline & Security Standard */}
-          <div className="flex items-center space-x-4 text-xs">
-            <div className="hidden lg:flex items-center space-x-3 bg-blue-50/80 px-3.5 py-2 rounded-lg border border-blue-200">
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-[#003366] flex items-center justify-center shrink-0">
-                <Phone className="w-4 h-4 text-[#003366]" />
+          {/* Row 2: Subtitle & Ministry Info */}
+          <div className="w-full sm:flex-1 sm:max-w-xl text-[#002244] border-t sm:border-t-0 border-gray-100 pt-1 sm:pt-0">
+            <h2 className="text-[11px] sm:text-xs font-bold text-gray-800 leading-snug break-words">
+              {t('gov.subtitle')}
+            </h2>
+            <p className="text-[9px] sm:text-[10px] text-gray-500 leading-tight truncate mt-0.5" style={hindiStyle}>
+              {t('gov.ministry')}
+            </p>
+          </div>
+
+          {/* Right Cards for Tablet & Desktop */}
+          <div className="hidden lg:flex items-center space-x-3 text-xs shrink-0">
+            <div className="flex items-center space-x-2.5 bg-blue-50/80 px-3 py-1.5 rounded-lg border border-blue-200">
+              <div className="w-7 h-7 rounded-full bg-blue-100 text-[#003366] flex items-center justify-center shrink-0">
+                <Phone className="w-3.5 h-3.5 text-[#003366]" />
               </div>
               <div>
-                <div className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">{t('helpline.title')}</div>
+                <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">{t('helpline.title')}</div>
                 <div className="text-xs font-black text-[#003366]">{t('helpline.number')}</div>
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center space-x-3 bg-emerald-50/80 px-3.5 py-2 rounded-lg border border-emerald-200">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 text-[#138808] flex items-center justify-center shrink-0">
-                <Shield className="w-4 h-4 text-[#138808]" />
+            <div className="flex items-center space-x-2.5 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-200">
+              <div className="w-7 h-7 rounded-full bg-emerald-100 text-[#138808] flex items-center justify-center shrink-0">
+                <Shield className="w-3.5 h-3.5 text-[#138808]" />
               </div>
               <div>
-                <div className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">{t('security.title')}</div>
+                <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">{t('security.title')}</div>
                 <div className="text-xs font-black text-[#138808]">{t('security.certified')}</div>
               </div>
             </div>
