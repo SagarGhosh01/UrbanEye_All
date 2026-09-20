@@ -470,28 +470,7 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
                   Live Telemetry {lastTick ? `• ${lastTick}` : ''}
                 </span>
 
-                <div className="flex bg-[#EAF4FB] p-0.5 rounded-lg border border-[#1769AA]/20 ml-2 hidden sm:flex">
-                  <button
-                    onClick={() => setMapMode('POLYLINE')}
-                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
-                      mapMode === 'POLYLINE' 
-                        ? 'bg-[#1769AA] text-white shadow-sm' 
-                        : 'text-[#0B3558] hover:bg-[#1769AA]/10'
-                    }`}
-                  >
-                    Routes
-                  </button>
-                  <button
-                    onClick={() => setMapMode('HEATMAP')}
-                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
-                      mapMode === 'HEATMAP' 
-                        ? 'bg-[#1769AA] text-white shadow-sm' 
-                        : 'text-[#0B3558] hover:bg-[#1769AA]/10'
-                    }`}
-                  >
-                    Heatmap
-                  </button>
-                </div>
+
               </div>
 
               {/* Traffic Level Legend */}
