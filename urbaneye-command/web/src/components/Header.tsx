@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { 
   Home, LayoutDashboard, Eye, FileText, Map, AlertTriangle, 
-  BarChart2, Info, HelpCircle, LogOut, Video, Radio, Phone, Shield,
-  AlertCircle, Globe, Type
+  Info, LogOut, Phone, Shield, AlertCircle, Globe, Type, Menu, X, Sparkles
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { GovtEmblem } from './GovtEmblem';
-import { SrimsHeaderBrand } from './SrimsHeaderBrand';
 
 export type ActiveTabType = 'HOME' | 'DEFECTS' | 'TRAFFIC' | 'INCIDENTS' | 'SAFETY' | 'PREDICTIVE' | 'REPORTS' | 'ANALYTICS' | 'WORK_ORDERS';
 
@@ -38,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { language, toggleLanguage, fontSize, setFontSize, t } = useLanguage();
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -65,28 +64,31 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="w-full flex flex-col z-50 bg-white border-b border-gray-200 shadow-sm font-sans text-gray-900">
+    <header className="w-full max-w-full flex flex-col z-50 bg-white border-b border-gray-200 shadow-xs font-sans text-gray-900 overflow-x-hidden">
       
-      {/* 1. Top Announcement & Utility Bar (With English/Hindi Switcher & Accessibility Controls) */}
-      <div className="bg-[#002244] text-white py-1.5 px-4 flex flex-wrap justify-between items-center text-xs border-b border-amber-500/40 gap-2">
+      {/* 1. Top Announcement & Utility Bar */}
+      <div className="bg-[#002244] text-white py-1.5 px-3 sm:px-4 flex flex-wrap justify-between items-center text-xs border-b border-amber-500/40 gap-2 max-w-full overflow-hidden">
         
         {/* Left: Announcement Marquee */}
-        <div className="flex items-center space-x-2 overflow-hidden flex-1 min-w-[280px]">
+        <div className="flex items-center space-x-2 overflow-hidden flex-1 min-w-0 max-w-full">
           <div className="bg-[#FF9933] text-black font-bold px-2 py-0.5 rounded text-[10px] tracking-wide flex items-center gap-1 shrink-0 uppercase">
             <AlertCircle className="w-3 h-3" /> {t('announcement.title')}
           </div>
-          <div className="overflow-hidden whitespace-nowrap text-gray-200 text-xs flex-1">
-            <div className="inline-block animate-marquee">
+          <div className="overflow-hidden whitespace-nowrap text-gray-200 text-xs flex-1 min-w-0">
+            <div className="inline-block animate-marquee truncate">
               🚨 {t('announcement.text')}
             </div>
           </div>
         </div>
 
-        {/* Right: English / Hindi Language Switcher + Accessibility Font Controls */}
-        <div className="flex items-center space-x-3 shrink-0 text-xs">
-          
-          {/* Accessibility Font Size Resizer (A- A A+) */}
-          <div className="flex items-center bg-[#001730] px-2 py-0.5 rounded border border-blue-900/60 space-x-1 text-[11px]">
+        {/* Right: Language Switcher, Accessibility Controls & Prototype Badge */}
+        <div className="flex items-center space-x-2 shrink-0 text-xs">
+          <span className="hidden sm:inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded border border-amber-400/30 uppercase tracking-wider">
+            <Sparkles className="w-2.5 h-2.5 text-amber-400" /> Prototype / Hackathon Demo
+          </span>
+
+          {/* Accessibility Font Size Resizer (A- A+) */}
+          <div className="flex items-center bg-[#001730] px-1.5 py-0.5 rounded border border-blue-900/60 space-x-1 text-[10px]">
             <Type className="w-3 h-3 text-amber-400" />
             <button 
               onClick={() => setFontSize('normal')}
@@ -104,15 +106,15 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* English / Hindi Translator Switch Button */}
+          {/* English / Hindi Switch Button */}
           <button
             onClick={toggleLanguage}
-            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-3 py-1 rounded flex items-center space-x-1.5 text-xs transition shadow-sm border border-amber-300"
+            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-2.5 py-1 rounded flex items-center space-x-1 text-xs transition shadow-xs border border-amber-300"
             title="Switch Language (English / हिन्दी)"
           >
-            <Globe className="w-3.5 h-3.5 text-black" />
-            <span className="font-sans font-bold">{language === 'EN' ? 'English' : 'हिन्दी'}</span>
-            <span className="text-[10px] bg-black/20 px-1 py-0.2 rounded font-mono">
+            <Globe className="w-3 h-3 text-black" />
+            <span className="font-sans font-bold text-[11px]">{language === 'EN' ? 'English' : 'हिन्दी'}</span>
+            <span className="text-[9px] bg-black/20 px-1 py-0.2 rounded font-mono">
               {language === 'EN' ? 'HI' : 'EN'}
             </span>
           </button>
@@ -121,82 +123,117 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden xl:block font-mono text-[11px] text-amber-300/90 pl-2 border-l border-blue-900/60">
             {currentTime}
           </div>
-
         </div>
       </div>
 
-      {/* 2. Main Header Bar (Exact match with user reference screenshot) */}
-      <div className="bg-white py-3 px-4 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* 2. Main Header Bar */}
+      <div className="bg-white py-2.5 px-3 sm:px-6 md:px-8 flex flex-wrap items-center justify-between gap-2 max-w-full">
         
-        {/* Left: Emblem + SRIMS Brand + Hindi Subtitle */}
-        <div className="flex items-center space-x-4">
-          <GovtEmblem size={52} />
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-[#003366] tracking-tight">{t('gov.title')}</h1>
-              <span className="bg-[#138808] text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wide">
+        {/* Left: Emblem + SRIMS Brand + Responsive Subtitle */}
+        <div className="flex items-center space-x-2.5 sm:space-x-4 min-w-0 flex-1">
+          <GovtEmblem size={44} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-[#003366] tracking-tight leading-none">
+                {t('gov.title')}
+              </h1>
+              <span className="bg-[#138808] text-white text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
                 GOVT. OF INDIA
               </span>
+              <span className="sm:hidden bg-slate-100 text-[#003366] text-[8px] font-bold px-1.5 py-0.5 rounded border border-slate-200">
+                PROTOTYPE
+              </span>
             </div>
-            <h2 className="text-xs font-bold text-gray-900 leading-snug">{t('gov.subtitle')}</h2>
-            <p className="text-[10px] text-gray-500 leading-tight" style={hindiStyle}>
+            <h2 className="text-[11px] sm:text-xs font-bold text-gray-900 leading-snug break-words max-w-full mt-0.5">
+              {t('gov.subtitle')}
+            </h2>
+            <p className="text-[9px] sm:text-[10px] text-gray-500 leading-tight truncate" style={hindiStyle}>
               {t('gov.ministry')}
             </p>
           </div>
         </div>
 
-        {/* Right: Emergency Helpline Box + Security Standard Box + User Control */}
-        <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
+        {/* Right: Helpline & User Controls */}
+        <div className="flex items-center space-x-2 shrink-0">
           
           {/* Emergency Highway Helpline Pill Card */}
-          <div className="hidden lg:flex items-center space-x-3 bg-blue-50/80 px-3.5 py-2 rounded-lg border border-blue-200">
-            <div className="w-8 h-8 rounded-full bg-blue-100 text-[#003366] flex items-center justify-center shrink-0">
-              <Phone className="w-4 h-4 text-[#003366]" />
+          <div className="hidden lg:flex items-center space-x-2.5 bg-blue-50/80 px-3 py-1.5 rounded-lg border border-blue-200">
+            <div className="w-7 h-7 rounded-full bg-blue-100 text-[#003366] flex items-center justify-center shrink-0">
+              <Phone className="w-3.5 h-3.5 text-[#003366]" />
             </div>
             <div>
-              <div className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Emergency Highway Helpline</div>
-              <div className="text-xs font-black text-[#003366]">1033 (24x7 Toll Free)</div>
+              <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">Highway Helpline</div>
+              <div className="text-xs font-black text-[#003366]">1033 (24x7)</div>
             </div>
           </div>
 
           {/* Security Standard Card */}
-          <div className="hidden lg:flex items-center space-x-3 bg-emerald-50/80 px-3.5 py-2 rounded-lg border border-emerald-200">
-            <div className="w-8 h-8 rounded-full bg-emerald-100 text-[#138808] flex items-center justify-center shrink-0">
-              <Shield className="w-4 h-4 text-[#138808]" />
+          <div className="hidden lg:flex items-center space-x-2.5 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-200">
+            <div className="w-7 h-7 rounded-full bg-emerald-100 text-[#138808] flex items-center justify-center shrink-0">
+              <Shield className="w-3.5 h-3.5 text-[#138808]" />
             </div>
             <div>
-              <div className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Security Standard</div>
-              <div className="text-xs font-black text-[#138808]">NIC Certified Portal</div>
+              <div className="text-[8px] uppercase font-bold text-gray-500 tracking-wider">Security</div>
+              <div className="text-xs font-black text-[#138808]">NIC Certified</div>
             </div>
           </div>
 
-          {/* User Account controls */}
-          <div className="flex items-center space-x-2 w-full md:w-auto">
-
-            {/* User Account Badge */}
-            <div className="flex items-center justify-between w-full md:w-auto space-x-3 bg-gray-50 px-3 md:px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
-              <div className="text-left md:text-right text-xs flex-1">
-                <div className="font-bold text-[#003366] truncate">{user.name}</div>
-                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mt-0.5">{user.role.replace('_', ' ')}</div>
+          {/* User Account Controls */}
+          <div className="flex items-center space-x-1.5">
+            <div className="flex items-center space-x-2 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-200 shadow-xs max-w-[200px] sm:max-w-none">
+              <div className="text-left text-xs min-w-0">
+                <div className="font-bold text-[#003366] text-xs truncate">{user.name}</div>
+                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">{user.role.replace('_', ' ')}</div>
               </div>
               <button
                 onClick={onLogout}
                 title="Logout"
-                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-gray-200 bg-white shadow-sm shrink-0 flex items-center space-x-1"
+                className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-gray-200 bg-white shadow-xs shrink-0 flex items-center space-x-1 min-h-[36px]"
               >
-                <span className="text-[10px] font-bold hidden md:inline mr-1">LOGOUT</span>
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold hidden sm:inline">LOGOUT</span>
               </button>
             </div>
+
+            {/* Mobile Hamburger Toggle for Mobile Submenu */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition min-h-[40px] min-w-[40px] flex items-center justify-center"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
 
         </div>
 
       </div>
 
+      {/* Mobile Drawer Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-[#001730] text-white px-4 py-3 border-t border-amber-500/40 space-y-2 text-xs">
+          <div className="flex items-center justify-between pb-2 border-b border-blue-900/60">
+            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+              PROTOTYPE DEMO PORTAL • {user.role.replace('_', ' ')}
+            </span>
+            <span className="text-[10px] text-gray-400">SRIMS v3.4</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="bg-blue-950/60 p-2 rounded border border-blue-800/40">
+              <span className="text-[9px] text-gray-400 block">HELPLINE</span>
+              <span className="font-bold text-white">1033 (24x7 Toll Free)</span>
+            </div>
+            <div className="bg-blue-950/60 p-2 rounded border border-blue-800/40">
+              <span className="text-[9px] text-gray-400 block">SECURITY</span>
+              <span className="font-bold text-emerald-400">NIC Compliant</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 3. Horizontal Navigation Bar */}
-      <nav className="bg-[#003366] text-white border-t border-amber-500">
-        <div className="flex items-center px-4 md:px-8 space-x-1 overflow-x-auto whitespace-nowrap py-1 scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <nav className="bg-[#003366] text-white border-t border-amber-500 w-full max-w-full overflow-hidden">
+        <div className="flex items-center px-2 sm:px-6 md:px-8 space-x-1 overflow-x-auto whitespace-nowrap py-1 scroll-smooth max-w-full scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -209,35 +246,35 @@ export const Header: React.FC<HeaderProps> = ({
                   } else if (onTabChange) {
                     onTabChange(item.id);
                   }
+                  setMobileMenuOpen(false);
                 }}
-                className={`flex items-center space-x-1.5 px-3 py-2.5 md:px-4 md:py-2.5 text-xs font-semibold rounded-lg transition shrink-0 snap-start ${
+                className={`flex items-center space-x-1.5 px-3 py-2.5 text-xs font-semibold rounded-lg transition shrink-0 snap-start min-h-[40px] ${
                   isActive
-                    ? 'bg-[#001730] text-white border-b-2 border-amber-400'
+                    ? 'bg-[#001730] text-white border-b-2 border-amber-400 font-bold shadow-xs'
                     : 'text-gray-200 hover:bg-[#001730]/60 hover:text-white'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-400' : 'text-gray-300'}`} />
                 <span>{item.label}</span>
               </button>
             );
           })}
-          <div className="pr-4 md:pr-0"></div> {/* Spacer for scroll end */}
         </div>
       </nav>
 
       {/* Breadcrumb / Scope Strip */}
       {currentBreadcrumbs && currentBreadcrumbs.length > 0 && (
-        <div className="bg-blue-50/80 px-4 md:px-8 py-2 text-[11px] md:text-xs text-gray-600 flex items-center space-x-2 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-none">
-          <span className="font-bold text-[#003366] uppercase tracking-wide">Scope:</span>
+        <div className="bg-blue-50/80 px-3 sm:px-6 md:px-8 py-1.5 text-[11px] sm:text-xs text-gray-600 flex items-center space-x-2 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-none max-w-full">
+          <span className="font-bold text-[#003366] uppercase tracking-wide shrink-0">Scope:</span>
           {currentBreadcrumbs.map((b, idx) => (
             <React.Fragment key={idx}>
-              {idx > 0 && <span className="text-gray-400">/</span>}
+              {idx > 0 && <span className="text-gray-400 shrink-0">/</span>}
               {b.onClick ? (
-                <button onClick={b.onClick} className="text-[#003366] hover:underline font-bold transition">
+                <button onClick={b.onClick} className="text-[#003366] hover:underline font-bold transition shrink-0">
                   {b.label}
                 </button>
               ) : (
-                <span className="font-black text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-sm">{b.label}</span>
+                <span className="font-black text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-xs shrink-0">{b.label}</span>
               )}
             </React.Fragment>
           ))}
@@ -249,3 +286,4 @@ export const Header: React.FC<HeaderProps> = ({
 };
 
 export default Header;
+

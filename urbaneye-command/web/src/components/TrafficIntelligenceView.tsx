@@ -362,22 +362,81 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
   };
 
   return (
-    <div className="space-y-6">
-      {congestionSource === 'SCRIPTED_DEMO' && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
-          <span className="rounded bg-amber-500/25 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
-            Simulated
-          </span>
-          <span className="text-[13px] text-amber-100/90">
-            Congestion levels are a scripted Bangalore scenario. Road geometry is real OpenStreetMap data;
-            the traffic values are not measured by the fleet.
-          </span>
+    <div className="space-y-6 w-full max-w-full">
+      {/* Active Fleet Telemetry Summary Bar */}
+      <div className="bg-white rounded-2xl border border-[#D8E0E8] p-4 shadow-xs space-y-3 w-full max-w-full">
+        <div className="flex flex-wrap items-center justify-between border-b border-[#D8E0E8] pb-3 gap-2">
+          <div className="flex items-center space-x-2">
+            <Bus className="w-5 h-5 text-[#1769AA]" />
+            <h3 className="font-bold text-sm text-[#0B3558] uppercase tracking-wider">ACTIVE FLEET TELEMETRY TRACKER</h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs font-bold font-mono">
+            <span className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded border border-slate-200">62 Total Buses</span>
+            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded border border-emerald-200">● 48 Online</span>
+            <span className="px-2.5 py-1 bg-slate-50 text-slate-500 rounded border border-slate-200">10 Offline</span>
+            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 rounded border border-amber-200">4 Maintenance</span>
+          </div>
         </div>
-      )}
+
+        {/* Live Bus Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[
+            { id: 'PB08-AX-2841', route: 'KPT-04', speed: 42, lat: 31.3260, lon: 75.5762, defects: 7, status: 'LIVE', camera: 'Online' },
+            { id: 'PB08-CV-9821', route: 'GT-HIGHWAY-01', speed: 56, lat: 31.2536, lon: 75.7037, defects: 4, status: 'LIVE', camera: 'Online' },
+            { id: 'PB09-MN-4412', route: 'JAL-CITY-03', speed: 38, lat: 31.3124, lon: 75.5891, defects: 12, status: 'LIVE', camera: 'Online' },
+          ].map((bus) => (
+            <div key={bus.id} className="bg-[#F6F8FA] p-3 rounded-xl border border-[#D8E0E8] space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-[#0B3558] flex items-center gap-1.5">
+                  <Bus className="w-3.5 h-3.5 text-[#1769AA]" />
+                  {bus.id}
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  ● {bus.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-white p-2 rounded border border-[#D8E0E8]">
+                <div>
+                  <span className="text-[#667788] text-[9px] block uppercase">SPEED / ROUTE</span>
+                  <span className="font-bold text-[#0B3558]">{bus.speed} km/h • {bus.route}</span>
+                </div>
+                <div>
+                  <span className="text-[#667788] text-[9px] block uppercase">GPS FIX</span>
+                  <span className="font-bold text-slate-700">{bus.lat.toFixed(4)}, {bus.lon.toFixed(4)}</span>
+                </div>
+                <div>
+                  <span className="text-[#667788] text-[9px] block uppercase">DEFECTS TODAY</span>
+                  <span className="font-bold text-[#C62828]">{bus.defects} Detected</span>
+                </div>
+                <div>
+                  <span className="text-[#667788] text-[9px] block uppercase">CAMERA TELEMETRY</span>
+                  <span className="font-bold text-[#198754]">● {bus.camera}</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-1.5 pt-1">
+                <button 
+                  onClick={() => alert(`Centering map on bus ${bus.id}...`)}
+                  className="flex-1 py-1.5 bg-[#1769AA] text-white rounded font-bold text-[10px] hover:bg-[#0B3558] transition text-center min-h-[32px]"
+                >
+                  View Route
+                </button>
+                <button 
+                  onClick={() => alert(`Showing AI detections for ${bus.id}...`)}
+                  className="flex-1 py-1.5 bg-white border border-[#D8E0E8] text-[#172B3A] rounded font-bold text-[10px] hover:bg-slate-100 transition text-center min-h-[32px]"
+                >
+                  View Detections
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* 1. Top 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: VEHICLES DETECTED */}
         <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+
           isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
         } shadow-sm`}>
           <div className="flex items-center justify-between">

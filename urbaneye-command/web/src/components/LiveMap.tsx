@@ -3,8 +3,7 @@ import L from 'leaflet';
 import 'leaflet.heat';
 
 import { RoadEvent, EventStatus } from '../types';
-import { MapPin, Layers } from 'lucide-react';
-import { resolveImageSrc } from '../utils/imageUtils';
+import { MapPin, Layers, Filter, CheckSquare, Square, Eye } from 'lucide-react';
 import { getIndiaTraffic } from '../services/congestionService';
 import { getFleet, subscribeToFleet, BusPosition } from '../services/fleetService';
 
@@ -16,14 +15,6 @@ interface LiveMapProps {
   onUpdateStatus?: (eventId: string, status: EventStatus, notes?: string) => void;
   onSelectEvent?: (event: RoadEvent) => void;
   latestEventId?: string | null;
-  activeLayerFilters?: {
-    defects?: boolean;
-    traffic?: boolean;
-    incidents?: boolean;
-    vruSafety?: boolean;
-    predictive?: boolean;
-    heatmap?: boolean;
-  };
 }
 
 export const LiveMap: React.FC<LiveMapProps> = ({
@@ -40,16 +31,33 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const defectMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const busLayerRef = useRef<L.LayerGroup | null>(null);
+  const trafficLayerRef = useRef<L.LayerGroup | null>(null);
   const busMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const heatLayerRef = useRef<any>(null);
-  const [showHeatmap, setShowHeatmap] = useState(false);
+
+  // Layer Toggles
+  const [layers, setLayers] = useState({
+    defects: true,
+    buses: true,
+    traffic: true,
+    workOrders: false,
+    roadConditions: false,
+    accidentAlerts: false,
+    heatmap: false,
+  });
+
+  // Filter States
+  const [selectedSeverity, setSelectedSeverity] = useState<string>('ALL');
+  const [selectedType, setSelectedType] = useState<string>('ALL');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showLayerMenu, setShowLayerMenu] = useState(false);
 
   const getMarkerColor = (severity?: string | null) => {
     const sev = (severity || 'HIGH').toUpperCase();
     if (sev === 'CRITICAL') return '#C62828'; // Red
     if (sev === 'HIGH') return '#D98E04';     // Orange
     if (sev === 'MEDIUM') return '#F2A900';   // Yellow
-    return '#1769AA';                          // Blue
+    return '#198754';                          // Green (Low)
   };
 
   useEffect(() => {
@@ -65,7 +73,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(map);
 
@@ -76,6 +84,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       busLayerRef.current = busLayer;
 
       const trafficLayer = L.layerGroup().addTo(map);
+      trafficLayerRef.current = trafficLayer;
 
       getIndiaTraffic(['trunk', 'primary', 'motorway', 'expressway']).then(({ segments }) => {
         segments.forEach((seg) => {
@@ -92,51 +101,9 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             poly.bindTooltip(`
               <div style="font-family:sans-serif;font-size:11px;padding:2px;">
                 <strong>${seg.name || 'Road Segment'}</strong><br/>
-                Traffic Level: <span style="color:${color};font-weight:bold;">${seg.level}</span> | <strong>${seg.avgSpeedKmh || 40} km/h</strong><br/>
-                <em>Click road for full details</em>
+                Traffic Level: <span style="color:${color};font-weight:bold;">${seg.level}</span> | <strong>${seg.avgSpeedKmh || 40} km/h</strong>
               </div>
             `);
-
-            const popupContent = `
-              <div style="font-family: Inter, system-ui, sans-serif; padding: 4px; min-width: 230px; color: #172B3A;">
-                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 8px;">
-                  <h4 style="font-size: 13px; font-weight: 800; color: #0B3558; margin: 0; line-height: 1.2;">
-                    ${seg.name || 'Urban Road Corridor'}
-                  </h4>
-                  <span style="font-size: 9px; font-weight: 800; background: ${color}22; color: ${color}; border: 1px solid ${color}44; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
-                    ${seg.level}
-                  </span>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 8px;">
-                  <div style="background: #F8FAFC; padding: 6px; border-radius: 6px; border: 1px solid #E2E8F0;">
-                    <span style="color: #64748B; font-size: 9px; display: block; font-weight: 700; text-transform: uppercase;">AVG SPEED</span>
-                    <strong style="color: #0F172A; font-size: 13px;">${seg.avgSpeedKmh || 40} <span style="font-size: 10px; font-weight: 500;">km/h</span></strong>
-                  </div>
-                  <div style="background: #F8FAFC; padding: 6px; border-radius: 6px; border: 1px solid #E2E8F0;">
-                    <span style="color: #64748B; font-size: 9px; display: block; font-weight: 700; text-transform: uppercase;">VEHICLE FLOW</span>
-                    <strong style="color: #0F172A; font-size: 13px;">${seg.vehicleCountPerHour || 1800} <span style="font-size: 10px; font-weight: 500;">veh/hr</span></strong>
-                  </div>
-                </div>
-
-                <div style="font-size: 11px; color: #334155; margin-bottom: 8px; line-height: 1.5; background: #F1F5F9; padding: 6px 8px; border-radius: 6px;">
-                  <div>🛣️ <strong>Road Class:</strong> <span style="text-transform: capitalize;">${seg.roadClass || 'Primary Corridor'}</span></div>
-                  <div>📍 <strong>Location Tag:</strong> ${(seg.cityTag || 'urban').toUpperCase()}</div>
-                  <div>📊 <strong>Congestion Density:</strong> ${seg.score || 45}/100</div>
-                  <div>⏱️ <strong>Estimated Delay:</strong> +${seg.level === 'SEVERE' ? 14 : seg.level === 'HEAVY' ? 8 : seg.level === 'MODERATE' ? 3 : 0} mins</div>
-                </div>
-              </div>
-            `;
-
-            poly.bindPopup(popupContent);
-
-            poly.on('mouseover', () => {
-              poly.setStyle({ weight: 10, opacity: 1.0 });
-            });
-
-            poly.on('mouseout', () => {
-              poly.setStyle({ weight: 6, opacity: 0.85 });
-            });
 
             poly.addTo(trafficLayer);
           }
@@ -160,11 +127,30 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     };
   }, []);
 
-  // Fleet buses layer
+  // Control traffic layer visibility
+  useEffect(() => {
+    if (!mapInstanceRef.current || !trafficLayerRef.current) return;
+    if (layers.traffic) {
+      if (!mapInstanceRef.current.hasLayer(trafficLayerRef.current)) {
+        mapInstanceRef.current.addLayer(trafficLayerRef.current);
+      }
+    } else {
+      if (mapInstanceRef.current.hasLayer(trafficLayerRef.current)) {
+        mapInstanceRef.current.removeLayer(trafficLayerRef.current);
+      }
+    }
+  }, [layers.traffic]);
+
+  // Control buses layer visibility
   useEffect(() => {
     if (!mapInstanceRef.current || !busLayerRef.current) return;
     const busLayer = busLayerRef.current;
-    const markers = busMarkersRef.current;
+
+    if (!layers.buses) {
+      busLayer.clearLayers();
+      busMarkersRef.current.clear();
+      return;
+    }
 
     const busIcon = (bus: BusPosition) => {
       const colour = bus.isLive ? '#1769AA' : '#667788';
@@ -177,7 +163,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     };
 
     const upsert = (bus: BusPosition) => {
-      const existing = markers.get(bus.sessionId);
+      const existing = busMarkersRef.current.get(bus.sessionId);
       if (existing) {
         existing.setLatLng([bus.latitude, bus.longitude]);
         existing.setIcon(busIcon(bus));
@@ -185,21 +171,21 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         const marker = L.marker([bus.latitude, bus.longitude], { icon: busIcon(bus), zIndexOffset: 1200 })
           .bindPopup(`<div style="font-family:Inter,sans-serif;font-size:12px;font-weight:bold;">Unit UE-${bus.busLabel.slice(-3)}</div>`)
           .addTo(busLayer);
-        markers.set(bus.sessionId, marker);
+        busMarkersRef.current.set(bus.sessionId, marker);
       }
     };
 
     getFleet().then(({ buses }) => buses.forEach(upsert));
     const unsub = subscribeToFleet(upsert, (sessionId) => {
-      const marker = markers.get(sessionId);
+      const marker = busMarkersRef.current.get(sessionId);
       if (marker) {
         busLayer.removeLayer(marker);
-        markers.delete(sessionId);
+        busMarkersRef.current.delete(sessionId);
       }
     });
 
     return () => unsub();
-  }, []);
+  }, [layers.buses]);
 
   // Update map center
   useEffect(() => {
@@ -207,6 +193,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       mapInstanceRef.current.flyTo([centerLat, centerLon], zoom, { animate: true, duration: 1.0 });
     }
   }, [centerLat, centerLon, zoom]);
+
+  // Filtered defects rendering
+  const filteredEvents = events.filter((ev) => {
+    if (!layers.defects) return false;
+    if (selectedSeverity !== 'ALL' && (ev.severity || 'HIGH').toUpperCase() !== selectedSeverity) return false;
+    if (selectedType !== 'ALL' && ev.type !== selectedType) return false;
+    return true;
+  });
 
   // Defect Markers & Heatmap
   useEffect(() => {
@@ -221,18 +215,18 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       heatLayerRef.current = null;
     }
 
-    if (showHeatmap) {
-      const heatPoints = events.map(ev => [ev.latitude, ev.longitude, ev.severityScore ? ev.severityScore / 100 : 0.8]);
+    if (layers.heatmap) {
+      const heatPoints = filteredEvents.map(ev => [ev.latitude, ev.longitude, ev.severityScore ? ev.severityScore / 100 : 0.8]);
       heatLayerRef.current = (L as any).heatLayer(heatPoints, {
         radius: 25,
         blur: 15,
         maxZoom: 15,
         gradient: { 0.4: 'blue', 0.6: 'lime', 0.8: 'orange', 1.0: 'red' }
       }).addTo(mapInstanceRef.current);
-      return; // Do not render individual markers when heatmap is active to prevent clutter
+      return;
     }
 
-    events.forEach((event) => {
+    filteredEvents.forEach((event) => {
       const color = getMarkerColor(event.severity);
 
       const iconHtml = `
@@ -276,54 +270,166 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       marker.addTo(layer);
       defectMarkersRef.current.set(event.id, marker);
     });
-  }, [events, onSelectEvent, showHeatmap]);
+  }, [filteredEvents, onSelectEvent, layers.heatmap, layers.defects]);
 
   return (
-    <div className="relative w-full h-full min-h-[420px] bg-[#F6F8FA] rounded border border-[#D8E0E8] overflow-hidden text-[#172B3A]">
+    <div className="relative w-full h-full min-h-[420px] bg-[#F6F8FA] rounded border border-[#D8E0E8] overflow-hidden text-[#172B3A] max-w-full">
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Map Title Banner */}
-      <div className="absolute top-3 left-3 z-30 bg-white/95 backdrop-blur border border-[#D8E0E8] px-3 py-1.5 rounded shadow-xs flex items-center space-x-2 text-xs">
-        <MapPin className="w-4 h-4 text-[#1769AA]" />
-        <span className="font-bold text-[#0B3558]">Road Infrastructure Intelligence Map</span>
+      <div className="absolute top-3 left-3 z-30 bg-white/95 backdrop-blur border border-[#D8E0E8] px-3 py-1.5 rounded shadow-xs flex items-center space-x-2 text-xs max-w-[70%] sm:max-w-none">
+        <MapPin className="w-4 h-4 text-[#1769AA] shrink-0" />
+        <span className="font-bold text-[#0B3558] truncate">Road Infrastructure GIS Command Map</span>
       </div>
 
-      {/* Heatmap Toggle */}
-      <div className="absolute top-3 right-3 z-30">
-        <button
-          onClick={() => setShowHeatmap(!showHeatmap)}
-          className={`px-3 py-1.5 rounded shadow-sm text-xs font-bold transition flex items-center gap-1.5 border ${
-            showHeatmap 
-              ? 'bg-[#1769AA] text-white border-[#1769AA]' 
-              : 'bg-white text-[#172B3A] border-[#D8E0E8] hover:bg-[#F6F8FA]'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          {showHeatmap ? 'Disable Heatmap' : 'Heatmap Layer'}
-        </button>
+      {/* Top Right Controls: Map Layers & Filters */}
+      <div className="absolute top-3 right-3 z-30 flex items-center space-x-2">
+        
+        {/* Layer Selector Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowLayerMenu(!showLayerMenu)}
+            className="px-2.5 py-1.5 rounded bg-white text-[#172B3A] border border-[#D8E0E8] shadow-xs text-xs font-bold transition flex items-center gap-1.5 hover:bg-[#F6F8FA]"
+          >
+            <Layers className="w-3.5 h-3.5 text-[#1769AA]" />
+            <span className="hidden sm:inline">MAP LAYERS</span>
+          </button>
+
+          {showLayerMenu && (
+            <div className="absolute right-0 mt-1.5 w-56 bg-white border border-[#D8E0E8] rounded-xl shadow-lg p-3 space-y-2 text-xs z-40">
+              <div className="font-bold text-[#0B3558] border-b border-slate-100 pb-1 uppercase tracking-wider text-[10px]">
+                MAP LAYERS
+              </div>
+              <label className="flex items-center space-x-2 cursor-pointer text-slate-800 hover:text-black">
+                <input
+                  type="checkbox"
+                  checked={layers.defects}
+                  onChange={(e) => setLayers({ ...layers, defects: e.target.checked })}
+                  className="rounded text-[#1769AA]"
+                />
+                <span>☑ Road Defects</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer text-slate-800 hover:text-black">
+                <input
+                  type="checkbox"
+                  checked={layers.buses}
+                  onChange={(e) => setLayers({ ...layers, buses: e.target.checked })}
+                  className="rounded text-[#1769AA]"
+                />
+                <span>☑ Active Buses</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer text-slate-800 hover:text-black">
+                <input
+                  type="checkbox"
+                  checked={layers.traffic}
+                  onChange={(e) => setLayers({ ...layers, traffic: e.target.checked })}
+                  className="rounded text-[#1769AA]"
+                />
+                <span>☑ Traffic Density</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer text-slate-600 hover:text-black">
+                <input
+                  type="checkbox"
+                  checked={layers.workOrders}
+                  onChange={(e) => setLayers({ ...layers, workOrders: e.target.checked })}
+                  className="rounded text-[#1769AA]"
+                />
+                <span>☐ Work Orders</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer text-slate-600 hover:text-black">
+                <input
+                  type="checkbox"
+                  checked={layers.roadConditions}
+                  onChange={(e) => setLayers({ ...layers, roadConditions: e.target.checked })}
+                  className="rounded text-[#1769AA]"
+                />
+                <span>☐ Road Conditions</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer text-slate-600 hover:text-black">
+                <input
+                  type="checkbox"
+                  checked={layers.heatmap}
+                  onChange={(e) => setLayers({ ...layers, heatmap: e.target.checked })}
+                  className="rounded text-[#1769AA]"
+                />
+                <span>🔥 Heatmap Layer</span>
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* Filter Toggle Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-2.5 py-1.5 rounded bg-white text-[#172B3A] border border-[#D8E0E8] shadow-xs text-xs font-bold transition flex items-center gap-1.5 hover:bg-[#F6F8FA]"
+          >
+            <Filter className="w-3.5 h-3.5 text-[#1769AA]" />
+            <span className="hidden sm:inline">FILTERS</span>
+          </button>
+
+          {showFilters && (
+            <div className="absolute right-0 mt-1.5 w-60 bg-white border border-[#D8E0E8] rounded-xl shadow-lg p-3 space-y-3 text-xs z-40">
+              <div className="font-bold text-[#0B3558] border-b border-slate-100 pb-1 uppercase tracking-wider text-[10px]">
+                MAP DEFECT FILTERS
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Severity</label>
+                <select
+                  value={selectedSeverity}
+                  onChange={(e) => setSelectedSeverity(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 text-xs rounded p-1.5 font-semibold"
+                >
+                  <option value="ALL">All Severities</option>
+                  <option value="CRITICAL">🔴 Critical</option>
+                  <option value="HIGH">🟠 High</option>
+                  <option value="MEDIUM">🟡 Medium</option>
+                  <option value="LOW">🟢 Low</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Defect Type</label>
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 text-xs rounded p-1.5 font-semibold"
+                >
+                  <option value="ALL">All Defect Types</option>
+                  <option value="POTHOLE">Pothole</option>
+                  <option value="ROAD_CRACK">Road Crack</option>
+                  <option value="SURFACE_DAMAGE">Surface Damage</option>
+                  <option value="WATERLOGGING">Waterlogging</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Map Legend */}
-      <div className="absolute bottom-3 left-3 z-30 bg-white/95 backdrop-blur border border-[#D8E0E8] p-3 rounded shadow-xs text-xs max-w-xs space-y-1.5">
+      <div className="absolute bottom-3 left-3 z-30 bg-white/95 backdrop-blur border border-[#D8E0E8] p-2.5 rounded shadow-xs text-xs max-w-xs space-y-1.5">
         <div className="font-bold text-[#0B3558] border-b border-[#D8E0E8] pb-1 uppercase tracking-wider text-[10px]">
-          Severity Legend
+          Visual Severity
         </div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
           <div className="flex items-center space-x-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#C62828] inline-block"></span>
-            <span>Critical</span>
+            <span className="font-bold text-red-700">🔴 Critical</span>
           </div>
           <div className="flex items-center space-x-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#D98E04] inline-block"></span>
-            <span>High</span>
+            <span className="font-bold text-orange-700">🟠 High</span>
           </div>
           <div className="flex items-center space-x-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#F2A900] inline-block"></span>
-            <span>Medium</span>
+            <span className="font-bold text-amber-700">🟡 Medium</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#1769AA] inline-block"></span>
-            <span>Low</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#198754] inline-block"></span>
+            <span className="font-bold text-emerald-700">🟢 Low</span>
           </div>
         </div>
       </div>
@@ -333,3 +439,4 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 };
 
 export default LiveMap;
+

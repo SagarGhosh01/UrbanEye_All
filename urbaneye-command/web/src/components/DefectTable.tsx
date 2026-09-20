@@ -187,8 +187,8 @@ export const DefectTable: React.FC<DefectTableProps> = ({
         </div>
       </div>
 
-      {/* Main Data Table */}
-      <div className="overflow-x-auto">
+      {/* Main Data Table (Desktop & Tablet) */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead className="bg-[#0B3558] text-white font-bold border-b border-[#D8E0E8]">
             <tr>
@@ -279,6 +279,75 @@ export const DefectTable: React.FC<DefectTableProps> = ({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card List View (sm:hidden) */}
+      <div className="block sm:hidden divide-y divide-[#D8E0E8] bg-white">
+        {isLoading ? (
+          <div className="p-6 text-center text-xs text-[#667788]">
+            Loading operational detection events...
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="p-6 text-center text-xs text-[#667788]">
+            No road issues found for the selected filters.
+          </div>
+        ) : (
+          filteredEvents.map((event) => (
+            <div key={event.id} className="p-3.5 hover:bg-[#F6F8FA] transition flex flex-col space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-[#0B3558] text-[13px]">
+                  {formatIssueId(event.id)}
+                </span>
+                <div className="flex items-center space-x-1.5">
+                  {getSeverityBadge(event.severity)}
+                  {getStatusBadge(event.status)}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#172B3A] text-xs">
+                  {getCategoryDisplayName(event.type)}
+                </span>
+                <span className="text-[11px] font-mono text-[#667788]">
+                  {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-[#667788]">
+                <span>Loc: <strong className="text-[#172B3A]">{event.busLabel}</strong></span>
+                <span>Source: Unit {event.busLabel.slice(-3)}</span>
+              </div>
+
+              <div className="pt-2 border-t border-[#EAF4FB] flex items-center justify-end space-x-2">
+                {onSelectEvent && (
+                  <button
+                    onClick={() => onSelectEvent(event)}
+                    className="min-h-[36px] px-3 py-1.5 bg-[#1769AA] text-white rounded text-xs font-bold hover:bg-[#0B3558] transition flex items-center space-x-1"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View AI Data</span>
+                  </button>
+                )}
+                {event.status === 'NEW' && (
+                  <button
+                    onClick={() => handleStatusClick(event.id, 'ASSIGNED_FOR_REPAIR')}
+                    className="min-h-[36px] px-3 py-1.5 bg-[#F2A900] text-[#08243D] rounded text-xs font-bold hover:bg-amber-500 transition"
+                  >
+                    Assign Order
+                  </button>
+                )}
+                {event.status === 'ASSIGNED_FOR_REPAIR' && (
+                  <button
+                    onClick={() => handleStatusClick(event.id, 'RESOLVED')}
+                    className="min-h-[36px] px-3 py-1.5 bg-[#198754] text-white rounded text-xs font-bold hover:bg-green-700 transition"
+                  >
+                    Mark Resolved
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Action Notes Modal */}
