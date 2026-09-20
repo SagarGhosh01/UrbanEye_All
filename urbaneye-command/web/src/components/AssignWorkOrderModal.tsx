@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RoadEvent, EventStatus } from '../types';
+import { api } from '../services/api';
 import { resolveImageSrc } from '../utils/imageUtils';
 import { getPotholeCostDetails } from '../utils/potholeEstimates';
 import { calculateSLARemaining } from '../utils/slaCalculator';
@@ -75,6 +76,19 @@ export const AssignWorkOrderModal: React.FC<AssignWorkOrderModalProps> = ({
     setIsSubmitting(true);
     try {
       const formattedNotes = `[WORK ORDER ASSIGNED] Lead: ${selectedLead} (${contractorPhone}) | Priority: ${priority} | Material: ${materialSpec} | Budget: ₹${allocatedBudget.toLocaleString('en-IN')} | Instructions: ${customDirectives}`;
+      
+      // Call Backend Work Order Creation Endpoint
+      await api.createWorkOrder({
+        title: `Work Order: ${event.type.replace(/_/g, ' ')} (${selectedLead})`,
+        description: formattedNotes,
+        urgency: priority.includes('24H') ? 'CRITICAL' : priority.includes('48H') ? 'HIGH' : 'MEDIUM',
+        impactScore: event.severityScore || 85,
+        estimatedCostINR: allocatedBudget,
+        districtId: event.districtId,
+        status: 'DISPATCHED',
+        linkedEntityId: event.id,
+      });
+
       await onConfirmAssignment(event.id, 'ASSIGNED_FOR_REPAIR', formattedNotes);
       onClose();
     } catch (err) {
@@ -83,6 +97,7 @@ export const AssignWorkOrderModal: React.FC<AssignWorkOrderModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
 
   const handlePrintWorkOrder = () => {
     window.print();

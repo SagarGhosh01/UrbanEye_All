@@ -338,6 +338,58 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch live fleet pings');
     return res.json();
   },
+
+  // Work Orders API
+  async getWorkOrders(params?: { districtId?: string; status?: string }): Promise<any[]> {
+    const query = new URLSearchParams();
+    if (params?.districtId && params.districtId !== 'ALL') query.set('districtId', params.districtId);
+    if (params?.status) query.set('status', params.status);
+    const res = await fetchWithRetry(`${API_BASE}/workorders?${query.toString()}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch work orders');
+    return res.json();
+  },
+
+  async createWorkOrder(data: {
+    title: string;
+    description?: string;
+    urgency?: string;
+    impactScore?: number;
+    estimatedCostINR?: number;
+    districtId?: string;
+    status?: string;
+    linkedEntityId?: string;
+  }): Promise<{ success: boolean; order: any }> {
+    const res = await fetchWithRetry(`${API_BASE}/workorders`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Work order creation failed' }));
+      throw new Error(err.error || 'Failed to create work order');
+    }
+    return res.json();
+  },
+
+  async generateWorkOrders(districtId?: string): Promise<{ success: boolean; message: string; generatedCount: number }> {
+    const res = await fetchWithRetry(`${API_BASE}/workorders/generate`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ districtId: districtId === 'ALL' ? undefined : districtId }),
+    });
+    if (!res.ok) throw new Error('Failed to generate work orders');
+    return res.json();
+  },
+
+  async dispatchWorkOrder(id: string): Promise<{ success: boolean; order: any }> {
+    const res = await fetchWithRetry(`${API_BASE}/workorders/${id}/dispatch`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to dispatch work order');
+    return res.json();
+  },
 };
+
 
 
