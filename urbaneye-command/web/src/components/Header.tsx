@@ -67,28 +67,28 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="w-full max-w-full flex flex-col z-50 bg-white border-b border-gray-200 shadow-xs font-sans text-gray-900 overflow-x-hidden">
       
       {/* 1. Top Announcement & Utility Bar */}
-      <div className="bg-[#002244] text-white py-1.5 px-3 sm:px-4 flex flex-wrap justify-between items-center text-xs border-b border-amber-500/40 gap-2 max-w-full overflow-hidden">
+      <div className="bg-[#002244] text-white py-1 px-2.5 sm:px-4 flex items-center justify-between text-xs border-b border-amber-500/40 gap-2 max-w-full overflow-hidden">
         
         {/* Left: Announcement Marquee */}
-        <div className="flex items-center space-x-2 overflow-hidden flex-1 min-w-0 max-w-full">
-          <div className="bg-[#FF9933] text-black font-bold px-2 py-0.5 rounded text-[10px] tracking-wide flex items-center gap-1 shrink-0 uppercase">
-            <AlertCircle className="w-3 h-3" /> {t('announcement.title')}
+        <div className="flex items-center space-x-1.5 overflow-hidden flex-1 min-w-0">
+          <div className="bg-[#FF9933] text-black font-bold px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] tracking-wide flex items-center gap-1 shrink-0 uppercase">
+            <AlertCircle className="w-3 h-3" /> <span className="hidden sm:inline">{t('announcement.title')}</span><span className="sm:hidden">NOTICE</span>
           </div>
-          <div className="overflow-hidden whitespace-nowrap text-gray-200 text-xs flex-1 min-w-0">
+          <div className="overflow-hidden whitespace-nowrap text-gray-200 text-[11px] sm:text-xs flex-1 min-w-0">
             <div className="inline-block animate-marquee truncate">
               🚨 {t('announcement.text')}
             </div>
           </div>
         </div>
 
-        {/* Right: Language Switcher, Accessibility Controls & Prototype Badge */}
-        <div className="flex items-center space-x-2 shrink-0 text-xs">
-          <span className="hidden sm:inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded border border-amber-400/30 uppercase tracking-wider">
+        {/* Right: Language Switcher & Prototype Badge */}
+        <div className="flex items-center space-x-1.5 shrink-0 text-xs">
+          <span className="hidden lg:inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded border border-amber-400/30 uppercase tracking-wider">
             <Sparkles className="w-2.5 h-2.5 text-amber-400" /> Prototype / Hackathon Demo
           </span>
 
-          {/* Accessibility Font Size Resizer (A- A+) */}
-          <div className="flex items-center bg-[#001730] px-1.5 py-0.5 rounded border border-blue-900/60 space-x-1 text-[10px]">
+          {/* Accessibility Font Size Resizer (Desktop) */}
+          <div className="hidden sm:flex items-center bg-[#001730] px-1.5 py-0.5 rounded border border-blue-900/60 space-x-1 text-[10px]">
             <Type className="w-3 h-3 text-amber-400" />
             <button 
               onClick={() => setFontSize('normal')}
@@ -109,53 +109,73 @@ export const Header: React.FC<HeaderProps> = ({
           {/* English / Hindi Switch Button */}
           <button
             onClick={toggleLanguage}
-            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-2.5 py-1 rounded flex items-center space-x-1 text-xs transition shadow-xs border border-amber-300"
+            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded flex items-center space-x-1 text-[10px] sm:text-xs transition shadow-xs border border-amber-300 shrink-0"
             title="Switch Language (English / हिन्दी)"
           >
             <Globe className="w-3 h-3 text-black" />
-            <span className="font-sans font-bold text-[11px]">{language === 'EN' ? 'English' : 'हिन्दी'}</span>
-            <span className="text-[9px] bg-black/20 px-1 py-0.2 rounded font-mono">
-              {language === 'EN' ? 'HI' : 'EN'}
-            </span>
+            <span className="font-sans font-bold text-[10px] sm:text-[11px]">{language === 'EN' ? 'EN' : 'HI'}</span>
           </button>
-
-          {/* Current Live Time Display */}
-          <div className="hidden xl:block font-mono text-[11px] text-amber-300/90 pl-2 border-l border-blue-900/60">
-            {currentTime}
-          </div>
         </div>
       </div>
 
       {/* 2. Main Header Bar */}
-      <div className="bg-white py-2.5 px-3 sm:px-6 md:px-8 flex flex-wrap items-center justify-between gap-2 max-w-full">
+      <div className="bg-white py-2 px-3 sm:px-6 md:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 max-w-full">
         
-        {/* Left: Emblem + SRIMS Brand + Responsive Subtitle */}
-        <div className="flex items-center space-x-2.5 sm:space-x-4 min-w-0 flex-1">
-          <GovtEmblem size={44} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-black text-[#003366] tracking-tight leading-none">
-                {t('gov.title')}
-              </h1>
-              <span className="bg-[#138808] text-white text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
-                GOVT. OF INDIA
-              </span>
-              <span className="sm:hidden bg-slate-100 text-[#003366] text-[8px] font-bold px-1.5 py-0.5 rounded border border-slate-200">
-                PROTOTYPE
-              </span>
+        {/* Row 1: Brand & User Profile */}
+        <div className="flex items-center justify-between w-full sm:w-auto min-w-0 space-x-2">
+          {/* Emblem & Brand Title */}
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <GovtEmblem size={38} />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-black text-[#003366] tracking-tight leading-none">
+                  {t('gov.title')}
+                </h1>
+                <span className="bg-[#138808] text-white text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                  GOVT. OF INDIA
+                </span>
+                <span className="bg-amber-100 text-[#003366] text-[8px] font-bold px-1.5 py-0.5 rounded border border-amber-200">
+                  PROTOTYPE
+                </span>
+              </div>
             </div>
-            <h2 className="text-[11px] sm:text-xs font-bold text-gray-900 leading-snug break-words max-w-full mt-0.5">
-              {t('gov.subtitle')}
-            </h2>
-            <p className="text-[9px] sm:text-[10px] text-gray-500 leading-tight truncate" style={hindiStyle}>
-              {t('gov.ministry')}
-            </p>
+          </div>
+
+          {/* Mobile Right Controls: User Badge & Mobile Drawer Toggle */}
+          <div className="flex items-center space-x-1.5 shrink-0 sm:hidden">
+            <div className="text-right text-[10px] leading-tight max-w-[110px] truncate">
+              <div className="font-bold text-[#003366] truncate">{user.name.split(' ')[0]}</div>
+              <div className="text-[8px] text-gray-500 font-bold uppercase truncate">{user.role.replace('_', ' ')}</div>
+            </div>
+            <button
+              onClick={onLogout}
+              title="Logout"
+              className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200 bg-gray-50 shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1.5 rounded border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition min-h-[36px] min-w-[36px] flex items-center justify-center"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
-        {/* Right: Helpline & User Controls */}
-        <div className="flex items-center space-x-2 shrink-0">
-          
+        {/* Subtitle Row - Full Width on Mobile, Inline on Desktop */}
+        <div className="w-full sm:flex-1 sm:max-w-xl text-[#002244] border-t sm:border-t-0 border-gray-100 pt-1 sm:pt-0">
+          <h2 className="text-[11px] sm:text-xs font-bold text-gray-800 leading-snug break-words">
+            {t('gov.subtitle')}
+          </h2>
+          <p className="text-[9px] sm:text-[10px] text-gray-500 leading-tight truncate mt-0.5" style={hindiStyle}>
+            {t('gov.ministry')}
+          </p>
+        </div>
+
+        {/* Right Controls for Tablet & Desktop */}
+        <div className="hidden sm:flex items-center space-x-2 shrink-0">
           {/* Emergency Highway Helpline Pill Card */}
           <div className="hidden lg:flex items-center space-x-2.5 bg-blue-50/80 px-3 py-1.5 rounded-lg border border-blue-200">
             <div className="w-7 h-7 rounded-full bg-blue-100 text-[#003366] flex items-center justify-center shrink-0">
@@ -179,32 +199,20 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* User Account Controls */}
-          <div className="flex items-center space-x-1.5">
-            <div className="flex items-center space-x-2 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-200 shadow-xs max-w-[200px] sm:max-w-none">
-              <div className="text-left text-xs min-w-0">
-                <div className="font-bold text-[#003366] text-xs truncate">{user.name}</div>
-                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">{user.role.replace('_', ' ')}</div>
-              </div>
-              <button
-                onClick={onLogout}
-                title="Logout"
-                className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-gray-200 bg-white shadow-xs shrink-0 flex items-center space-x-1 min-h-[36px]"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-bold hidden sm:inline">LOGOUT</span>
-              </button>
+          <div className="flex items-center space-x-2 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-200 shadow-xs">
+            <div className="text-left text-xs min-w-0">
+              <div className="font-bold text-[#003366] text-xs truncate">{user.name}</div>
+              <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wide truncate">{user.role.replace('_', ' ')}</div>
             </div>
-
-            {/* Mobile Hamburger Toggle for Mobile Submenu */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition min-h-[40px] min-w-[40px] flex items-center justify-center"
-              aria-label="Toggle Navigation Menu"
+              onClick={onLogout}
+              title="Logout"
+              className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-gray-200 bg-white shadow-xs shrink-0 flex items-center space-x-1 min-h-[36px]"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold">LOGOUT</span>
             </button>
           </div>
-
         </div>
 
       </div>
