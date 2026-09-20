@@ -72,7 +72,7 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
           getTrafficRoutes(district?.id),
           getTrafficStats(district?.id),
           getActiveBottlenecks(district?.id),
-          getIndiaTraffic(['trunk', 'primary', 'motorway', 'expressway']),
+          getIndiaTraffic(),
         ]);
         if (!isMounted) return;
 

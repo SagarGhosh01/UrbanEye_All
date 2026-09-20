@@ -74,13 +74,30 @@ select option:hover {
   color: #FFFFFF !important;
 }
 
-/* Leaflet map container */
+/* Leaflet map container & Seamless Tile Fix (removes black grid lines) */
 .leaflet-container {
   width: 100%;
   height: 100%;
+  background: #f2efe9 !important; /* Matches OpenStreetMap land terrain to eliminate subpixel seam lines */
   border-radius: 6px;
   z-index: 10;
   border: 1px solid #D8E0E8;
+}
+
+.leaflet-tile {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.leaflet-tile-container img {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Live detection marker pulse */
