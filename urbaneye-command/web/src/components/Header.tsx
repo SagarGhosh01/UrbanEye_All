@@ -146,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right: Emergency Helpline Box + Security Standard Box + User Control */}
-        <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+        <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
           
           {/* Emergency Highway Helpline Pill Card */}
           <div className="hidden lg:flex items-center space-x-3 bg-blue-50/80 px-3.5 py-2 rounded-lg border border-blue-200">
@@ -171,19 +171,20 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* User Account controls */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 w-full md:w-auto">
 
             {/* User Account Badge */}
-            <div className="flex items-center space-x-2.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
-              <div className="text-right text-xs">
-                <div className="font-bold text-[#003366] truncate max-w-[120px]">{user.name}</div>
-                <div className="text-[10px] font-medium text-gray-500">{user.role.replace('_', ' ')}</div>
+            <div className="flex items-center justify-between w-full md:w-auto space-x-3 bg-gray-50 px-3 md:px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
+              <div className="text-left md:text-right text-xs flex-1">
+                <div className="font-bold text-[#003366] truncate">{user.name}</div>
+                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mt-0.5">{user.role.replace('_', ' ')}</div>
               </div>
               <button
                 onClick={onLogout}
                 title="Logout"
-                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-gray-200 bg-white shadow-sm shrink-0 flex items-center space-x-1"
               >
+                <span className="text-[10px] font-bold hidden md:inline mr-1">LOGOUT</span>
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
@@ -194,8 +195,8 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 3. Horizontal Navigation Bar */}
-      <nav className="bg-[#003366] text-white px-4 md:px-8 border-t border-amber-500">
-        <div className="flex items-center space-x-1 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
+      <nav className="bg-[#003366] text-white border-t border-amber-500">
+        <div className="flex items-center px-4 md:px-8 space-x-1 overflow-x-auto whitespace-nowrap py-1 scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -209,10 +210,10 @@ export const Header: React.FC<HeaderProps> = ({
                     onTabChange(item.id);
                   }
                 }}
-                className={`flex items-center space-x-1.5 px-3.5 py-2 text-xs font-medium rounded transition shrink-0 ${
+                className={`flex items-center space-x-1.5 px-3 py-2.5 md:px-4 md:py-2.5 text-xs font-semibold rounded-lg transition shrink-0 snap-start ${
                   isActive
-                    ? 'bg-[#002244] text-white font-bold border-b-2 border-amber-400'
-                    : 'text-gray-200 hover:bg-[#002244]/60 hover:text-white'
+                    ? 'bg-[#001730] text-white border-b-2 border-amber-400'
+                    : 'text-gray-200 hover:bg-[#001730]/60 hover:text-white'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -220,22 +221,23 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             );
           })}
+          <div className="pr-4 md:pr-0"></div> {/* Spacer for scroll end */}
         </div>
       </nav>
 
       {/* Breadcrumb / Scope Strip */}
       {currentBreadcrumbs && currentBreadcrumbs.length > 0 && (
-        <div className="bg-blue-50/60 px-4 md:px-8 py-1.5 text-xs text-gray-600 flex items-center space-x-2 border-b border-gray-200">
-          <span className="font-semibold text-[#003366]">Scope:</span>
+        <div className="bg-blue-50/80 px-4 md:px-8 py-2 text-[11px] md:text-xs text-gray-600 flex items-center space-x-2 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-none">
+          <span className="font-bold text-[#003366] uppercase tracking-wide">Scope:</span>
           {currentBreadcrumbs.map((b, idx) => (
             <React.Fragment key={idx}>
               {idx > 0 && <span className="text-gray-400">/</span>}
               {b.onClick ? (
-                <button onClick={b.onClick} className="text-[#003366] hover:underline font-medium">
+                <button onClick={b.onClick} className="text-[#003366] hover:underline font-bold transition">
                   {b.label}
                 </button>
               ) : (
-                <span className="font-bold text-gray-900">{b.label}</span>
+                <span className="font-black text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-sm">{b.label}</span>
               )}
             </React.Fragment>
           ))}

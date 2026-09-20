@@ -485,7 +485,7 @@ const defaultStats: AnalyticsStats = {
       )}
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full max-w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-3.5 sm:py-5 overflow-x-hidden">
+      <main className="flex-1 max-w-7xl w-full max-w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-3.5 pb-24 sm:py-5 sm:pb-10 overflow-x-hidden">
         {/* VIEW 0: Citizen Reporter Workspace */}
         {user.role === 'CITIZEN_REPORTER' ? (
           <CitizenReportView
