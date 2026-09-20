@@ -77,7 +77,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
       const trafficLayer = L.layerGroup().addTo(map);
 
-      getIndiaTraffic().then(({ segments }) => {
+      getIndiaTraffic(['trunk', 'primary', 'motorway', 'expressway']).then(({ segments }) => {
         segments.forEach((seg) => {
           if (seg.coordinates && seg.coordinates.length > 0) {
             const color = seg.level === 'SEVERE' ? '#ef4444' : seg.level === 'HEAVY' ? '#f97316' : seg.level === 'MODERATE' ? '#eab308' : '#22c55e';
