@@ -19,6 +19,8 @@ import { safetyRouter } from './safety/safety.router.js';
 import { predictiveRouter } from './predictive/predictive.router.js';
 import { modelsRouter } from './models/models.router.js';
 import { detectRouter } from './models/detect.js';
+import { reportingRouter } from './reporting/reporting.router.js';
+import { workordersRouter } from './workorders/workorders.router.js';
 import { gpsRouter } from './gps/gps.router.js';
 import { startDemoPlayer } from './traffic/demo-player.js';
 import { apiRateLimiter, authRateLimiter, ingestionRateLimiter } from './middleware/rateLimiter.js';
@@ -48,7 +50,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('X-Powered-By', 'UrbanEye-SmartCity-Engine');
+  res.setHeader('X-Powered-By', 'SRIMS-SmartCity-Engine');
   (req as any).correlationId = correlationId;
   next();
 });
@@ -92,6 +94,8 @@ app.use('/api/traffic', congestionRouter);
 app.use('/api/incidents', incidentsRouter);
 app.use('/api/safety', safetyRouter);
 app.use('/api/predictive', predictiveRouter);
+app.use('/api/reporting', reportingRouter);
+app.use('/api/workorders', workordersRouter);
 app.use('/api/models', detectRouter);
 app.use('/api/models', modelsRouter);
 app.use('/api/gps', gpsRouter);
@@ -116,7 +120,7 @@ app.get('/api/health', async (req, res) => {
   const memUsage = process.memoryUsage();
   res.json({
     status: 'HEALTHY',
-    service: 'UrbanEye Command Center Engine',
+    service: 'SRIMS Command Center Engine',
     version: '2.4.0',
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.floor(process.uptime()),
@@ -142,7 +146,7 @@ app.get('/api/health', async (req, res) => {
 const clientDistCandidates = [
   path.resolve(__dirname, '../../web/dist'),
   path.resolve(process.cwd(), '../web/dist'),
-  path.resolve(process.cwd(), 'urbaneye-command/web/dist'),
+  path.resolve(process.cwd(), 'srims-command/web/dist'),
   path.resolve(__dirname, '../public'),
 ];
 const clientDistPath = clientDistCandidates.find(p => fs.existsSync(p));
@@ -190,7 +194,7 @@ const PORT = process.env.PORT || 5000;
   await ensureDatabaseInitialized();
   server.listen(PORT, () => {
     console.log(`====================================================`);
-    console.log(`🛡️  UrbanEye Command Backend listening on port ${PORT}`);
+    console.log(`🛡️  SRIMS Command Backend listening on port ${PORT}`);
     console.log(`📡 WebSocket / Socket.IO live intelligence streaming active`);
     console.log(`🔗 REST API endpoints mounted at /api/*`);
     console.log(`====================================================`);

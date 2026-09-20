@@ -31,7 +31,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSelect
     setIsSubmitting(true);
     try {
       if (onSelectDemoUser) {
-        await onSelectDemoUser(roleEmail, 'UrbanEye@2026');
+        await onSelectDemoUser(roleEmail, 'SRIMS@2026');
       } else if (onLoginClick) {
         onLoginClick(roleEmail);
       }
@@ -255,7 +255,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSelect
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setLoginRole('CITIZEN'); setEmail('citizen@urbaneye.gov.in'); }}
+                  onClick={() => { setLoginRole('CITIZEN'); setEmail('citizen@srims.gov.in'); }}
                   className={`py-2.5 text-center border-b-2 transition-colors ${
                     loginRole === 'CITIZEN'
                       ? 'border-[#003366] text-[#003366] bg-white font-bold'

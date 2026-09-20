@@ -151,7 +151,7 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
 
     // Check device local storage for temporary cached photo
     try {
-      const cachedPhoto = localStorage.getItem('urbaneye_recent_citizen_photo');
+      const cachedPhoto = localStorage.getItem('srims_recent_citizen_photo');
       if (cachedPhoto) {
         setSelectedImage(cachedPhoto);
       }
@@ -201,7 +201,7 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
       setSelectedImage(compressedB64);
       // Cache photo temporarily on user's device
       try {
-        localStorage.setItem('urbaneye_recent_citizen_photo', compressedB64);
+        localStorage.setItem('srims_recent_citizen_photo', compressedB64);
       } catch {
         // quota exceeded fallback
       }
@@ -213,7 +213,7 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
         if (b64) {
           setSelectedImage(b64);
           try {
-            localStorage.setItem('urbaneye_recent_citizen_photo', b64);
+            localStorage.setItem('srims_recent_citizen_photo', b64);
           } catch {}
         }
       };
@@ -246,7 +246,7 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
         setMyReports((prev) => [res.event!, ...prev]);
         // Clear cached photo from device storage once successfully submitted
         try {
-          localStorage.removeItem('urbaneye_recent_citizen_photo');
+          localStorage.removeItem('srims_recent_citizen_photo');
         } catch {}
         if (onReportSubmitted) onReportSubmitted(res.event);
       }
@@ -264,7 +264,7 @@ export const CitizenReportView: React.FC<CitizenReportViewProps> = ({ user, onRe
     setSelectedImage(null);
     setAnalysisResult(null);
     try {
-      localStorage.removeItem('urbaneye_recent_citizen_photo');
+      localStorage.removeItem('srims_recent_citizen_photo');
     } catch {}
   };
 

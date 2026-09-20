@@ -4,6 +4,7 @@ import { api } from './services/api';
 import { subscribeToDistrict, subscribeToNational } from './services/socket';
 import { startDemoMode, stopDemoMode } from './services/congestionService';
 import { Header, ActiveTabType } from './components/Header';
+import { WorkOrderPanel } from './components/WorkOrderPanel';
 import { LiveMap } from './components/LiveMap';
 import { DefectTable } from './components/DefectTable';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
@@ -40,7 +41,7 @@ const AppInner: React.FC = () => {
   const { isDark } = useTheme();
   // Auth State
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('urbaneye_token'));
+  const [token, setToken] = useState<string | null>(localStorage.getItem('srims_token'));
   const [authLoading, setAuthLoading] = useState(true);
   const [isLoginView, setIsLoginView] = useState(false);
 
@@ -114,7 +115,7 @@ const defaultStats: AnalyticsStats = {
         console.warn('Session check notice:', e?.message || e);
         // Only clear session if user profile is not set and error is explicitly unauthorized
         if (!user && e?.message?.toLowerCase().includes('unauthorized')) {
-          localStorage.removeItem('urbaneye_token');
+          localStorage.removeItem('srims_token');
           setToken(null);
           setUser(null);
         }
@@ -339,8 +340,8 @@ const defaultStats: AnalyticsStats = {
   // Switch persona handler for rapid review
   const handleSwitchUser = async (targetEmail: string) => {
     try {
-      const res = await api.login(targetEmail, 'UrbanEye@2026');
-      localStorage.setItem('urbaneye_token', res.token);
+      const res = await api.login(targetEmail, 'SRIMS@2026');
+      localStorage.setItem('srims_token', res.token);
       setToken(res.token);
       setUser(res.user);
       setSelectedEventForDetail(null);
@@ -351,7 +352,7 @@ const defaultStats: AnalyticsStats = {
 
   // Logout Handler
   const handleLogout = () => {
-    localStorage.removeItem('urbaneye_token');
+    localStorage.removeItem('srims_token');
     setToken(null);
     setUser(null);
     setActiveDistrict(null);
@@ -367,7 +368,7 @@ const defaultStats: AnalyticsStats = {
       <div className={`min-h-screen flex items-center justify-center text-xs ${isDark ? 'bg-[#07162c] text-white' : 'bg-slate-100 text-slate-800'}`}>
         <div className="flex flex-col items-center space-y-3">
           <div className="w-10 h-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-          <span className="font-semibold tracking-wider text-slate-300">Loading UrbanEye Command Center...</span>
+          <span className="font-semibold tracking-wider text-slate-300">Loading SRIMS Command Center...</span>
         </div>
       </div>
     );
@@ -376,20 +377,20 @@ const defaultStats: AnalyticsStats = {
   // Unauthenticated -> Landing Page (Direct Home Page Login)
   if (!user) {
     const handleHomepageLogin = async (userEmail: string, passInput?: string) => {
-      const passToTry = (passInput && passInput !== '••••••••••••') ? passInput : 'UrbanEye@2026';
+      const passToTry = (passInput && passInput !== '••••••••••••') ? passInput : 'SRIMS@2026';
       let res;
       try {
         res = await api.login(userEmail, passToTry);
       } catch (firstErr) {
         // Fallback to default demo password if custom pass failed
         try {
-          res = await api.login(userEmail, 'UrbanEye@2026');
+          res = await api.login(userEmail, 'SRIMS@2026');
         } catch (err: any) {
           throw new Error(err.response?.data?.error || err.message || 'Invalid government credentials');
         }
       }
 
-      localStorage.setItem('urbaneye_token', res.token);
+      localStorage.setItem('srims_token', res.token);
       setToken(res.token);
       setUser(res.user);
       setIsLoginView(false);
@@ -442,7 +443,7 @@ const defaultStats: AnalyticsStats = {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col font-sans bg-[#F6F8FA] text-[#172B3A]">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col font-sans bg-blue-50 text-[#172B3A]">
       {/* Header */}
       <Header
         user={user}
@@ -460,24 +461,26 @@ const defaultStats: AnalyticsStats = {
       {latestLiveAlert && (
         <div
           onClick={() => setSelectedEventForDetail(latestLiveAlert)}
-          className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-6 z-50 max-w-sm mx-auto bg-slate-900 text-white rounded-xl shadow-2xl p-3.5 border-l-4 border-red-500 flex items-start space-x-3 cursor-pointer hover:bg-slate-800 transition"
+          className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-6 z-[9999] max-w-sm mx-auto bg-white border border-rose-200 text-[#172B3A] rounded-xl shadow-lg p-3.5 border-l-4 border-l-rose-600 flex items-start space-x-3 cursor-pointer hover:bg-rose-50 transition"
         >
-          <div className="w-8 h-8 rounded bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
             <BellRing className="w-4 h-4 animate-pulse" />
           </div>
-          <div className="text-xs">
-            <div className="font-bold text-red-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <span>LIVE EDGE DETECTION</span>
-              <Sparkles className="w-3 h-3 text-amber-400" />
+          <div className="text-xs w-full">
+            <div className="font-bold text-rose-700 uppercase tracking-wider flex items-center justify-between w-full">
+              <span className="flex items-center space-x-1.5">
+                <span>CRITICAL LIVE DETECTION</span>
+                <Sparkles className="w-3 h-3 text-[#D98E04]" />
+              </span>
             </div>
-            <p className="text-white font-medium mt-0.5">
-              {latestLiveAlert.type.replace('_', ' ')} ({Math.round(latestLiveAlert.confidence * 100)}% conf)
+            <p className="font-bold text-[#172B3A] mt-1 text-[13px]">
+              {latestLiveAlert.type.replace(/_/g, ' ')} ({Math.round(latestLiveAlert.confidence * 100)}% conf)
             </p>
-            <p className="text-[11px] text-slate-300">
-              Bus {latestLiveAlert.busLabel} • {new Date(latestLiveAlert.timestamp).toLocaleTimeString()}
+            <p className="text-[11px] text-[#667788] mt-0.5">
+              Source: Unit {latestLiveAlert.busLabel} • {new Date(latestLiveAlert.timestamp).toLocaleTimeString()}
             </p>
-            <span className="text-[10px] text-blue-400 font-semibold underline mt-1 block">
-              Click to Open Action Panel →
+            <span className="text-[10px] text-[#1769AA] font-bold mt-1.5 block">
+              Click to Open Action Panel & Generate Work Order →
             </span>
           </div>
         </div>
@@ -542,14 +545,14 @@ const defaultStats: AnalyticsStats = {
                   </button>
                 )}
                 <div>
-                  <h1 className={`text-xl font-black tracking-tight flex items-center ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  <h1 className="text-2xl font-black tracking-tight flex items-center text-[#0B3558]">
                     <span>{activeDistrict.name}</span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ml-2 ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-md ml-2.5 bg-[#003366] text-white">
                       {activeDistrict.code}
                     </span>
                   </h1>
-                  <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Live transit telemetry, continuous edge-AI defect mapping & municipal work order registry.
+                  <p className="text-xs font-semibold text-slate-600 mt-1">
+                    Live transit telemetry, continuous edge-AI defect mapping &amp; municipal work order registry.
                   </p>
                 </div>
               </div>
@@ -611,11 +614,15 @@ const defaultStats: AnalyticsStats = {
               <SafetyIntelligenceView districtId={activeDistrict.id} />
             ) : dashboardTab === 'PREDICTIVE' ? (
               <PredictiveIntelligenceView districtId={activeDistrict.id} />
+            ) : dashboardTab === 'WORK_ORDERS' ? (
+              <WorkOrderPanel activeDistrictId={activeDistrict.id} />
+            ) : dashboardTab === 'REPORTS' ? (
+              <AnalyticsPanel stats={stats} districtName={activeDistrict.name} showReports={true} />
             ) : (
               <>
 
                 {/* Analytics Stats Grid */}
-                <AnalyticsPanel stats={stats} districtName={activeDistrict.name} />
+                <AnalyticsPanel stats={stats} districtName={activeDistrict.name} showReports={false} />
 
                 {/* Live Map & Defect Feed Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
@@ -662,7 +669,7 @@ const defaultStats: AnalyticsStats = {
                       </span>
                     </div>
 
-                    <div className={`flex-1 rounded-b-xl border border-slate-700/80 p-3 overflow-y-auto max-h-[380px] sm:max-h-[450px] space-y-2.5 ${
+                    <div className={`h-[420px] sm:h-[520px] rounded-b-xl border border-slate-700/80 p-3 overflow-y-auto space-y-2.5 ${
                       isDark ? 'bg-[#0B1C33]/60 backdrop-blur-sm' : 'bg-white border-slate-200'
                     }`}>
                       {events.length === 0 ? (

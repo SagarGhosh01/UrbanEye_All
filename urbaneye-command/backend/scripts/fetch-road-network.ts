@@ -92,7 +92,7 @@ interface OverpassElement {
 }
 
 async function main() {
-  console.log('🗺️  UrbanEye Road Network Ingestion — Bangalore');
+  console.log('🗺️  SRIMS Road Network Ingestion — Bangalore');
   console.log('================================================');
   console.log(`Bounding box: ${BANGALORE_BBOX}`);
   console.log(`Road types: primary, secondary, trunk, tertiary + link roads`);
@@ -110,7 +110,7 @@ async function main() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'UrbanEye/1.0 (urbaneye-command-center@urbaneye.org)',
+          'User-Agent': 'SRIMS/1.0 (srims-command-center@srims.org)',
           'Accept': 'application/json',
         },
         body: `data=${encodeURIComponent(query)}`,

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 /**
- * Global Enterprise Error Handler for UrbanEye Backend.
+ * Global Enterprise Error Handler for SRIMS Backend.
  * Prevents crash unhandled rejections, sanitizes internal stack traces in production,
  * and returns standardized JSON error envelopes.
  */

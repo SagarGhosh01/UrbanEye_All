@@ -69,7 +69,7 @@ export interface DetectedPotholeBox {
 // The one model that actually runs. Previous revisions listed four engines
 // (TensorRT INT8, SAM2, MobileNetV4 3D-Depth) with invented latencies; none existed.
 const AI_ENGINES = [
-  { id: 'urbaneye-road-defect-v1', label: 'UrbanEye YOLOv8n Road Defect (ONNX / WASM)', latency: 'measured live' },
+  { id: 'srims-road-defect-v1', label: 'SRIMS YOLOv8n Road Defect (ONNX / WASM)', latency: 'measured live' },
 ];
 
 export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
@@ -94,7 +94,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
   const [telemetryHeading, setTelemetryHeading] = useState<number>(0);
 
   // AI & Scanner State
-  const [selectedEngine, setSelectedEngine] = useState<string>('urbaneye-road-defect-v1');
+  const [selectedEngine, setSelectedEngine] = useState<string>('srims-road-defect-v1');
   const [videoFilter, setVideoFilter] = useState<'NORMAL' | 'THERMAL' | 'NIGHT_VISION' | 'SEGMENTATION'>('NORMAL');
   const [voiceAlerts, setVoiceAlerts] = useState<boolean>(false);
   const [autoDetectLoop, setAutoDetectLoop] = useState(false);
@@ -493,7 +493,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
           dCtx.fillRect(0, 0, 640, 480);
           dCtx.fillStyle = '#38bdf8';
           dCtx.font = '20px monospace';
-          dCtx.fillText('URBANEYE LIVE SENSOR SNAPSHOT', 120, 240);
+          dCtx.fillText('SRIMS LIVE SENSOR SNAPSHOT', 120, 240);
           imageSnippet = dummyCanvas.toDataURL('image/jpeg', 0.80);
         }
       }
@@ -534,7 +534,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         timestamp: new Date().toISOString(),
       };
 
-      const token = localStorage.getItem('urbaneye_token');
+      const token = localStorage.getItem('srims_token');
       const headers = {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -640,23 +640,23 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
   const activeBox = detectedPotholes.find((b) => b.id === selectedBoxId) || detectedPotholes[0];
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-0 sm:p-3 animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700 rounded-none sm:rounded-2xl shadow-2xl max-w-xl w-full h-full sm:h-auto sm:max-h-[96vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[9999] bg-[#0B3558]/80 backdrop-blur-sm flex items-center justify-center p-0 sm:p-3 animate-fade-in">
+      <div className="bg-white border border-[#D8E0E8] rounded-none sm:rounded-2xl shadow-2xl max-w-xl w-full h-full sm:h-auto sm:max-h-[96vh] overflow-hidden flex flex-col">
         
         {/* Header HUD - Clean, non-overlapping header bar */}
-        <div className="bg-[#0b2545] px-3 py-2.5 sm:px-4 sm:py-3 text-white flex items-center justify-between border-b border-slate-700 shrink-0">
+        <div className="bg-[#0B3558] px-3 py-2.5 sm:px-4 sm:py-3 text-white flex items-center justify-between border-b border-[#08243D] shrink-0">
           <div className="flex items-center space-x-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#1769AA]/30 border border-[#1769AA] flex items-center justify-center text-white shrink-0">
               <Camera className="w-4 h-4 animate-pulse" />
             </div>
             <div className="min-w-0">
               <h3 className="font-extrabold text-xs sm:text-sm tracking-tight truncate flex items-center gap-1.5">
                 <span>Citizen Defect Camera Scanner</span>
-                <span className="text-[8px] bg-teal-500/20 text-teal-300 px-1.5 py-0.5 rounded font-mono font-bold uppercase">
+                <span className="text-[8px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-mono font-bold uppercase">
                   LIVE SENSOR
                 </span>
               </h3>
-              <p className="text-[10px] text-slate-300 truncate">
+              <p className="text-[10px] text-blue-100 truncate">
                 Real-Time AI Road Defect Detection & Authority Ingestion
               </p>
             </div>
@@ -667,7 +667,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
               type="button"
               onClick={() => setShowModelInfo(!showModelInfo)}
               title="Edge AI Model Architecture & Training Info"
-              className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-teal-300 hover:text-white transition"
+              className="p-1.5 rounded-lg bg-[#08243D] border border-[#0B3558] text-[#90CAF9] hover:text-white transition"
             >
               <Info className="w-4 h-4" />
             </button>
@@ -678,18 +678,18 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
               title={voiceAlerts ? 'Voice Alerts Active' : 'Voice Muted'}
               className={`p-1.5 rounded-lg border transition ${
                 voiceAlerts
-                  ? 'bg-teal-500/20 border-teal-400/50 text-teal-300'
-                  : 'bg-slate-800 border-slate-700 text-slate-400'
+                  ? 'bg-[#1769AA]/30 border-[#1769AA] text-white'
+                  : 'bg-[#08243D] border-[#0B3558] text-[#90CAF9]'
               }`}
             >
-              {voiceAlerts ? <Volume2 className="w-4 h-4 text-teal-400" /> : <VolumeX className="w-4 h-4" />}
+              {voiceAlerts ? <Volume2 className="w-4 h-4 text-white" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
             <button
               type="button"
               onClick={flipCamera}
               title="Switch Camera Lens"
-              className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition"
+              className="p-1.5 rounded-lg bg-[#08243D] border border-[#0B3558] text-[#90CAF9] hover:text-white transition"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -717,8 +717,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
           {/* Top Status Bar */}
           <div className="absolute top-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none select-none">
-            <div className="bg-slate-950/85 backdrop-blur-md border border-teal-500/40 text-teal-300 text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg flex items-center space-x-1.5 shadow-md">
-              <Camera className="w-3 h-3 text-teal-400" />
+            <div className="bg-white/90 backdrop-blur-md border border-[#D8E0E8] text-[#1769AA] text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg flex items-center space-x-1.5 shadow-md">
+              <Camera className="w-3 h-3 text-[#1769AA]" />
               <span className="truncate max-w-[130px] sm:max-w-none">Live Viewfinder • Manual Ingest Mode</span>
             </div>
           </div>
@@ -795,8 +795,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                 {/* Searching HUD indicator when no defect is present (Y=56 guarantees 0% overlap with top HUD bar!) */}
                 {detectedPotholes.length === 0 && (
                   <g transform="translate(18, 56)" className="animate-pulse pointer-events-none">
-                    <rect width="245" height="26" rx="6" fill="rgba(15, 23, 42, 0.90)" stroke="#334155" strokeWidth="1" />
-                    <text x="10" y="17" fill="#38bdf8" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                    <rect width="245" height="26" rx="6" fill="rgba(255, 255, 255, 0.90)" stroke="#D8E0E8" strokeWidth="1" />
+                    <text x="10" y="17" fill="#1769AA" fontSize="10" fontWeight="bold" fontFamily="monospace">
                       🔍 SCANNING ROAD SURFACE (0 DEFECTS)
                     </text>
                   </g>
@@ -807,13 +807,13 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
           {/* Camera Error Display */}
           {cameraError && (
-            <div className="absolute inset-0 bg-slate-950 p-6 flex flex-col items-center justify-center text-center space-y-3 z-30">
-              <AlertCircle className="w-10 h-10 text-amber-400" />
-              <p className="text-xs text-slate-300 max-w-xs">{cameraError}</p>
+            <div className="absolute inset-0 bg-white/95 p-6 flex flex-col items-center justify-center text-center space-y-3 z-30">
+              <AlertCircle className="w-10 h-10 text-amber-500" />
+              <p className="text-xs text-[#172B3A] max-w-xs font-medium">{cameraError}</p>
               <button
                 type="button"
                 onClick={startCamera}
-                className="px-4 py-2 rounded-xl bg-[#1E7F73] text-white font-bold text-xs flex items-center space-x-1.5 shadow"
+                className="px-4 py-2 rounded-xl bg-[#1769AA] hover:bg-[#0B3558] transition text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Grant Camera Permission</span>
@@ -824,25 +824,25 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
         {/* Telemetry Summary Bar */}
         {cameraActive && (
-          <div className="bg-slate-950 px-3 py-1.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-1.5 text-[10px] font-mono shrink-0">
+          <div className="bg-white px-3 py-1.5 border-b border-[#D8E0E8] flex flex-wrap items-center justify-between gap-1.5 text-[10px] font-mono shrink-0 shadow-sm z-10 relative">
             <div className="flex items-center space-x-2">
-              <span className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded font-bold flex items-center gap-1">
-                <Crosshair className="w-3 h-3 text-amber-400" />
+              <span className="bg-amber-100 border border-amber-200 text-[#D98E04] px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                <Crosshair className="w-3 h-3 text-amber-500" />
                 <span>{detectedPotholes.length > 0 ? `DETECTED: ${detectedPotholes.length} POTHOLES` : 'STATUS: ROAD CLEAR'}</span>
               </span>
-              <span className="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded font-bold">
+              <span className="bg-rose-100 border border-rose-200 text-rose-700 px-2 py-0.5 rounded font-bold">
                 {activeBox?.diameterCm ? `SIZE: Ø${activeBox.diameterCm} cm` : 'SIZE: not measurable'}
               </span>
-              <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold">
+              <span className="bg-emerald-100 border border-emerald-200 text-[#198754] px-2 py-0.5 rounded font-bold">
                 {activeBox ? `CONF: ${(activeBox.confidence * 100).toFixed(0)}%` : 'CONF: —'}
               </span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <span className="text-slate-400">
+              <span className="text-[#667788]">
                 {telemetrySpeed} km/h • {telemetryHeading}° S
               </span>
-              <span className="text-teal-300 font-bold border-l border-slate-800 pl-2">
+              <span className="text-[#1769AA] font-bold border-l border-[#D8E0E8] pl-2">
                 MANUAL CAPTURE MODE
               </span>
             </div>
@@ -850,24 +850,24 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
         )}
 
         {/* Controls & Automatic Ingestion Panel (Bottom half) */}
-        <div className="p-3.5 sm:p-4 bg-slate-900 space-y-3 text-xs overflow-y-auto flex-1">
+        <div className="p-3.5 sm:p-4 bg-[#F6F8FA] space-y-3 text-xs overflow-y-auto flex-1">
           {/* Relocated Structured Metric Detail Card for Selected Pothole Box */}
           {activeBox && (
-            <div className="p-3 bg-slate-950/90 border border-slate-700 rounded-xl space-y-2 text-xs font-mono animate-fade-in shadow-lg">
-              <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-800 pb-1.5">
+            <div className="p-3 bg-white border border-[#D8E0E8] rounded-xl space-y-2 text-xs font-mono animate-fade-in shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-[#D8E0E8] pb-1.5">
                 <div className="flex flex-wrap items-center space-x-2 gap-y-1">
-                  <span className="font-bold text-slate-200 text-sm flex items-center gap-1.5">
+                  <span className="font-bold text-[#172B3A] text-sm flex items-center gap-1.5">
                     <span>🕳️</span>
                     <span>{activeBox.label.toUpperCase()}</span>
                   </span>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
                     activeBox.status === 'CONFIRMED'
-                      ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
-                      : 'bg-amber-950 border-amber-500 text-amber-300 border-dashed animate-pulse'
+                      ? 'bg-emerald-50 border-emerald-200 text-[#198754]'
+                      : 'bg-amber-50 border-amber-200 text-[#D98E04] border-dashed animate-pulse'
                   }`}>
                     {activeBox.status === 'CONFIRMED' ? '✓ CONFIRMED MULTI-FRAME' : '? UNCONFIRMED SINGLE-FRAME'}
                   </span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-purple-950/80 border-purple-500/60 text-purple-300 flex items-center gap-1">
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-purple-50 border-purple-200 text-purple-700 flex items-center gap-1">
                     <span>🛡️</span>
                     <span>Seen {gpsLocation ? deduplicationService.getTimesSeen(gpsLocation.lat, gpsLocation.lon) : 1}x</span>
                   </span>
@@ -876,7 +876,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleFlagFalsePositive(activeBox.id)}
-                  className="px-2.5 py-1 bg-red-950/60 hover:bg-red-900 border border-red-700/60 text-red-300 font-sans font-bold text-[10px] rounded-lg transition flex items-center space-x-1"
+                  className="px-2.5 py-1 bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 font-sans font-bold text-[10px] rounded-lg transition flex items-center space-x-1 shadow-sm"
                   title="Flag this detection as false positive for dataset retraining"
                 >
                   <span>🚩</span>
@@ -886,38 +886,38 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
               {/* Metric Grid with Sparkline & Consistent cm Units */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1">
-                <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div className="text-slate-400 text-[10px] flex items-center justify-between">
+                <div className="bg-[#F6F8FA] p-2 rounded-lg border border-[#D8E0E8]">
+                  <div className="text-[#667788] text-[10px] flex items-center justify-between">
                     <span>Confidence Trend</span>
                     <svg className="w-12 h-3" viewBox="0 0 40 15">
                       <polyline
                         fill="none"
-                        stroke="#38bdf8"
+                        stroke="#1769AA"
                         strokeWidth="2"
                         points={activeBox.confidenceHistory?.map((c, i) => `${i * 10},${15 - c * 12}`).join(' ') || '0,7 40,7'}
                       />
                     </svg>
                   </div>
-                  <div className="font-bold text-teal-300 text-sm mt-0.5">{Math.round(activeBox.confidence * 100)}%</div>
+                  <div className="font-bold text-[#1769AA] text-sm mt-0.5">{Math.round(activeBox.confidence * 100)}%</div>
                 </div>
 
-                <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Ground size (est.)</div>
-                  <div className="font-bold text-rose-400 text-sm mt-0.5">
+                <div className="bg-[#F6F8FA] p-2 rounded-lg border border-[#D8E0E8]">
+                  <div className="text-[#667788] text-[10px]">Ground size (est.)</div>
+                  <div className="font-bold text-rose-600 text-sm mt-0.5">
                     {activeBox.diameterCm ? `Ø ${activeBox.diameterCm} cm` : 'Not applicable'}
                   </div>
                 </div>
 
-                <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Depth</div>
-                  <div className="font-bold text-amber-400 text-sm mt-0.5" title="A single camera cannot recover depth">
+                <div className="bg-[#F6F8FA] p-2 rounded-lg border border-[#D8E0E8]">
+                  <div className="text-[#667788] text-[10px]">Depth</div>
+                  <div className="font-bold text-[#D98E04] text-sm mt-0.5" title="A single camera cannot recover depth">
                     Not measurable
                   </div>
                 </div>
 
-                <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Repair estimate</div>
-                  <div className="font-bold text-emerald-400 text-sm mt-0.5">Computed on ingest</div>
+                <div className="bg-[#F6F8FA] p-2 rounded-lg border border-[#D8E0E8]">
+                  <div className="text-[#667788] text-[10px]">Repair estimate</div>
+                  <div className="font-bold text-[#198754] text-sm mt-0.5">Computed on ingest</div>
                 </div>
               </div>
             </div>
@@ -926,20 +926,20 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
           {/* Status Alert Banner */}
           {lastTransmitted && (
             <div
-              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 animate-fade-in shadow-inner ${
+              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 animate-fade-in shadow-sm border ${
                 lastTransmitted.includes('❌') || lastTransmitted.includes('Error') || lastTransmitted.includes('Failed')
-                  ? 'bg-rose-950/80 border border-rose-500/60 text-rose-300'
+                  ? 'bg-rose-50 border-rose-200 text-rose-700'
                   : lastTransmitted.includes('🛡️')
-                  ? 'bg-purple-950/80 border border-purple-500/60 text-purple-300'
-                  : 'bg-emerald-950/70 border border-emerald-500/50 text-emerald-300'
+                  ? 'bg-purple-50 border-purple-200 text-purple-700'
+                  : 'bg-emerald-50 border-emerald-200 text-[#198754]'
               }`}
             >
               {lastTransmitted.includes('❌') || lastTransmitted.includes('Error') || lastTransmitted.includes('Failed') ? (
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               ) : lastTransmitted.includes('🛡️') ? (
-                <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
               ) : (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[#198754] shrink-0" />
               )}
               <span className="truncate">{lastTransmitted}</span>
             </div>
@@ -951,7 +951,7 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
               type="button"
               onClick={() => captureAndTransmit()}
               disabled={isCapturing}
-              className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 active:bg-teal-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-teal-950/40 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#1769AA] hover:bg-[#0B3558] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
               <Camera className="w-4 h-4 text-white shrink-0" />
               <span className="truncate">{isCapturing ? 'Ingesting Photo...' : 'Take & Ingest Photo'}</span>
@@ -960,16 +960,16 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
 
           {/* Engine & Vision Mode Selector */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white p-2.5 rounded-xl border border-[#D8E0E8]">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 mb-1 flex items-center space-x-1">
-                <Cpu className="w-3 h-3 text-teal-400" />
+              <label className="block text-[10px] font-bold text-[#667788] mb-1 flex items-center space-x-1">
+                <Cpu className="w-3 h-3 text-[#1769AA]" />
                 <span>Edge AI Model:</span>
               </label>
               <select
                 value={selectedEngine}
                 onChange={(e) => setSelectedEngine(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 text-slate-200 font-mono text-xs rounded-lg p-1.5 focus:border-teal-400 focus:outline-none"
+                className="w-full bg-[#F6F8FA] border border-[#D8E0E8] text-[#172B3A] font-mono text-xs rounded-lg p-1.5 focus:border-[#1769AA] focus:outline-none"
               >
                 {AI_ENGINES.map((eng) => (
                   <option key={eng.id} value={eng.id}>
@@ -980,8 +980,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 mb-1 flex items-center space-x-1">
-                <Layers className="w-3 h-3 text-teal-400" />
+              <label className="block text-[10px] font-bold text-[#667788] mb-1 flex items-center space-x-1">
+                <Layers className="w-3 h-3 text-[#1769AA]" />
                 <span>Vision Mode:</span>
               </label>
               <div className="grid grid-cols-4 gap-1">
@@ -997,8 +997,8 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                     onClick={() => setVideoFilter(f.id as any)}
                     className={`py-1 px-1.5 rounded-lg font-mono text-[9px] font-bold border transition min-h-[36px] ${
                       videoFilter === f.id
-                        ? 'bg-teal-500/20 border-teal-400 text-teal-300'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-[#1769AA] border-[#1769AA] text-white'
+                        : 'bg-[#F6F8FA] border-[#D8E0E8] text-[#667788] hover:text-[#172B3A]'
                     }`}
                   >
                     {f.label}
@@ -1010,13 +1010,13 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
           {/* Model Architecture & Training Info Modal */}
           {showModelInfo && (
-            <div className="p-3 bg-slate-950 rounded-xl border border-teal-500/30 text-xs space-y-2 text-slate-300 animate-fade-in">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                <span className="font-bold text-teal-300 flex items-center space-x-1">
-                  <ShieldCheck className="w-4 h-4 text-teal-400" />
+            <div className="p-3 bg-white rounded-xl border border-[#D8E0E8] text-xs space-y-2 text-[#172B3A] animate-fade-in shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#D8E0E8] pb-1.5">
+                <span className="font-bold text-[#1769AA] flex items-center space-x-1">
+                  <ShieldCheck className="w-4 h-4 text-[#1769AA]" />
                   <span>Edge AI Model Architecture & Training Credentials</span>
                 </span>
-                <button onClick={() => setShowModelInfo(false)} className="text-slate-500 hover:text-slate-300 font-mono">✕</button>
+                <button onClick={() => setShowModelInfo(false)} className="text-[#667788] hover:text-[#172B3A] font-mono">✕</button>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
                 <div>• Architecture: <strong>YOLOv11x-Seg + Monocular Depth</strong></div>
@@ -1029,13 +1029,13 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
 
           {/* Recent Live Capture History Gallery */}
           {captureHistory.length > 0 && (
-            <div className="pt-2 border-t border-slate-800">
+            <div className="pt-2 border-t border-[#D8E0E8]">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold text-slate-300 flex items-center space-x-1">
-                  <Film className="w-3.5 h-3.5 text-teal-400" />
+                <span className="text-[11px] font-bold text-[#172B3A] flex items-center space-x-1">
+                  <Film className="w-3.5 h-3.5 text-[#1769AA]" />
                   <span>Recent Automatic Captures ({captureHistory.length})</span>
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">Live Telemetry History</span>
+                <span className="text-[10px] text-[#667788] font-mono">Live Telemetry History</span>
               </div>
 
               <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin">
@@ -1043,11 +1043,11 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                   <div
                     key={item.id + idx}
                     onClick={() => setSelectedHistoryItem(item)}
-                    className={`shrink-0 w-28 bg-slate-950 border rounded-xl p-1.5 cursor-pointer hover:border-teal-400 transition ${
-                      selectedHistoryItem?.id === item.id ? 'border-teal-400 ring-2 ring-teal-400/30' : 'border-slate-800'
+                    className={`shrink-0 w-28 bg-white border rounded-xl p-1.5 cursor-pointer hover:border-[#1769AA] transition ${
+                      selectedHistoryItem?.id === item.id ? 'border-[#1769AA] ring-2 ring-[#1769AA]/30' : 'border-[#D8E0E8]'
                     }`}
                   >
-                    <div className="h-14 w-full rounded-lg bg-slate-900 overflow-hidden relative border border-slate-800">
+                    <div className="h-14 w-full rounded-lg bg-[#F6F8FA] overflow-hidden relative border border-[#D8E0E8]">
                       {item.imageSnippet ? (
                         <img
                           src={resolveImageSrc(item.imageSnippet) || undefined}
@@ -1055,20 +1055,20 @@ export const LiveCameraModal: React.FC<LiveCameraModalProps> = ({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-600 text-[9px]">
+                        <div className="w-full h-full flex items-center justify-center text-[#667788] text-[9px]">
                           No Frame
                         </div>
                       )}
-                      <span className="absolute bottom-1 right-1 text-[8px] bg-slate-950/80 px-1 py-0.5 rounded text-teal-300 font-mono">
+                      <span className="absolute bottom-1 right-1 text-[8px] bg-white/90 px-1 py-0.5 rounded text-[#172B3A] font-mono shadow-sm">
                         {item.timestamp}
                       </span>
                     </div>
 
                     <div className="mt-1 flex items-center justify-between text-[9px] font-mono">
-                      <span className="font-bold text-slate-300 truncate max-w-[65px]">
+                      <span className="font-bold text-[#172B3A] truncate max-w-[65px]">
                         {item.type.replace(/_/g, ' ')}
                       </span>
-                      <span className="text-emerald-400 font-bold">
+                      <span className="text-[#198754] font-bold">
                         {item.diameterCm ? `Ø${item.diameterCm}cm` : `${(item.confidence * 100).toFixed(0)}%`}
                       </span>
                     </div>

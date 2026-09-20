@@ -1,5 +1,5 @@
 /**
- * UrbanEye - Client-Side O(1) Grid GPS & Perceptual Image Deduplication Service
+ * SRIMS - Client-Side O(1) Grid GPS & Perceptual Image Deduplication Service
  * Quantizes GPS into 10m grid cells for O(1) hash map lookups, computes 64-bit pHash
  * for image similarity checks, and buffers best-confidence frames.
  */
@@ -250,7 +250,7 @@ class DeduplicationService {
 
   private saveToStorage() {
     try {
-      localStorage.setItem('urbaneye_dedup_cache', JSON.stringify(this.cacheList.slice(0, 100)));
+      localStorage.setItem('srims_dedup_cache', JSON.stringify(this.cacheList.slice(0, 100)));
     } catch (e) {
       // ignore storage errors
     }
@@ -258,7 +258,7 @@ class DeduplicationService {
 
   private loadFromStorage() {
     try {
-      const raw = localStorage.getItem('urbaneye_dedup_cache');
+      const raw = localStorage.getItem('srims_dedup_cache');
       if (raw) {
         this.cacheList = JSON.parse(raw);
         this.pruneExpiredEntries(Date.now());

@@ -9,8 +9,8 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
-  const [email, setEmail] = useState('head.kapurthala@urbaneye.gov.in');
-  const [password, setPassword] = useState('UrbanEye@2026');
+  const [email, setEmail] = useState('head.kapurthala@srims.gov.in');
+  const [password, setPassword] = useState('SRIMS@2026');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +22,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
     setLoading(true);
     try {
       const res = await api.login(email.trim(), password);
-      localStorage.setItem('urbaneye_token', res.token);
+      localStorage.setItem('srims_token', res.token);
       onLoginSuccess(res.user, res.token);
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please verify login details.');
@@ -33,7 +33,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
 
   const handleDemoAccess = (demoEmail: string, roleType: 'ADMIN' | 'INSPECTOR' | 'PUBLIC') => {
     setEmail(demoEmail);
-    setPassword('UrbanEye@2026');
+    setPassword('SRIMS@2026');
     setLoginRole(roleType);
     setError(null);
   };
@@ -44,7 +44,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
       {/* Top Header Strip */}
       <div className="bg-[#08243D] text-white py-2 px-4 md:px-8 flex justify-between items-center border-b border-[#F2A900]/40">
         <div className="flex items-center space-x-2 text-xs">
-          <span className="font-semibold text-gray-200">UrbanEye | Public Infrastructure Intelligence</span>
+          <span className="font-semibold text-gray-200">SRIMS | Public Infrastructure Intelligence</span>
         </div>
         {onBack && (
           <button
@@ -67,7 +67,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
               <Eye className="w-5 h-5 text-[#F2A900]" />
             </div>
 
-            <h1 className="text-xl font-black tracking-tight uppercase">URBANEYE</h1>
+            <h1 className="text-xl font-black tracking-tight uppercase">SRIMS</h1>
             <p className="text-xs text-gray-200 mt-0.5">Road Infrastructure Intelligence Platform</p>
           </div>
 
@@ -75,7 +75,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
           <div className="grid grid-cols-3 bg-[#EAF4FB] border-b border-[#D8E0E8] text-xs font-bold text-center">
             <button
               type="button"
-              onClick={() => handleDemoAccess('head.kapurthala@urbaneye.gov.in', 'ADMIN')}
+              onClick={() => handleDemoAccess('head.kapurthala@srims.gov.in', 'ADMIN')}
               className={`py-2.5 border-b-2 transition ${loginRole === 'ADMIN' ? 'border-[#0B3558] text-[#0B3558] bg-white' : 'border-transparent text-[#667788]'}`}
             >
               Administrator
@@ -89,7 +89,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
             </button>
             <button
               type="button"
-              onClick={() => handleDemoAccess('citizen@urbaneye.gov.in', 'PUBLIC')}
+              onClick={() => handleDemoAccess('citizen@srims.gov.in', 'PUBLIC')}
               className={`py-2.5 border-b-2 transition ${loginRole === 'PUBLIC' ? 'border-[#0B3558] text-[#0B3558] bg-white' : 'border-transparent text-[#667788]'}`}
             >
               Public / Citizen
@@ -117,7 +117,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@urbaneye.platform"
+                    placeholder="user@srims.platform"
                     className="w-full pl-9 pr-3 py-2 border border-[#D8E0E8] rounded text-sm text-[#172B3A] bg-white focus:outline-none"
                   />
                 </div>
@@ -179,7 +179,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleDemoAccess('head.kapurthala@urbaneye.gov.in', 'ADMIN')}
+                  onClick={() => handleDemoAccess('head.kapurthala@srims.gov.in', 'ADMIN')}
                   className="py-1.5 px-2 bg-[#EAF4FB] border border-[#D8E0E8] rounded text-[10px] font-bold text-[#1769AA] hover:bg-blue-100 truncate"
                 >
                   Demo Administrator
@@ -193,7 +193,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDemoAccess('citizen@urbaneye.gov.in', 'PUBLIC')}
+                  onClick={() => handleDemoAccess('citizen@srims.gov.in', 'PUBLIC')}
                   className="py-1.5 px-2 bg-[#EAF4FB] border border-[#D8E0E8] rounded text-[10px] font-bold text-[#1769AA] hover:bg-blue-100 truncate"
                 >
                   Demo Citizen
@@ -212,7 +212,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onBack }) => {
 
       {/* Footer strip */}
       <div className="bg-[#08243D] text-gray-300 text-[11px] py-2 px-4 text-center border-t border-[#F2A900]">
-        UrbanEye — Public Infrastructure Technology Prototype | © 2026 UrbanEye
+        SRIMS — Public Infrastructure Technology Prototype | © 2026 SRIMS
       </div>
 
     </div>

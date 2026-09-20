@@ -289,78 +289,78 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: VEHICLES DETECTED */}
         <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-          isDark ? 'bg-[#0f1f38] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-        }`}>
+          isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
+        } shadow-sm`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">VEHICLES DETECTED</span>
-            <div className="p-2 rounded-xl bg-teal-500/10 text-[#2dd4bf]">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#667788]">VEHICLES DETECTED</span>
+            <div className="p-2 rounded-xl bg-teal-50 text-teal-600 border border-teal-100">
               <Car className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight">{stats.vehiclesDetectedToday.toLocaleString()}</span>
-            <span className="text-xs font-bold text-teal-400 bg-teal-500/15 px-2 py-0.5 rounded-full">Today</span>
+            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-[#0B3558]">{stats.vehiclesDetectedToday.toLocaleString()}</span>
+            <span className="text-xs font-bold text-teal-700 bg-teal-100 border border-teal-200 px-2 py-0.5 rounded-full">Today</span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Real-time edge camera frame count</p>
+          <p className="mt-1 text-[11px] text-[#667788] font-semibold">Real-time edge camera frame count</p>
         </div>
 
         {/* KPI 2: TRAFFIC DENSITY */}
         <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-          isDark ? 'bg-[#0f1f38] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-        }`}>
+          isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
+        } shadow-sm`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">TRAFFIC DENSITY</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#667788]">TRAFFIC DENSITY</span>
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
               <Activity className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight">{stats.trafficDensityPercent}%</span>
-            <span className="text-xs font-bold text-amber-400 bg-amber-500/15 px-2.5 py-0.5 rounded-full uppercase">
+            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-[#0B3558]">{stats.trafficDensityPercent}%</span>
+            <span className="text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-full uppercase">
               {stats.densityLevel}
             </span>
           </div>
-          <div className="mt-2 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full" style={{ width: `${stats.trafficDensityPercent}%` }} />
+          <div className="mt-2 w-full bg-[#D8E0E8] rounded-full h-1.5 overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-400 to-orange-500 h-full rounded-full" style={{ width: `${stats.trafficDensityPercent}%` }} />
           </div>
         </div>
 
         {/* KPI 3: ACTIVE BOTTLENECKS */}
         <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-          isDark ? 'bg-[#0f1f38] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-        }`}>
+          isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
+        } shadow-sm`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">ACTIVE BOTTLENECKS</span>
-            <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#667788]">ACTIVE BOTTLENECKS</span>
+            <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-100">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-red-400">
+            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-rose-600">
               0{stats.activeBottlenecksCount}
             </span>
-            <span className="text-xs font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full">Active</span>
+            <span className="text-xs font-bold text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full">Active</span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Across monitored bus routes</p>
+          <p className="mt-1 text-[11px] text-[#667788] font-semibold">Across monitored bus routes</p>
         </div>
 
         {/* KPI 4: AVG. ROUTE DELAY */}
         <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-          isDark ? 'bg-[#0f1f38] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-        }`}>
+          isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
+        } shadow-sm`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">AVG. ROUTE DELAY</span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#667788]">AVG. ROUTE DELAY</span>
+            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
               <Clock className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-amber-300">
+            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-amber-600">
               +{stats.avgRouteDelayMinutes} min
             </span>
-            <span className="text-xs font-medium text-slate-400">vs Normal</span>
+            <span className="text-xs font-semibold text-[#667788]">vs Normal</span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Compared with baseline flow</p>
+          <p className="mt-1 text-[11px] text-[#667788] font-semibold">Compared with baseline flow</p>
         </div>
       </div>
 
@@ -369,12 +369,12 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
         {/* Left 2 Cols: GIS Traffic Density Map */}
         <div className="lg:col-span-2 space-y-4">
           <div className={`rounded-2xl border overflow-hidden relative shadow-lg ${
-            isDark ? 'bg-[#0f1f38] border-slate-800' : 'bg-white border-slate-200'
+            isDark ? 'bg-white border-[#D8E0E8]' : 'bg-white border-[#D8E0E8]'
           }`}>
             {/* Map Header Overlay */}
-            <div className="p-3.5 sm:p-4 border-b flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-md border-slate-800 text-white z-10 relative">
+            <div className="p-3.5 sm:p-4 border-b flex flex-wrap items-center justify-between gap-2 bg-[#F6F8FA]/90 backdrop-blur-md border-[#D8E0E8] text-[#172B3A] z-10 relative">
               <div className="flex items-center space-x-2.5">
-                <Navigation className="w-4 h-4 text-[#2dd4bf]" />
+                <Navigation className="w-4 h-4 text-[#1769AA]" />
                 <span className="font-bold text-sm tracking-tight">Live GIS Traffic Density Map</span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -402,9 +402,9 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
             {/* Leaflet Native Canvas with guaranteed size and overlay */}
             <div className="relative w-full">
               {loading && routes.length === 0 && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-                  <Activity className="w-8 h-8 text-[#1E7F73] animate-spin" />
-                  <span className="text-xs font-semibold text-slate-300 mt-2">Connecting to Live Traffic Telemetry...</span>
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+                  <Activity className="w-8 h-8 text-[#1769AA] animate-spin" />
+                  <span className="text-xs font-semibold text-[#667788] mt-2">Connecting to Live Traffic Telemetry...</span>
                 </div>
               )}
               <div
@@ -418,9 +418,9 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
           {/* Road Telemetry Detail Inspection Drawer when clicked */}
           {selectedRoute && (
             <div className={`p-5 rounded-2xl border transition-all ${
-              isDark ? 'bg-[#0f1f38] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-            }`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
+            } shadow-sm mt-4`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#D8E0E8] pb-3">
                 <div>
                   <div className="flex items-center space-x-2">
                     <h3 className="font-bold text-base sm:text-lg">{selectedRoute.name}</h3>
@@ -432,11 +432,11 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
                       Traffic Level: {selectedRoute.trafficLevel}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">Segment Tag: {selectedRoute.junctionTag} • Sensor Update: {selectedRoute.lastUpdated}</p>
+                  <p className="text-xs text-[#667788] mt-0.5">Segment Tag: {selectedRoute.junctionTag} • Sensor Update: {selectedRoute.lastUpdated}</p>
                 </div>
 
                 {selectedRoute.bottleneckStatus === 'ACTIVE' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-950/70 text-red-300 border border-red-800 text-xs font-bold animate-pulse">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200 text-xs font-bold animate-pulse">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     Bottleneck Status: ACTIVE
                   </span>
@@ -445,52 +445,52 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
               {/* Grid of Road Telemetry */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Vehicles Detected</span>
-                  <div className="text-xl font-extrabold font-mono text-teal-400 mt-1">{selectedRoute.vehiclesPerMin} <span className="text-xs font-normal text-slate-400">/min</span></div>
+                <div className="p-3 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8]">
+                  <span className="text-[11px] font-semibold text-[#667788] uppercase">Vehicles Detected</span>
+                  <div className="text-xl font-extrabold font-mono text-teal-600 mt-1">{selectedRoute.vehiclesPerMin} <span className="text-xs font-normal text-[#667788]">/min</span></div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Average Speed</span>
-                  <div className="text-xl font-extrabold font-mono text-white mt-1">{selectedRoute.avgSpeedKmh} <span className="text-xs font-normal text-slate-400">km/h</span></div>
-                  <div className="text-[10px] text-slate-400">Normal: {selectedRoute.normalSpeedKmh} km/h</div>
+                <div className="p-3 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8]">
+                  <span className="text-[11px] font-semibold text-[#667788] uppercase">Average Speed</span>
+                  <div className="text-xl font-extrabold font-mono text-[#0B3558] mt-1">{selectedRoute.avgSpeedKmh} <span className="text-xs font-normal text-[#667788]">km/h</span></div>
+                  <div className="text-[10px] text-[#667788]">Normal: {selectedRoute.normalSpeedKmh} km/h</div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Estimated Delay</span>
-                  <div className="text-xl font-extrabold font-mono text-amber-400 mt-1">+{selectedRoute.estimatedDelayMin} <span className="text-xs font-normal text-slate-400">min</span></div>
+                <div className="p-3 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8]">
+                  <span className="text-[11px] font-semibold text-[#667788] uppercase">Estimated Delay</span>
+                  <div className="text-xl font-extrabold font-mono text-amber-600 mt-1">+{selectedRoute.estimatedDelayMin} <span className="text-xs font-normal text-[#667788]">min</span></div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Edge Buses</span>
-                  <div className="text-xs font-bold text-slate-200 mt-1 truncate">{selectedRoute.detectedByBuses.length} Fleet Nodes</div>
-                  <div className="text-[10px] text-teal-400 truncate">{selectedRoute.detectedByBuses.join(', ')}</div>
+                <div className="p-3 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8]">
+                  <span className="text-[11px] font-semibold text-[#667788] uppercase">Edge Buses</span>
+                  <div className="text-xs font-bold text-[#172B3A] mt-1 truncate">{selectedRoute.detectedByBuses.length} Fleet Nodes</div>
+                  <div className="text-[10px] text-teal-600 truncate">{selectedRoute.detectedByBuses.join(', ')}</div>
                 </div>
               </div>
 
               {/* Road Specific Vehicle Classification Progress Bar */}
-              <div className="mt-4 pt-3 border-t border-slate-800">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Primary Vehicle Mix on {selectedRoute.name}:</span>
+              <div className="mt-4 pt-3 border-t border-[#D8E0E8]">
+                <span className="text-xs font-bold text-[#172B3A] uppercase tracking-wider">Primary Vehicle Mix on {selectedRoute.name}:</span>
                 <div className="grid grid-cols-5 gap-2 mt-2 text-center text-xs">
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Cars</span>
-                    <span className="font-bold text-teal-300">{selectedRoute.vehicleClassification.cars}%</span>
+                  <div className="p-2 rounded bg-white border border-[#D8E0E8] shadow-sm">
+                    <span className="text-[#667788] block text-[10px] font-semibold">Cars</span>
+                    <span className="font-bold text-teal-600">{selectedRoute.vehicleClassification.cars}%</span>
                   </div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">2-Wheelers</span>
-                    <span className="font-bold text-indigo-300">{selectedRoute.vehicleClassification.twoWheelers}%</span>
+                  <div className="p-2 rounded bg-white border border-[#D8E0E8] shadow-sm">
+                    <span className="text-[#667788] block text-[10px] font-semibold">2-Wheelers</span>
+                    <span className="font-bold text-indigo-600">{selectedRoute.vehicleClassification.twoWheelers}%</span>
                   </div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Buses</span>
-                    <span className="font-bold text-amber-300">{selectedRoute.vehicleClassification.buses}%</span>
+                  <div className="p-2 rounded bg-white border border-[#D8E0E8] shadow-sm">
+                    <span className="text-[#667788] block text-[10px] font-semibold">Buses</span>
+                    <span className="font-bold text-amber-600">{selectedRoute.vehicleClassification.buses}%</span>
                   </div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Trucks</span>
-                    <span className="font-bold text-orange-300">{selectedRoute.vehicleClassification.trucks}%</span>
+                  <div className="p-2 rounded bg-white border border-[#D8E0E8] shadow-sm">
+                    <span className="text-[#667788] block text-[10px] font-semibold">Trucks</span>
+                    <span className="font-bold text-orange-600">{selectedRoute.vehicleClassification.trucks}%</span>
                   </div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Other</span>
-                    <span className="font-bold text-slate-300">{selectedRoute.vehicleClassification.other}%</span>
+                  <div className="p-2 rounded bg-white border border-[#D8E0E8] shadow-sm">
+                    <span className="text-[#667788] block text-[10px] font-semibold">Other</span>
+                    <span className="font-bold text-[#667788]">{selectedRoute.vehicleClassification.other}%</span>
                   </div>
                 </div>
               </div>
@@ -502,10 +502,10 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
         <div className="space-y-6">
           {/* Panel A: Vehicle Classification Breakdown */}
           <div className={`p-5 rounded-2xl border ${
-            isDark ? 'bg-[#0f1f38] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-          }`}>
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
-              <SlidersHorizontal className="w-4 h-4 text-[#2dd4bf]" />
+            isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
+          } shadow-sm`}>
+            <div className="flex items-center space-x-2 border-b border-[#D8E0E8] pb-3 mb-4">
+              <SlidersHorizontal className="w-4 h-4 text-[#1769AA]" />
               <h3 className="font-bold text-sm tracking-wide uppercase">Vehicle Classification</h3>
             </div>
 
@@ -513,55 +513,55 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
               {/* Cars */}
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-teal-400" /> Cars</span>
-                  <span className="font-mono text-teal-400">{stats.classification.cars}%</span>
+                  <span className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-teal-600" /> Cars</span>
+                  <span className="font-mono text-teal-600">{stats.classification.cars}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                  <div className="bg-teal-400 h-full rounded-full" style={{ width: `${stats.classification.cars}%` }} />
+                <div className="w-full bg-[#D8E0E8] rounded-full h-2 overflow-hidden">
+                  <div className="bg-teal-500 h-full rounded-full" style={{ width: `${stats.classification.cars}%` }} />
                 </div>
               </div>
 
               {/* Two Wheelers */}
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="flex items-center gap-1.5"><Compass className="w-3.5 h-3.5 text-indigo-400" /> Two-Wheelers</span>
-                  <span className="font-mono text-indigo-400">{stats.classification.twoWheelers}%</span>
+                  <span className="flex items-center gap-1.5"><Compass className="w-3.5 h-3.5 text-indigo-600" /> Two-Wheelers</span>
+                  <span className="font-mono text-indigo-600">{stats.classification.twoWheelers}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                  <div className="bg-indigo-400 h-full rounded-full" style={{ width: `${stats.classification.twoWheelers}%` }} />
+                <div className="w-full bg-[#D8E0E8] rounded-full h-2 overflow-hidden">
+                  <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${stats.classification.twoWheelers}%` }} />
                 </div>
               </div>
 
               {/* Buses */}
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="flex items-center gap-1.5"><Bus className="w-3.5 h-3.5 text-amber-400" /> Buses</span>
-                  <span className="font-mono text-amber-400">{stats.classification.buses}%</span>
+                  <span className="flex items-center gap-1.5"><Bus className="w-3.5 h-3.5 text-amber-600" /> Buses</span>
+                  <span className="font-mono text-amber-600">{stats.classification.buses}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                  <div className="bg-amber-400 h-full rounded-full" style={{ width: `${stats.classification.buses}%` }} />
+                <div className="w-full bg-[#D8E0E8] rounded-full h-2 overflow-hidden">
+                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${stats.classification.buses}%` }} />
                 </div>
               </div>
 
               {/* Trucks */}
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-orange-400" /> Trucks</span>
-                  <span className="font-mono text-orange-400">{stats.classification.trucks}%</span>
+                  <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-orange-600" /> Trucks</span>
+                  <span className="font-mono text-orange-600">{stats.classification.trucks}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                  <div className="bg-orange-400 h-full rounded-full" style={{ width: `${stats.classification.trucks}%` }} />
+                <div className="w-full bg-[#D8E0E8] rounded-full h-2 overflow-hidden">
+                  <div className="bg-orange-500 h-full rounded-full" style={{ width: `${stats.classification.trucks}%` }} />
                 </div>
               </div>
 
               {/* Other */}
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-slate-400" /> Other / Commercial</span>
-                  <span className="font-mono text-slate-400">{stats.classification.other}%</span>
+                  <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-[#667788]" /> Other / Commercial</span>
+                  <span className="font-mono text-[#667788]">{stats.classification.other}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                  <div className="bg-slate-400 h-full rounded-full" style={{ width: `${stats.classification.other}%` }} />
+                <div className="w-full bg-[#D8E0E8] rounded-full h-2 overflow-hidden">
+                  <div className="bg-[#667788] h-full rounded-full" style={{ width: `${stats.classification.other}%` }} />
                 </div>
               </div>
             </div>
@@ -569,14 +569,14 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
 
           {/* Panel B: Active Bottlenecks Feed */}
           <div className={`p-5 rounded-2xl border ${
-            isDark ? 'bg-[#0f1f38] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-          }`}>
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            isDark ? 'bg-white border-[#D8E0E8] text-[#172B3A]' : 'bg-white border-[#D8E0E8] text-[#172B3A]'
+          } shadow-sm`}>
+            <div className="flex items-center justify-between border-b border-[#D8E0E8] pb-3 mb-4">
               <div className="flex items-center space-x-2">
-                <ShieldAlert className="w-4 h-4 text-red-400 animate-pulse" />
+                <ShieldAlert className="w-4 h-4 text-rose-600 animate-pulse" />
                 <h3 className="font-bold text-sm tracking-wide uppercase">Active Bottleneck Feed</h3>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
                 {bottlenecks.length} Active
               </span>
             </div>
@@ -585,35 +585,35 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
               {bottlenecks.map((btn) => (
                 <div
                   key={btn.id}
-                  className="p-3.5 rounded-xl bg-red-950/20 border border-red-800/40 hover:border-red-600 transition-all space-y-2"
+                  className="p-3.5 rounded-xl bg-white border border-[#D8E0E8] hover:border-[#1769AA] hover:shadow-md transition-all space-y-2 shadow-sm"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <h4 className="font-bold text-xs text-white flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                      <h4 className="font-bold text-xs text-[#0B3558] flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                         {btn.routeName}
                       </h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{btn.junctionTag}</p>
+                      <p className="text-[11px] text-[#667788] mt-0.5">{btn.junctionTag}</p>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 uppercase">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200 uppercase">
                       {btn.densityLevel}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-red-900/40">
+                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-[#D8E0E8]">
                     <div>
-                      <span className="text-slate-400 block">Speed:</span>
-                      <span className="font-bold font-mono text-white">{btn.currentSpeedKmh} km/h</span>
+                      <span className="text-[#667788] block">Speed:</span>
+                      <span className="font-bold font-mono text-[#172B3A]">{btn.currentSpeedKmh} km/h</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Delay:</span>
-                      <span className="font-bold font-mono text-amber-400">+{btn.delayMinutes} min</span>
+                      <span className="text-[#667788] block">Delay:</span>
+                      <span className="font-bold font-mono text-amber-600">+{btn.delayMinutes} min</span>
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-slate-400 pt-1">
-                    <span className="font-semibold text-slate-300">Detected by: </span>
-                    <span className="text-teal-300">{btn.detectedByBuses.join(', ')}</span>
+                  <div className="text-[10px] text-[#667788] pt-1">
+                    <span className="font-semibold text-[#172B3A]">Detected by: </span>
+                    <span className="text-teal-700">{btn.detectedByBuses.join(', ')}</span>
                   </div>
 
                   <div className="flex items-center gap-2 pt-2">
@@ -625,7 +625,7 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
                           handleRouteClick(targetRoute);
                         }
                       }}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center space-x-1 transition active:scale-95"
+                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#1769AA] hover:bg-[#104a7a] text-white text-xs font-bold flex items-center justify-center space-x-1 transition active:scale-95 shadow-sm"
                     >
                       <MapPin className="w-3 h-3" />
                       <span>View on Map</span>
@@ -635,7 +635,7 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
                       onClick={() => {
                         setAnalysisModalTarget({ routeId: btn.id, routeName: btn.routeName });
                       }}
-                      className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center space-x-1 transition border border-slate-700 active:scale-95"
+                      className="py-1.5 px-2.5 rounded-lg bg-[#F6F8FA] hover:bg-[#D8E0E8] text-[#172B3A] text-xs font-semibold flex items-center justify-center space-x-1 transition border border-[#D8E0E8] active:scale-95 shadow-sm"
                     >
                       <span>Analyze</span>
                       <ArrowRight className="w-3 h-3" />

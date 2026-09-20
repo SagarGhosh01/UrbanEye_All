@@ -469,7 +469,7 @@ safetyRouter.post('/analyze', async (req, res) => {
 
   res.json({
     status: 'SUCCESS',
-    riskEngine: 'UrbanEye VRU Pedestrian Risk Engine (on-device person counts + segment velocity)',
+    riskEngine: 'SRIMS VRU Pedestrian Risk Engine (on-device person counts + segment velocity)',
     assessment: {
       isSchoolZone,
       pedestriansTracked: Number(pedestrianCount),

@@ -15,7 +15,7 @@ const getApiBase = (): string => {
 const API_BASE = getApiBase();
 
 function getHeaders(): HeadersInit {
-  const token = localStorage.getItem('urbaneye_token');
+  const token = localStorage.getItem('srims_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -9,7 +9,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { GovtEmblem } from './GovtEmblem';
 import { SrimsHeaderBrand } from './SrimsHeaderBrand';
 
-export type ActiveTabType = 'HOME' | 'DEFECTS' | 'TRAFFIC' | 'INCIDENTS' | 'SAFETY' | 'PREDICTIVE' | 'REPORTS' | 'ANALYTICS' | 'COMPLAINTS';
+export type ActiveTabType = 'HOME' | 'DEFECTS' | 'TRAFFIC' | 'INCIDENTS' | 'SAFETY' | 'PREDICTIVE' | 'REPORTS' | 'ANALYTICS' | 'WORK_ORDERS';
 
 interface HeaderProps {
   user: User;
@@ -58,11 +58,10 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'HOME' as ActiveTabType, label: language === 'HI' ? 'मुख्य पृष्ठ' : 'Home', icon: Home, action: onNavigateHome },
     { id: 'DEFECTS' as ActiveTabType, label: t('nav.defects'), icon: LayoutDashboard },
     { id: 'INCIDENTS' as ActiveTabType, label: t('nav.map'), icon: Map },
-    { id: 'COMPLAINTS' as ActiveTabType, label: language === 'HI' ? 'मुद्दे एवं शिकायतें' : 'Issues', icon: AlertTriangle },
     { id: 'TRAFFIC' as ActiveTabType, label: t('nav.traffic'), icon: Eye },
-    { id: 'ANALYTICS' as ActiveTabType, label: t('nav.analytics'), icon: BarChart2 },
     { id: 'REPORTS' as ActiveTabType, label: language === 'HI' ? 'रिपोर्ट्स' : 'Reports', icon: FileText },
     { id: 'PREDICTIVE' as ActiveTabType, label: t('nav.predictive'), icon: Info },
+    { id: 'WORK_ORDERS' as ActiveTabType, label: 'Work Orders', icon: AlertTriangle },
   ];
 
   return (
@@ -171,25 +170,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Connect Unit & User Account controls */}
+          {/* User Account controls */}
           <div className="flex items-center space-x-2">
-            {onOpenLiveCamera && (
-              <button
-                onClick={onOpenLiveCamera}
-                className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 text-[#003366] border border-blue-200 rounded-lg hover:bg-[#003366] hover:text-white transition"
-              >
-                <Video className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Camera Sensor</span>
-              </button>
-            )}
-
-            <button
-              onClick={onOpenPairing}
-              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              <Radio className="w-3.5 h-3.5 text-[#003366]" />
-              <span className="hidden sm:inline">Connect Unit</span>
-            </button>
 
             {/* User Account Badge */}
             <div className="flex items-center space-x-2.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">

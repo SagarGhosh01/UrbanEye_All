@@ -26,7 +26,7 @@ export function getSocket(): Socket {
     });
 
     socket.on('connect', () => {
-      console.log('⚡ Connected to UrbanEye Live Intelligence Stream');
+      console.log('⚡ Connected to SRIMS Live Intelligence Stream');
       if (activeSubscribedDistrict) {
         console.log(`📡 Re-joining district room: ${activeSubscribedDistrict}`);
         socket?.emit('join:district', activeSubscribedDistrict);

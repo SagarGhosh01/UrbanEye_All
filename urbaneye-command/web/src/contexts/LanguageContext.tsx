@@ -28,12 +28,12 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Navigation
     'nav.defects': 'Defect Monitoring',
-    'nav.map': 'Live Map',
+    'nav.map': 'Vehicle Tracker',
     'nav.analytics': 'Analytics',
     'nav.traffic': 'Traffic Intelligence',
     'nav.incidents': 'Incident Response',
     'nav.safety': 'Safety Intelligence',
-    'nav.predictive': 'Predictive AI',
+    'nav.predictive': 'Analytics',
     'nav.citizen': 'Citizen Portal',
     'nav.pairUnit': 'Pair Mobile Unit',
     'nav.liveCamera': 'Live Stream',
@@ -105,12 +105,12 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Navigation
     'nav.defects': 'सड़क दोष निगरानी',
-    'nav.map': 'लाइव मानचित्र',
+    'nav.map': 'वाहन ट्रैकर',
     'nav.analytics': 'विश्लेषण डेटा',
     'nav.traffic': 'यातायात आसूचना',
     'nav.incidents': 'दुर्घटना त्वरित कार्रवाई',
     'nav.safety': 'सड़क सुरक्षा विश्लेषण',
-    'nav.predictive': 'पूर्वानुमानित AI',
+    'nav.predictive': 'विश्लेषण डेटा',
     'nav.citizen': 'नागरिक सेवा पोर्टल',
     'nav.pairUnit': 'मोबाइल यूनिट जोड़ें',
     'nav.liveCamera': 'लाइव कैमरा स्ट्रीम',

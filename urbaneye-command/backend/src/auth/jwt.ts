@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'urbaneye_secret_fallback_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'srims_secret_fallback_2026';
 
 export interface UserJwtPayload {
   id?: string;

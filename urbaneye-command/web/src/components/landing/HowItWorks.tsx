@@ -41,7 +41,7 @@ const steps = [
     n: "06",
     phase: "Estimate & Dispatch",
     title: "Repair Cost & Work Order",
-    body: "UrbanEye estimates repair requirements and costs using defect dimensions, severity, repair method, and applicable local rates, then generates a maintenance task.",
+    body: "SRIMS estimates repair requirements and costs using defect dimensions, severity, repair method, and applicable local rates, then generates a maintenance task.",
     icon: Wrench,
   },
 ];

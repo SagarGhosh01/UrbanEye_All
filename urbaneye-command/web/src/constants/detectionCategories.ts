@@ -1,5 +1,5 @@
 /**
- * UrbanEye Detection Category Registry
+ * SRIMS Detection Category Registry
  * =====================================
  * SINGLE SOURCE OF TRUTH for all detection category metadata.
  *

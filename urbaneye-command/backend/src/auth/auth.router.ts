@@ -39,9 +39,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: 'dist-kapurthala',
     districtName: 'Kapurthala',
   },
-  'head.kapurthala@urbaneye.gov.in': {
+  'head.kapurthala@srims.gov.in': {
     id: 'usr-kapurthala-1',
-    email: 'head.kapurthala@urbaneye.gov.in',
+    email: 'head.kapurthala@srims.gov.in',
     name: 'District Head (Kapurthala)',
     role: 'DISTRICT_HEAD',
     stateId: 'state-punjab',
@@ -50,9 +50,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: 'dist-kapurthala',
     districtName: 'Kapurthala',
   },
-  'head.jalandhar@urbaneye.gov.in': {
+  'head.jalandhar@srims.gov.in': {
     id: 'usr-jalandhar-1',
-    email: 'head.jalandhar@urbaneye.gov.in',
+    email: 'head.jalandhar@srims.gov.in',
     name: 'District Head (Jalandhar)',
     role: 'DISTRICT_HEAD',
     stateId: 'state-punjab',
@@ -61,9 +61,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: 'dist-jalandhar',
     districtName: 'Jalandhar',
   },
-  'admin.pb@urbaneye.gov.in': {
+  'admin.pb@srims.gov.in': {
     id: 'usr-admin-pb',
-    email: 'admin.pb@urbaneye.gov.in',
+    email: 'admin.pb@srims.gov.in',
     name: 'State Admin (Punjab)',
     role: 'STATE_ADMIN',
     stateId: 'state-punjab',
@@ -72,9 +72,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: null,
     districtName: null,
   },
-  'head.mumbai@urbaneye.gov.in': {
+  'head.mumbai@srims.gov.in': {
     id: 'usr-mumbai-1',
-    email: 'head.mumbai@urbaneye.gov.in',
+    email: 'head.mumbai@srims.gov.in',
     name: 'District Head (Mumbai Suburban)',
     role: 'DISTRICT_HEAD',
     stateId: 'state-maharashtra',
@@ -83,9 +83,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: 'dist-mumbai-suburban',
     districtName: 'Mumbai Suburban',
   },
-  'head.bengaluru@urbaneye.gov.in': {
+  'head.bengaluru@srims.gov.in': {
     id: 'usr-bengaluru-1',
-    email: 'head.bengaluru@urbaneye.gov.in',
+    email: 'head.bengaluru@srims.gov.in',
     name: 'District Head (Bengaluru Urban)',
     role: 'DISTRICT_HEAD',
     stateId: 'state-karnataka',
@@ -94,9 +94,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: 'dist-bengaluru-urban',
     districtName: 'Bengaluru Urban',
   },
-  'admin.mh@urbaneye.gov.in': {
+  'admin.mh@srims.gov.in': {
     id: 'usr-admin-mh',
-    email: 'admin.mh@urbaneye.gov.in',
+    email: 'admin.mh@srims.gov.in',
     name: 'State Admin (Maharashtra)',
     role: 'STATE_ADMIN',
     stateId: 'state-maharashtra',
@@ -105,9 +105,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: null,
     districtName: null,
   },
-  'citizen@urbaneye.gov.in': {
+  'citizen@srims.gov.in': {
     id: 'usr-citizen-reporter-1',
-    email: 'citizen@urbaneye.gov.in',
+    email: 'citizen@srims.gov.in',
     name: 'Public Citizen Reporter (Edge Camera)',
     role: 'CITIZEN_REPORTER',
     stateId: 'state-punjab',
@@ -116,9 +116,9 @@ const DEMO_USERS: Record<string, any> = {
     districtId: 'dist-kapurthala',
     districtName: 'Kapurthala',
   },
-  'admin@urbaneye.gov.in': {
+  'admin@srims.gov.in': {
     id: 'usr-admin-national',
-    email: 'admin@urbaneye.gov.in',
+    email: 'admin@srims.gov.in',
     name: 'Shri Rajesh Verma (MoRTH Director)',
     role: 'NATIONAL_ADMIN',
     stateId: null,

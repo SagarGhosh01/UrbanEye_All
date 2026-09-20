@@ -19,7 +19,7 @@ const stats = [
   {
     value: "0",
     title: "Additional roadside sensors required",
-    description: "UrbanEye leverages existing public-transport vehicles to collect road-condition data without deploying new sensor infrastructure.",
+    description: "SRIMS leverages existing public-transport vehicles to collect road-condition data without deploying new sensor infrastructure.",
     icon: Radio,
     accent: "text-[#2dd4bf] bg-[#1E7F73]/20 border-[#1E7F73]/40",
   },

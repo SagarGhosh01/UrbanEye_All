@@ -13,8 +13,8 @@ export const modelsRouter = Router();
  * opset 14, INT8-quantised, with ten classes — none of which matched the shipped file.
  */
 export const EDGE_MODEL = {
-  id: 'urbaneye-road-defect-v1',
-  name: 'UrbanEye Road Defect Detector',
+  id: 'srims-road-defect-v1',
+  name: 'SRIMS Road Defect Detector',
   architecture: 'YOLOv8n (Ultralytics)',
   format: 'ONNX, opset 12, FP32, static shapes, NMS applied client-side',
   baseDataset: 'RDD2022-derived road damage dataset',
@@ -33,9 +33,9 @@ export const EDGE_MODEL = {
 };
 
 const MODEL_CANDIDATES = [
-  path.resolve(process.cwd(), '../../urbaneye-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
-  path.resolve(process.cwd(), '../urbaneye-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
-  path.resolve(process.cwd(), 'urbaneye-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
+  path.resolve(process.cwd(), '../../srims-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
+  path.resolve(process.cwd(), '../srims-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
+  path.resolve(process.cwd(), 'srims-mobile/app/src/main/assets/models/road_defect_detector.onnx'),
 ];
 
 export function resolveModelPath(): string | null {
@@ -104,7 +104,7 @@ modelsRouter.post('/infer', (req, res) => {
 
   res.json({
     status: 'SUCCESS',
-    inferenceEngine: 'UrbanEye YOLOv8 Edge AI',
+    inferenceEngine: 'SRIMS YOLOv8 Edge AI',
     detectionsCount: simulatedDetections.length,
     predictions: simulatedDetections,
     totalEstimatedCostINR: 11700,

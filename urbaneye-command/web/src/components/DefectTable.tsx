@@ -97,28 +97,33 @@ export const DefectTable: React.FC<DefectTableProps> = ({
     return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#1769AA] border border-blue-200">Low</span>;
   };
 
-  const handleExportCsv = () => {
-    if (!filteredEvents.length) return;
-    const headers = ['Issue_ID', 'Category', 'Severity', 'Location', 'District', 'Latitude', 'Longitude', 'Status', 'Timestamp'];
-    const rows = filteredEvents.map((e) => [
-      `"${formatIssueId(e.id)}"`,
-      `"${e.type}"`,
-      `"${e.severity || 'HIGH'}"`,
-      `"${e.busLabel}"`,
-      `"${e.district?.name || 'Central'}"`,
-      e.latitude,
-      e.longitude,
-      `"${e.status}"`,
-      `"${e.timestamp}"`,
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `UrbanEye_Defect_Register_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleExportCsv = async () => {
+    try {
+      const token = localStorage.getItem('srims_token');
+      // Construct url using the VITE_API_URL or fallback to relative
+      const apiBase = (import.meta as any).env?.VITE_API_URL || '/api';
+      const baseUrl = apiBase.endsWith('/api') ? apiBase : `${apiBase.replace(/\/$/, '')}/api`;
+      const query = new URLSearchParams();
+      if (selectedStatus !== 'ALL') query.set('status', selectedStatus);
+      if (events.length > 0 && events[0].districtId) query.set('districtId', events[0].districtId);
+      
+      const res = await fetch(`${baseUrl}/reporting/csv?${query.toString()}`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      });
+      
+      if (!res.ok) throw new Error('Failed to generate CSV');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `SRIMS_Official_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('CSV Export Error:', err);
+      alert('Failed to export CSV from server.');
+    }
   };
 
   return (
@@ -128,7 +133,7 @@ export const DefectTable: React.FC<DefectTableProps> = ({
       <div className="p-3.5 bg-[#F6F8FA] border-b border-[#D8E0E8] flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center space-x-2">
           <h3 className="text-xs font-bold text-[#0B3558] tracking-tight uppercase">
-            UrbanEye Defect Register
+            SRIMS Defect Register
           </h3>
           <span className="bg-[#EAF4FB] text-[#1769AA] text-xs font-bold px-2 py-0.5 rounded border border-[#1769AA]/20">
             {filteredEvents.length} Items

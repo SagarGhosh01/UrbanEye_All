@@ -21,7 +21,7 @@ export const GovtFooter: React.FC = () => {
               <div className="w-7 h-7 rounded bg-[#0B3558] text-white flex items-center justify-center font-bold">
                 <Eye className="w-4 h-4 text-[#F2A900]" />
               </div>
-              <span className="text-base font-black tracking-tight text-white uppercase">SRIMS / URBANEYE</span>
+              <span className="text-base font-black tracking-tight text-white uppercase">SRIMS / SRIMS</span>
             </div>
             <p className="text-gray-300 leading-relaxed text-xs">
               {t('footer.disclaimer')}
@@ -62,7 +62,7 @@ export const GovtFooter: React.FC = () => {
               Project Info
             </h3>
             <ul className="space-y-2 text-gray-300 text-xs">
-              <li><a href="#about" className="hover:text-[#F2A900] transition">About UrbanEye</a></li>
+              <li><a href="#about" className="hover:text-[#F2A900] transition">About SRIMS</a></li>
               <li><a href="#tech" className="hover:text-[#F2A900] transition">Computer Vision Tech</a></li>
               <li><a href="#contact" className="hover:text-[#F2A900] transition">Contact &amp; Feedback</a></li>
             </ul>
@@ -77,7 +77,7 @@ export const GovtFooter: React.FC = () => {
       {/* Bottom Bar */}
       <div className="bg-[#0B3558] py-3 border-t border-gray-800 text-xs text-gray-300">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-          <p>UrbanEye — Public Infrastructure Technology Prototype | © 2026 UrbanEye</p>
+          <p>SRIMS — Public Infrastructure Technology Prototype | © 2026 SRIMS</p>
           <div className="flex space-x-6 text-[11px] text-gray-400">
             <span>Last Updated: {currentDate}</span>
           </div>

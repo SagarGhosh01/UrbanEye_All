@@ -194,7 +194,7 @@ async function main() {
 
 
   // Default password for all seeded accounts
-  const defaultPassword = 'UrbanEye@2026';
+  const defaultPassword = 'SRIMS@2026';
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(defaultPassword, salt);
 
@@ -202,7 +202,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       id: 'usr-admin-national',
-      email: 'admin@urbaneye.gov.in',
+      email: 'admin@srims.gov.in',
       passwordHash,
       name: 'Shri Rajesh Verma (MoRTH Director)',
       role: 'NATIONAL_ADMIN',
@@ -212,7 +212,7 @@ async function main() {
   const statePb = await prisma.user.create({
     data: {
       id: 'usr-admin-pb',
-      email: 'admin.pb@urbaneye.gov.in',
+      email: 'admin.pb@srims.gov.in',
       passwordHash,
       name: 'S. Harpreet Singh (Punjab PWD Chief Engineer)',
       role: 'STATE_ADMIN',
@@ -223,7 +223,7 @@ async function main() {
   const headKapurthala = await prisma.user.create({
     data: {
       id: 'usr-kapurthala-1',
-      email: 'head.kapurthala@urbaneye.gov.in',
+      email: 'head.kapurthala@srims.gov.in',
       passwordHash,
       name: 'Er. Gurpreet Singh (Kapurthala Road Commissioner)',
       role: 'DISTRICT_HEAD',
@@ -235,7 +235,7 @@ async function main() {
   await prisma.user.create({
     data: {
       id: 'usr-jalandhar-1',
-      email: 'head.jalandhar@urbaneye.gov.in',
+      email: 'head.jalandhar@srims.gov.in',
       passwordHash,
       name: 'Er. Manjit Kaur (Jalandhar Infrastructure Head)',
       role: 'DISTRICT_HEAD',
@@ -247,7 +247,7 @@ async function main() {
   await prisma.user.create({
     data: {
       id: 'usr-bengaluru-1',
-      email: 'head.bengaluru@urbaneye.gov.in',
+      email: 'head.bengaluru@srims.gov.in',
       passwordHash,
       name: 'Er. Anand Rao (Bengaluru Transport Commissioner)',
       role: 'DISTRICT_HEAD',
@@ -259,7 +259,7 @@ async function main() {
   await prisma.user.create({
     data: {
       id: 'usr-mumbai-1',
-      email: 'head.mumbai@urbaneye.gov.in',
+      email: 'head.mumbai@srims.gov.in',
       passwordHash,
       name: 'Er. Devendra Sawant (Mumbai Municipal Commissioner)',
       role: 'DISTRICT_HEAD',
@@ -952,10 +952,10 @@ async function main() {
 
   console.log('✅ SQLite Database dev.db successfully initialized with clean user accounts, Bangalore/Mumbai/Punjab road network segments, and spatial defect hotspots!');
   console.log('★ Demo District Head Accounts:');
-  console.log('   - Bangalore: head.bengaluru@urbaneye.gov.in / UrbanEye@2026');
-  console.log('   - Mumbai: head.mumbai@urbaneye.gov.in / UrbanEye@2026');
-  console.log('   - Kapurthala: head.kapurthala@urbaneye.gov.in / UrbanEye@2026');
-  console.log('   - Jalandhar: head.jalandhar@urbaneye.gov.in / UrbanEye@2026');
+  console.log('   - Bangalore: head.bengaluru@srims.gov.in / SRIMS@2026');
+  console.log('   - Mumbai: head.mumbai@srims.gov.in / SRIMS@2026');
+  console.log('   - Kapurthala: head.kapurthala@srims.gov.in / SRIMS@2026');
+  console.log('   - Jalandhar: head.jalandhar@srims.gov.in / SRIMS@2026');
 }
 
 main()

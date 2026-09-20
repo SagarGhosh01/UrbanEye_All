@@ -42,7 +42,7 @@ export default function Footer({ onLoginClick }: FooterProps) {
 
         <div className="mt-16 flex flex-col justify-between gap-4 border-t border-slate-800 pt-8 text-xs text-slate-400 sm:flex-row sm:items-center">
           <p className="flex items-center space-x-2">
-            <span className="font-semibold text-slate-300">UrbanEye</span>
+            <span className="font-semibold text-slate-300">SRIMS</span>
             <span>— Built for Bharat Electronics Limited</span>
           </p>
           <p className="font-medium text-slate-400">

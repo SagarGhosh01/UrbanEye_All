@@ -89,7 +89,7 @@ async function processCity(config: { cityTag: string, bbox: string, districtId?:
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'UrbanEye/1.0 (urbaneye-command-center@urbaneye.org)',
+          'User-Agent': 'SRIMS/1.0 (srims-command-center@srims.org)',
           'Accept': 'application/json',
         },
         body: `data=${encodeURIComponent(query)}`,

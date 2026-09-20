@@ -207,46 +207,46 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
     <div className="space-y-6">
       {/* Top Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-white border border-[#D8E0E8] shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400">VEHICLE EVENTS TODAY</div>
-            <div className="text-2xl font-bold text-white mt-1">{summary.totalIncidentsToday}</div>
-            <div className="text-[11px] text-red-400 mt-0.5 font-medium">Critical ANPR Telemetry</div>
+            <div className="text-xs font-semibold text-[#667788]">VEHICLE EVENTS TODAY</div>
+            <div className="text-2xl font-bold text-[#0B3558] mt-1">{summary.totalIncidentsToday}</div>
+            <div className="text-[11px] text-rose-600 mt-0.5 font-bold">Critical ANPR Telemetry</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center border border-red-500/30">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
             <ShieldAlert className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-white border border-[#D8E0E8] shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400">PENDING ALERTS</div>
-            <div className="text-2xl font-bold text-amber-400 mt-1">{summary.pendingAlerts}</div>
-            <div className="text-[11px] text-amber-300/80 mt-0.5 font-medium">Requires Officer Review</div>
+            <div className="text-xs font-semibold text-[#667788]">PENDING ALERTS</div>
+            <div className="text-2xl font-bold text-[#D98E04] mt-1">{summary.pendingAlerts}</div>
+            <div className="text-[11px] text-[#D98E04] mt-0.5 font-bold">Requires Officer Review</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
             <Clock className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-white border border-[#D8E0E8] shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400">ANPR RECOGNITION RATE</div>
-            <div className="text-2xl font-bold text-teal-400 mt-1">{summary.plateDetectionRatePercent}%</div>
-            <div className="text-[11px] text-teal-300/80 mt-0.5 font-medium">Optical Plate Extraction</div>
+            <div className="text-xs font-semibold text-[#667788]">ANPR RECOGNITION RATE</div>
+            <div className="text-2xl font-bold text-teal-600 mt-1">{summary.plateDetectionRatePercent}%</div>
+            <div className="text-[11px] text-teal-600 mt-0.5 font-bold">Optical Plate Extraction</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
+          <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100">
             <Car className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#10233D] border border-slate-800 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-white border border-[#D8E0E8] shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400">ACTIVE TRACKED VEHICLES</div>
-            <div className="text-2xl font-bold text-blue-400 mt-1">{summary.activeTrackedVehicles}</div>
-            <div className="text-[11px] text-blue-300/80 mt-0.5 font-medium">Multi-Frame Trajectory</div>
+            <div className="text-xs font-semibold text-[#667788]">ACTIVE TRACKED VEHICLES</div>
+            <div className="text-2xl font-bold text-[#1769AA] mt-1">{summary.activeTrackedVehicles}</div>
+            <div className="text-[11px] text-[#1769AA] mt-0.5 font-bold">Multi-Frame Trajectory</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1769AA] flex items-center justify-center border border-blue-100">
             <Navigation className="w-5 h-5" />
           </div>
         </div>
@@ -255,20 +255,20 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
       {/* Main Grid: Vehicle Tracker Log & Wanted Watchlist */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Vehicle Tracker Feed */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-[#10233D] border border-slate-800 space-y-4">
+        <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-[#D8E0E8] space-y-4 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Car className="w-5 h-5 text-teal-400" />
+                <h3 className="text-lg font-bold text-[#0B3558] flex items-center gap-2">
+                  <Car className="w-5 h-5 text-[#1769AA]" />
                   Vehicle Tracker & ANPR Intelligence Feed
                 </h3>
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live ANPR Stream
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[#667788] mt-0.5">
                 Real-time optical plate recognition, speed tracking & wanted vehicle alerts {lastSyncTime ? `• Last sync ${lastSyncTime}` : ''}
               </p>
             </div>
@@ -277,7 +277,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none"
+                className="bg-white border border-[#D8E0E8] text-xs font-semibold text-[#172B3A] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#1769AA]"
               >
                 <option value="ALL">All Categories</option>
                 <option value="ACCIDENT">Accidents</option>
@@ -289,7 +289,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none"
+                className="bg-white border border-[#D8E0E8] text-xs font-semibold text-[#172B3A] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#1769AA]"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="PENDING">Pending</option>
@@ -303,19 +303,19 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
           {/* ANPR Plate Search Bar & Quick Filters */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-[#667788] absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Lookup Plate Number (e.g. KA-01-AB-1234)..."
                 value={plateSearchQuery}
                 onChange={(e) => setPlateSearchQuery(e.target.value)}
-                className="w-full bg-slate-900 border border-teal-500/40 text-xs font-mono text-white rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full bg-[#F6F8FA] border border-[#D8E0E8] text-xs font-mono font-bold text-[#172B3A] rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-[#1769AA]"
               />
               {plateSearchQuery && (
                 <button
                   type="button"
                   onClick={() => setPlateSearchQuery('')}
-                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
+                  className="absolute right-2.5 top-2.5 text-[#667788] hover:text-[#172B3A]"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -328,8 +328,8 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                 onClick={() => setQuickFilter('ALL')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                   quickFilter === 'ALL'
-                    ? 'bg-teal-500 text-slate-950 shadow-md'
-                    : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                    ? 'bg-[#1769AA] text-white shadow-md'
+                    : 'bg-white border border-[#D8E0E8] text-[#172B3A] hover:bg-[#F6F8FA]'
                 }`}
               >
                 All Vehicles
@@ -339,8 +339,8 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                 onClick={() => setQuickFilter('WATCHLIST')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                   quickFilter === 'WATCHLIST'
-                    ? 'bg-red-500 text-white shadow-md'
-                    : 'bg-slate-900 text-red-300 hover:bg-slate-800'
+                    ? 'bg-rose-600 text-white shadow-md'
+                    : 'bg-white border border-[#D8E0E8] text-rose-600 hover:bg-rose-50'
                 }`}
               >
                 🚨 Watchlist
@@ -350,8 +350,8 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                 onClick={() => setQuickFilter('SPEEDING')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                   quickFilter === 'SPEEDING'
-                    ? 'bg-amber-500 text-slate-950 shadow-md'
-                    : 'bg-slate-900 text-amber-300 hover:bg-slate-800'
+                    ? 'bg-amber-500 text-white shadow-md'
+                    : 'bg-white border border-[#D8E0E8] text-amber-600 hover:bg-amber-50'
                 }`}
               >
                 ⚡ Speeding (&gt;80km/h)
@@ -361,7 +361,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
           <div className="space-y-3">
             {filteredIncidents.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs bg-slate-900/50 rounded-xl border border-slate-800">
+              <div className="p-8 text-center text-[#667788] text-xs bg-[#F6F8FA] rounded-xl border border-[#D8E0E8]">
                 No vehicles or ANPR records found matching the selected search query &amp; filters.
               </div>
             ) : (
@@ -376,21 +376,21 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                     key={inc.id}
                     className={`p-4 rounded-xl transition space-y-3 ${
                       isHotlistMatch
-                        ? 'bg-red-950/80 border-2 border-red-500 shadow-2xl animate-pulse'
-                        : 'bg-slate-900/70 border border-slate-800 hover:border-slate-700'
+                        ? 'bg-rose-50 border-2 border-rose-500 shadow-md'
+                        : 'bg-[#F6F8FA] border border-[#D8E0E8] hover:border-[#1769AA]/30'
                     }`}
                   >
                     {isHotlistMatch && (
-                      <div className="bg-red-600/30 border border-red-500/80 p-2 rounded-lg flex items-center justify-between">
-                        <span className="text-xs font-black text-red-300 flex items-center gap-1.5">
-                          <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
+                      <div className="bg-rose-100 border border-rose-200 p-2 rounded-lg flex items-center justify-between">
+                        <span className="text-xs font-black text-rose-700 flex items-center gap-1.5 animate-pulse">
+                          <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
                           <span>🚨 POLICE MATCH: WANTED VEHICLE [{inc.plateText}] SPOTTED!</span>
                         </span>
                         {onSelectOnMap && (
                           <button
                             type="button"
                             onClick={() => onSelectOnMap(inc.latitude, inc.longitude, `🚨 POLICE MATCH: ${inc.plateText}`)}
-                            className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] rounded-md transition flex items-center gap-1 shadow-md"
+                            className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[11px] rounded-md transition flex items-center gap-1 shadow-sm"
                           >
                             <MapPin className="w-3.5 h-3.5" />
                             <span>Locate on Map</span>
@@ -420,11 +420,11 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                         {getCategoryBadge(inc.category)}
                         {getStatusBadge(inc.status)}
                         {isSpeeding && (
-                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200 flex items-center gap-1">
                             ⚡ SPEEDING ({inc.speedKmh} km/h)
                           </span>
                         )}
-                        <span className={`px-2 py-0.5 rounded-md text-xs font-mono ${threat.badgeClass}`}>
+                        <span className={`px-2 py-0.5 rounded-md text-xs font-mono ${threat.badgeClass.replace('bg-red-600 text-white', 'bg-rose-100 text-rose-700 border-rose-300').replace('bg-amber-500/20 text-amber-300', 'bg-amber-100 text-amber-700 border-amber-300').replace('bg-teal-500/20 text-teal-300', 'bg-teal-50 text-teal-700 border-teal-200')}`}>
                           🧠 {threat.label}
                         </span>
                       </div>
@@ -436,8 +436,8 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                             onClick={() => setGreenWaveActiveId(isGreenWaveActive ? null : inc.id)}
                             className={`px-2.5 py-1 text-xs font-extrabold rounded-lg transition flex items-center gap-1 ${
                               isGreenWaveActive
-                                ? 'bg-emerald-500 text-slate-950 font-black'
-                                : 'bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40'
+                                ? 'bg-emerald-600 text-white font-black'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
                             }`}
                           >
                             🚑 {isGreenWaveActive ? 'Green Wave ON' : 'Green Wave'}
@@ -450,7 +450,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                             setAuthorityNotes(inc.authorityNotes || '');
                             setAiDeblurActive(false);
                           }}
-                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-[#1E7F73] hover:bg-[#186a60] text-white flex items-center gap-1 transition"
+                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-[#1769AA] hover:bg-[#0B3558] text-white flex items-center gap-1 transition shadow-sm"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           Inspect Telemetry
@@ -460,18 +460,18 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       <div>
-                        <span className="text-slate-400">License Plate:</span>
+                        <span className="text-[#667788] font-semibold">License Plate:</span>
                         <div className="font-mono font-bold mt-0.5">
                           {inc.plateText ? (
                             <span className={`px-2 py-0.5 rounded border ${
                               isHotlistMatch
-                                ? 'text-red-300 bg-red-950 border-red-500 font-extrabold animate-bounce'
-                                : 'text-teal-300 bg-teal-950/80 border-teal-500/30'
+                                ? 'text-rose-700 bg-rose-100 border-rose-300 font-extrabold'
+                                : 'text-teal-700 bg-teal-50 border-teal-200'
                             }`}>
                               {inc.plateText}
                             </span>
                           ) : (
-                            <span className="text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30 text-[11px]">
+                            <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
                               Plate Not Detected
                             </span>
                           )}
@@ -479,33 +479,33 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                       </div>
 
                       <div>
-                        <span className="text-slate-400">Vehicle Type:</span>
-                        <div className="font-semibold text-white mt-0.5">{inc.vehicleType}</div>
+                        <span className="text-[#667788] font-semibold">Vehicle Type:</span>
+                        <div className="font-bold text-[#172B3A] mt-0.5">{inc.vehicleType}</div>
                       </div>
 
                       <div>
-                        <span className="text-slate-400">Speed / Conf:</span>
-                        <div className="font-semibold text-white mt-0.5">
+                        <span className="text-[#667788] font-semibold">Speed / Conf:</span>
+                        <div className="font-bold text-[#172B3A] mt-0.5">
                           {inc.speedKmh} km/h ({(inc.confidence * 100).toFixed(0)}%)
                         </div>
                       </div>
 
                       <div>
-                        <span className="text-slate-400">Camera Source:</span>
-                        <div className="font-semibold text-slate-300 mt-0.5">{inc.busLabel}</div>
+                        <span className="text-[#667788] font-semibold">Camera Source:</span>
+                        <div className="font-bold text-[#172B3A] mt-0.5">{inc.busLabel}</div>
                       </div>
                     </div>
 
                     {onSelectOnMap && !isHotlistMatch && (
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                        <span className="text-slate-400 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-red-400" />
+                      <div className="pt-2 border-t border-[#D8E0E8] flex items-center justify-between text-xs">
+                        <span className="text-[#667788] flex items-center gap-1 font-semibold">
+                          <MapPin className="w-3.5 h-3.5 text-rose-500" />
                           Coords: {inc.latitude.toFixed(4)}, {inc.longitude.toFixed(4)}
                         </span>
                         <button
                           type="button"
                           onClick={() => onSelectOnMap(inc.latitude, inc.longitude, `${inc.category} (${inc.vehicleType})`)}
-                          className="text-[#1E7F73] hover:underline font-semibold flex items-center gap-1"
+                          className="text-[#1769AA] hover:underline font-bold flex items-center gap-1"
                         >
                           Locate on GIS Map <ChevronRight className="w-3 h-3" />
                         </button>
@@ -519,13 +519,13 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
         </div>
 
         {/* Police Wanted Vehicle Watchlist & Trajectory Search Panel */}
-        <div className="p-5 rounded-2xl bg-[#10233D] border border-red-500/40 space-y-4 shadow-xl">
-          <div className="border-b border-slate-800 pb-3">
-            <h3 className="text-md font-extrabold text-red-400 flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-red-500 animate-pulse" />
+        <div className="p-5 rounded-2xl bg-white border border-[#D8E0E8] space-y-4 shadow-sm">
+          <div className="border-b border-[#D8E0E8] pb-3">
+            <h3 className="text-md font-extrabold text-rose-600 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-rose-500 animate-pulse" />
               Police Wanted Vehicle Watchlist
             </h3>
-            <p className="text-xs text-slate-300 mt-1">
+            <p className="text-xs text-[#667788] mt-1">
               Manually enter suspect license plate numbers below. Edge cameras will automatically scan &amp; detect locations.
             </p>
           </div>
@@ -537,11 +537,11 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
               placeholder="Enter Plate (e.g. KA01AB1234)..."
               value={newHotlistPlate}
               onChange={(e) => setNewHotlistPlate(e.target.value)}
-              className="flex-1 bg-slate-900 border border-red-500/50 text-xs font-mono font-bold uppercase text-white rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="flex-1 bg-[#F6F8FA] border border-[#D8E0E8] text-xs font-mono font-bold uppercase text-[#172B3A] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1769AA]"
             />
             <button
               type="submit"
-              className="px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-xl shadow-lg transition active:scale-95 shrink-0"
+              className="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition active:scale-95 shrink-0"
             >
               + Track Plate
             </button>
@@ -549,21 +549,21 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
           {/* Active Watchlist Tags */}
           <div className="space-y-1.5 pt-1">
-            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+            <div className="text-[10px] font-extrabold text-[#667788] uppercase tracking-wider">
               Active Police Target Watchlist ({hotlistPlates.length})
             </div>
             <div className="flex flex-wrap gap-1.5">
               {hotlistPlates.map((plate) => (
                 <span
                   key={plate}
-                  className="bg-red-950/80 border border-red-500/60 text-red-300 font-mono font-extrabold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
+                  className="bg-rose-50 border border-rose-200 text-rose-700 font-mono font-extrabold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
                 >
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                   <span>{plate}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveHotlistPlate(plate)}
-                    className="hover:text-white transition ml-1"
+                    className="hover:text-rose-900 transition ml-1"
                     title="Remove from Watchlist"
                   >
                     <X className="w-3 h-3" />
@@ -573,52 +573,52 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 space-y-3">
+          <div className="pt-3 border-t border-[#D8E0E8] space-y-3">
             <div>
-              <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Navigation className="w-4 h-4 text-blue-400" />
+              <h4 className="text-xs font-bold text-[#0B3558] flex items-center gap-1.5">
+                <Navigation className="w-4 h-4 text-[#1769AA]" />
                 <span>Vehicle Trajectory Search</span>
               </h4>
-              <p className="text-[11px] text-slate-400">Search vehicle history across camera mesh</p>
+              <p className="text-[11px] text-[#667788]">Search vehicle history across camera mesh</p>
             </div>
 
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-[#667788] absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Search by Plate or Type..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl pl-9 pr-3 py-2 focus:outline-none focus:border-teal-500"
+                className="w-full bg-[#F6F8FA] border border-[#D8E0E8] text-xs text-[#172B3A] font-semibold rounded-xl pl-9 pr-3 py-2 focus:outline-none focus:border-[#1769AA]"
               />
             </div>
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
               {trackedVehicles.map((trk) => (
-                <div key={trk.id} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                <div key={trk.id} className="p-3 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8] space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-blue-300">{trk.trackId}</span>
+                    <span className="font-mono font-bold text-[#1769AA]">{trk.trackId}</span>
                     {trk.plateText ? (
-                      <span className="font-mono text-teal-300 bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-500/20 text-[11px]">
+                      <span className="font-mono text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200 text-[11px]">
                         {trk.plateText}
                       </span>
                     ) : (
-                      <span className="text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/20 text-[10px]">
+                      <span className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[10px]">
                         Plate Not Detected
                       </span>
                     )}
                   </div>
 
-                  <div className="text-xs text-slate-300 flex items-center justify-between">
+                  <div className="text-xs text-[#172B3A] font-semibold flex items-center justify-between">
                     <span>{trk.vehicleType} • {trk.speedKmh} km/h</span>
-                    <span className="text-slate-400 text-[11px]">{trk.lastSeenBus}</span>
+                    <span className="text-[#667788] text-[11px]">{trk.lastSeenBus}</span>
                   </div>
 
                   {onSelectOnMap && trk.trajectory.length > 0 && (
                     <button
                       type="button"
                       onClick={() => onSelectOnMap(trk.trajectory[0][0], trk.trajectory[0][1], `Track: ${trk.trackId}`)}
-                      className="w-full py-1 text-[11px] font-semibold text-center rounded bg-slate-800 hover:bg-slate-700 text-teal-300 transition"
+                      className="w-full py-1 text-[11px] font-bold text-center rounded bg-white hover:bg-teal-50 text-[#1769AA] border border-[#D8E0E8] hover:border-teal-200 transition"
                     >
                       View Trajectory Overlay on Map
                     </button>
@@ -632,12 +632,12 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
       {/* Evidence Inspection Modal */}
       {selectedIncident && (
-        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#10233D] border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-[#D8E0E8] rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
 
             <button
               onClick={() => setSelectedIncident(null)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800"
+              className="absolute right-4 top-4 text-[#667788] hover:text-[#172B3A] p-1 rounded-lg bg-[#F6F8FA] hover:bg-[#D8E0E8] transition"
             >
               <X className="w-5 h-5" />
             </button>
@@ -645,7 +645,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 {getCategoryBadge(selectedIncident.category)}
-                <h3 className="text-lg font-bold text-white">Vehicle Telemetry Evidence File</h3>
+                <h3 className="text-lg font-bold text-[#0B3558]">Vehicle Telemetry Evidence File</h3>
               </div>
               <button
                 type="button"
@@ -653,7 +653,7 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md ${
                   aiDeblurActive
                     ? 'bg-purple-600 text-white border border-purple-400 animate-pulse'
-                    : 'bg-slate-800 text-purple-300 hover:bg-slate-700 border border-purple-500/30'
+                    : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
                 }`}
               >
                 🔬 {aiDeblurActive ? 'AI Deblur Matrix Active' : '⚡ AI Deblur & Enhance'}
@@ -662,13 +662,13 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
             {/* AI Super-Resolution Deblur Panel */}
             {aiDeblurActive && (
-              <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-500/50 space-y-3">
+              <div className="p-4 rounded-xl bg-purple-50 border border-purple-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-purple-300 flex items-center gap-1.5">
-                    <ShieldAlert className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs font-extrabold text-purple-700 flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-purple-600" />
                     <span>AI Optical Character Confidence Matrix &amp; Deblur Model</span>
                   </span>
-                  <span className="text-[10px] font-mono text-purple-400 bg-purple-900/60 px-2 py-0.5 rounded border border-purple-500/30">
+                  <span className="text-[10px] font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded border border-purple-200">
                     ESRGAN + YOLO-ANPR v11
                   </span>
                 </div>
@@ -677,19 +677,19 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
                   {(selectedIncident.plateText || 'KA01AB1234').split('').map((char, idx) => {
                     const conf = Math.floor(92 + (idx * 3) % 8);
                     return (
-                      <div key={idx} className="p-1.5 rounded bg-slate-900 border border-purple-500/40 space-y-0.5">
-                        <div className="text-sm font-black text-white">{char}</div>
-                        <div className="text-[9px] text-teal-300 font-bold">{conf}%</div>
+                      <div key={idx} className="p-1.5 rounded bg-white border border-purple-200 space-y-0.5">
+                        <div className="text-sm font-black text-[#172B3A]">{char}</div>
+                        <div className="text-[9px] text-teal-600 font-bold">{conf}%</div>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="text-[11px] text-slate-300 flex items-center justify-between pt-1 border-t border-purple-500/30">
-                  <span className="text-slate-400">Probabilistic Match Candidates:</span>
+                <div className="text-[11px] text-[#667788] flex items-center justify-between pt-1 border-t border-purple-200">
+                  <span className="font-semibold text-[#172B3A]">Probabilistic Match Candidates:</span>
                   <div className="flex items-center gap-2 font-mono font-bold text-xs">
-                    <span className="text-teal-300 bg-teal-950 px-2 py-0.5 rounded border border-teal-500/30">{selectedIncident.plateText || 'KA-01-AB-1234'} (98.4%)</span>
-                    <span className="text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">KA-01-A8-1234 (84.1%)</span>
+                    <span className="text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">{selectedIncident.plateText || 'KA-01-AB-1234'} (98.4%)</span>
+                    <span className="text-[#667788] bg-white px-2 py-0.5 rounded border border-[#D8E0E8]">KA-01-A8-1234 (84.1%)</span>
                   </div>
                 </div>
               </div>
@@ -697,18 +697,18 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Snapshot Display */}
-              <div className="aspect-video bg-slate-900 rounded-xl border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="aspect-video bg-black rounded-xl border border-[#D8E0E8] flex flex-col items-center justify-center relative overflow-hidden">
                 {selectedIncident.imageSnippet ? (
                   <img
                     src={selectedIncident.imageSnippet}
                     alt={selectedIncident.plateText || 'Vehicle Snapshot'}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <>
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
-                    <Car className="w-12 h-12 text-slate-600 mb-2" />
-                    <span className="text-xs text-slate-400 font-mono">Camera Frame Snippet</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+                    <Car className="w-12 h-12 text-slate-500 mb-2" />
+                    <span className="text-xs text-slate-300 font-mono">Camera Frame Snippet</span>
                     <span className="text-[10px] text-teal-400 font-mono mt-1">Bus Sensor: {selectedIncident.busLabel}</span>
                     
                     {/* Simulated Bounding Box Overlay */}
@@ -726,57 +726,57 @@ export const IncidentResponseView: React.FC<IncidentResponseViewProps> = ({ dist
 
               {/* Metadata Details */}
               <div className="space-y-2 text-xs">
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                <div className="p-3 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8] space-y-1.5">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">License Plate:</span>
+                    <span className="text-[#667788] font-semibold">License Plate:</span>
                     {selectedIncident.plateText ? (
-                      <span className="font-mono font-bold text-teal-300">{selectedIncident.plateText}</span>
+                      <span className="font-mono font-bold text-teal-700">{selectedIncident.plateText}</span>
                     ) : (
-                      <span className="font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded text-[10px]">
+                      <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[10px]">
                         Plate Not Detected
                       </span>
                     )}
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Vehicle Classification:</span>
-                    <span className="font-semibold text-white">{selectedIncident.vehicleType}</span>
+                    <span className="text-[#667788] font-semibold">Vehicle Classification:</span>
+                    <span className="font-bold text-[#172B3A]">{selectedIncident.vehicleType}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Measured Velocity:</span>
-                    <span className="font-semibold text-white">{selectedIncident.speedKmh} km/h</span>
+                    <span className="text-[#667788] font-semibold">Measured Velocity:</span>
+                    <span className="font-bold text-[#172B3A]">{selectedIncident.speedKmh} km/h</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Detection Confidence:</span>
-                    <span className="font-semibold text-teal-400">{(selectedIncident.confidence * 100).toFixed(1)}%</span>
+                    <span className="text-[#667788] font-semibold">Detection Confidence:</span>
+                    <span className="font-bold text-[#1769AA]">{(selectedIncident.confidence * 100).toFixed(1)}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Timestamp:</span>
-                    <span className="font-mono text-slate-300">{new Date(selectedIncident.timestamp).toLocaleTimeString()}</span>
+                    <span className="text-[#667788] font-semibold">Timestamp:</span>
+                    <span className="font-mono font-bold text-[#172B3A]">{new Date(selectedIncident.timestamp).toLocaleTimeString()}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="text-slate-400 mb-1">Authority Action Status:</div>
+                <div className="p-3 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8]">
+                  <div className="text-[#667788] font-semibold mb-1">Authority Action Status:</div>
                   {getStatusBadge(selectedIncident.status)}
                 </div>
               </div>
             </div>
 
             {/* Officer Action Routing */}
-            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-              <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#1E7F73]" />
+            <div className="p-4 rounded-xl bg-[#F6F8FA] border border-[#D8E0E8] space-y-3 shadow-sm">
+              <h4 className="text-xs font-bold text-[#0B3558] uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-[#1769AA]" />
                 Secure Authority Alert Routing
               </h4>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Dispatch / Authority Review Notes:</label>
+                <label className="block text-[11px] font-semibold text-[#667788] mb-1">Dispatch / Authority Review Notes:</label>
                 <textarea
                   value={authorityNotes}
                   onChange={(e) => setAuthorityNotes(e.target.value)}
                   placeholder="Enter dispatch notes, patrol unit assignment, or challan ID..."
                   rows={2}
-                  className="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-lg p-2.5 focus:outline-none focus:border-teal-500"
+                  className="w-full bg-white border border-[#D8E0E8] text-xs font-semibold text-[#172B3A] rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-[#1769AA]"
                 />
               </div>
 

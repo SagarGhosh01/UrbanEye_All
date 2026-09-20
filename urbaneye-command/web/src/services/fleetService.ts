@@ -24,7 +24,7 @@ export interface FleetSnapshot {
 }
 
 function authHeaders(): HeadersInit {
-  const token = localStorage.getItem('urbaneye_token');
+  const token = localStorage.getItem('srims_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

@@ -506,7 +506,7 @@ trafficRouter.post('/analyze', async (req, res) => {
 
     res.json({
       status: 'SUCCESS',
-      bottleneckEngine: 'UrbanEye Congestion Engine (real road network + on-device vehicle counts)',
+      bottleneckEngine: 'SRIMS Congestion Engine (real road network + on-device vehicle counts)',
       analysis: {
         routeId: segment.id,
         routeName: segment.name,

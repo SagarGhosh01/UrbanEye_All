@@ -117,7 +117,7 @@ export const DefectDetailModal: React.FC<DefectDetailModalProps> = ({
               </span>
             </div>
             <p className="text-xs text-gray-200 mt-0.5">
-              UrbanEye Defect Telemetry &amp; Field Verification Record
+              SRIMS Defect Telemetry &amp; Field Verification Record
             </p>
           </div>
           <button

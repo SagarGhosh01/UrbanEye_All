@@ -113,7 +113,7 @@ export async function reverseGeocodeLocation(lat: number, lon: number): Promise<
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
       {
         headers: {
-          'User-Agent': 'UrbanEye-AI-Perception-Platform/1.0 (urbaneye.gov.in)',
+          'User-Agent': 'SRIMS-AI-Perception-Platform/1.0 (srims.gov.in)',
         },
         signal: controller.signal,
       }
@@ -170,7 +170,7 @@ export async function reverseGeocodeLocation(lat: number, lon: number): Promise<
 gpsRouter.get('/status', (req: Request, res: Response) => {
   res.json({
     status: 'SUCCESS',
-    gpsEngine: 'UrbanEye Global Telemetry & Map-Matching Model (EKF + OSM + OSRM)',
+    gpsEngine: 'SRIMS Global Telemetry & Map-Matching Model (EKF + OSM + OSRM)',
     providers: [
       { name: 'OpenStreetMap Nominatim Reverse Geocoding API', type: 'GLOBAL_GEOCODER', status: 'ONLINE' },
       { name: 'OSRM (Open Source Routing Machine) Snap-to-Road API', type: 'MAP_MATCHING', status: 'ONLINE' },

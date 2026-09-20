@@ -3,14 +3,14 @@ import { io } from 'socket.io-client';
 const API_BASE = 'http://localhost:5000/api';
 
 async function runVerification() {
-  console.log('🚀 Starting UrbanEye End-to-End Loop & Scoping Verification...\n');
+  console.log('🚀 Starting SRIMS End-to-End Loop & Scoping Verification...\n');
 
   // STEP 1: District Head Logins
   console.log('--- Step 1: Officer Logins ---');
   const kapurthalaLoginRes = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'head.kapurthala@urbaneye.gov.in', password: 'UrbanEye@2026' }),
+    body: JSON.stringify({ email: 'head.kapurthala@srims.gov.in', password: 'SRIMS@2026' }),
   });
   const kapurthalaAuth = await kapurthalaLoginRes.json();
   console.log('✅ Kapurthala District Head logged in:', kapurthalaAuth.user.name, 'District:', kapurthalaAuth.user.districtName);
@@ -18,7 +18,7 @@ async function runVerification() {
   const jalandharLoginRes = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'head.jalandhar@urbaneye.gov.in', password: 'UrbanEye@2026' }),
+    body: JSON.stringify({ email: 'head.jalandhar@srims.gov.in', password: 'SRIMS@2026' }),
   });
   const jalandharAuth = await jalandharLoginRes.json();
   console.log('✅ Jalandhar District Head logged in:', jalandharAuth.user.name, 'District:', jalandharAuth.user.districtName);

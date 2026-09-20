@@ -202,7 +202,7 @@ export const PairingModal: React.FC<PairingModalProps> = ({
                 <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-amber-300">Secure PIN Handshake:</strong> The bus operator opens{' '}
-                  <em>UrbanEye Mobile</em> on the mounted Android device to generate a 6-digit code. Enter it below to bind telemetry to this district.
+                  <em>SRIMS Mobile</em> on the mounted Android device to generate a 6-digit code. Enter it below to bind telemetry to this district.
                 </div>
               </div>
 

@@ -43,14 +43,14 @@ export default function Hero({ onLoginClick }: HeroProps) {
           <div className="relative group shrink-0">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1E7F73] to-[#2dd4bf] rounded-full blur opacity-40 group-hover:opacity-75 transition duration-300"></div>
             <div className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full overflow-hidden bg-[#081325] border border-[#2dd4bf]/40 p-0.5 shadow-md shadow-[#1E7F73]/20">
-              <img src="/logo.png" alt="UrbanEye" className="w-full h-full object-cover rounded-full" />
+              <img src="/logo.png" alt="SRIMS" className="w-full h-full object-cover rounded-full" />
             </div>
           </div>
 
           <div className="flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="font-display text-base sm:text-xl font-bold tracking-tight text-white leading-none">
-                UrbanEye
+                SRIMS
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold tracking-wider bg-[#1E7F73]/20 text-[#2dd4bf] border border-[#2dd4bf]/35 shadow-[0_0_10px_rgba(45,212,191,0.15)] uppercase backdrop-blur-md shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf] animate-pulse" />
@@ -161,7 +161,7 @@ export default function Hero({ onLoginClick }: HeroProps) {
           variants={rise}
           className="mt-4 sm:mt-6 max-w-5xl text-base sm:text-lg md:text-xl leading-relaxed text-slate-300"
         >
-          UrbanEye is an AI-driven road intelligence platform that converts public-transport fleets into distributed mobile sensing networks for automated road-defect detection, geospatial mapping and infrastructure monitoring.
+          SRIMS is an AI-driven road intelligence platform that converts public-transport fleets into distributed mobile sensing networks for automated road-defect detection, geospatial mapping and infrastructure monitoring.
         </motion.p>
 
         <motion.div variants={rise} className="mt-8 sm:mt-10 flex flex-wrap items-center gap-4 sm:gap-6">

@@ -14,7 +14,7 @@ const features = [
   },
   {
     title: "Automatic Incident Capture",
-    body: "When an accident or collision is detected, UrbanEye automatically captures relevant visual evidence and incident metadata for review and reporting.",
+    body: "When an accident or collision is detected, SRIMS automatically captures relevant visual evidence and incident metadata for review and reporting.",
     icon: Video,
   },
   {
@@ -67,7 +67,7 @@ export default function Features({ theme = 'dark' }: FeaturesProps) {
               isDark ? 'text-white' : 'text-slate-900'
             }`}
           >
-            What the fleet sees, UrbanEye understands.
+            What the fleet sees, SRIMS understands.
           </h2>
         </motion.div>
 

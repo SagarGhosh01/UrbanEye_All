@@ -11,7 +11,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Always dark — apply class once on mount, never toggle.
   React.useEffect(() => {
     document.documentElement.classList.add('dark');
-    localStorage.setItem('urbaneye_theme', 'dark');
+    localStorage.setItem('srims_theme', 'dark');
   }, []);
 
   return (

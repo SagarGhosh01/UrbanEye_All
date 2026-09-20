@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import 'leaflet.heat';
+
 import { RoadEvent, EventStatus } from '../types';
 import { MapPin, Layers } from 'lucide-react';
 import { resolveImageSrc } from '../utils/imageUtils';
@@ -39,6 +41,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const defectMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const busLayerRef = useRef<L.LayerGroup | null>(null);
   const busMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const heatLayerRef = useRef<any>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   const getMarkerColor = (severity?: string | null) => {
     const sev = (severity || 'HIGH').toUpperCase();
@@ -97,7 +101,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     const busIcon = (bus: BusPosition) => {
       const colour = bus.isLive ? '#1769AA' : '#667788';
       return L.divIcon({
-        className: 'urbaneye-bus-marker',
+        className: 'srims-bus-marker',
         html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${colour};border:2px solid #ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.3);color:#fff;font-size:11px;font-weight:bold;">🚌</div>`,
         iconSize: [24, 24],
         iconAnchor: [12, 12],
@@ -136,13 +140,29 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     }
   }, [centerLat, centerLon, zoom]);
 
-  // Defect Markers
+  // Defect Markers & Heatmap
   useEffect(() => {
     if (!mapInstanceRef.current || !markersLayerRef.current) return;
 
     const layer = markersLayerRef.current;
     layer.clearLayers();
     defectMarkersRef.current.clear();
+    
+    if (heatLayerRef.current) {
+      mapInstanceRef.current.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
+
+    if (showHeatmap) {
+      const heatPoints = events.map(ev => [ev.latitude, ev.longitude, ev.severityScore ? ev.severityScore / 100 : 0.8]);
+      heatLayerRef.current = (L as any).heatLayer(heatPoints, {
+        radius: 25,
+        blur: 15,
+        maxZoom: 15,
+        gradient: { 0.4: 'blue', 0.6: 'lime', 0.8: 'orange', 1.0: 'red' }
+      }).addTo(mapInstanceRef.current);
+      return; // Do not render individual markers when heatmap is active to prevent clutter
+    }
 
     events.forEach((event) => {
       const color = getMarkerColor(event.severity);
@@ -188,7 +208,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       marker.addTo(layer);
       defectMarkersRef.current.set(event.id, marker);
     });
-  }, [events, onSelectEvent]);
+  }, [events, onSelectEvent, showHeatmap]);
 
   return (
     <div className="relative w-full h-full min-h-[420px] bg-[#F6F8FA] rounded border border-[#D8E0E8] overflow-hidden text-[#172B3A]">
@@ -198,6 +218,21 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       <div className="absolute top-3 left-3 z-30 bg-white/95 backdrop-blur border border-[#D8E0E8] px-3 py-1.5 rounded shadow-xs flex items-center space-x-2 text-xs">
         <MapPin className="w-4 h-4 text-[#1769AA]" />
         <span className="font-bold text-[#0B3558]">Road Infrastructure Intelligence Map</span>
+      </div>
+
+      {/* Heatmap Toggle */}
+      <div className="absolute top-3 right-3 z-30">
+        <button
+          onClick={() => setShowHeatmap(!showHeatmap)}
+          className={`px-3 py-1.5 rounded shadow-sm text-xs font-bold transition flex items-center gap-1.5 border ${
+            showHeatmap 
+              ? 'bg-[#1769AA] text-white border-[#1769AA]' 
+              : 'bg-white text-[#172B3A] border-[#D8E0E8] hover:bg-[#F6F8FA]'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          {showHeatmap ? 'Disable Heatmap' : 'Heatmap Layer'}
+        </button>
       </div>
 
       {/* Map Legend */}
