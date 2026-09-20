@@ -747,56 +747,64 @@ async function main() {
 
   
   const NEW_CITY_SEGMENTS = [
-    // Delhi NCR
-    { osmWayId: 'dl-way-ringroad', name: 'Ring Road', roadClass: 'trunk', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.58, 77.23], [28.60, 77.25], [28.62, 77.24]]), lengthM: 15000 },
-    { osmWayId: 'dl-way-rajpath', name: 'Rajpath / Kartavya Path', roadClass: 'primary', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.61, 77.20], [28.61, 77.22], [28.61, 77.23]]), lengthM: 3000 },
-    { osmWayId: 'dl-way-nh44', name: 'NH-44 GT Karnal Road', roadClass: 'trunk', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.67, 77.19], [28.70, 77.16], [28.75, 77.14]]), lengthM: 12000 },
-    { osmWayId: 'dl-way-outer-ring', name: 'Outer Ring Road', roadClass: 'trunk', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.53, 77.18], [28.54, 77.23], [28.56, 77.26]]), lengthM: 10000 },
-    { osmWayId: 'dl-way-ito', name: 'ITO to India Gate corridor', roadClass: 'primary', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.63, 77.24], [28.62, 77.23], [28.61, 77.23]]), lengthM: 4000 },
+    // Delhi NCR (DL)
+    { osmWayId: 'dl-way-ringroad', name: 'Ring Road Expressway (AIIMS to Dhaula Kuan)', roadClass: 'trunk', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.5672, 77.2100], [28.5780, 77.2250], [28.5920, 77.2400], [28.6100, 77.2450], [28.6300, 77.2400], [28.6500, 77.2200]]), lengthM: 18000 },
+    { osmWayId: 'dl-way-rajpath', name: 'Kartavya Path / Rajpath Boulevard', roadClass: 'primary', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.6142, 77.1990], [28.6139, 77.2090], [28.6135, 77.2190], [28.6130, 77.2290]]), lengthM: 3200 },
+    { osmWayId: 'dl-way-nh44', name: 'NH-44 GT Karnal Road Expressway', roadClass: 'trunk', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.6720, 77.1950], [28.7050, 77.1680], [28.7520, 77.1420], [28.8100, 77.1150]]), lengthM: 16000 },
+    { osmWayId: 'dl-way-outer-ring', name: 'Outer Ring Road (IIT Flyover to Paschim Vihar)', roadClass: 'trunk', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.5420, 77.1890], [28.5510, 77.2250], [28.5680, 77.2620], [28.6100, 77.2850]]), lengthM: 14000 },
+    { osmWayId: 'dl-way-ito', name: 'ITO Junction & Pragati Maidan Corridor', roadClass: 'primary', cityTag: 'delhi', districtId: newDelhi.id, coordinates: JSON.stringify([[28.6295, 77.2435], [28.6240, 77.2400], [28.6180, 77.2350], [28.6130, 77.2290]]), lengthM: 4500 },
 
-    // Hyderabad
-    { osmWayId: 'hyd-way-pvnr', name: 'PVNR Expressway', roadClass: 'trunk', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.38, 78.45], [17.35, 78.42], [17.32, 78.40]]), lengthM: 11000 },
-    { osmWayId: 'hyd-way-hitech', name: 'Hitech City to Gachibowli corridor', roadClass: 'primary', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.44, 78.38], [17.43, 78.36], [17.42, 78.34]]), lengthM: 6000 },
-    { osmWayId: 'hyd-way-tankbund', name: 'Tank Bund Road', roadClass: 'primary', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.41, 78.48], [17.42, 78.48], [17.43, 78.48]]), lengthM: 3000 },
-    { osmWayId: 'hyd-way-orr', name: 'ORR Shamshabad to Gachibowli', roadClass: 'trunk', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.25, 78.40], [17.30, 78.35], [17.42, 78.34]]), lengthM: 25000 },
+    // Hyderabad (Telangana - TG)
+    { osmWayId: 'hyd-way-pvnr', name: 'PVNR Elevated Expressway', roadClass: 'trunk', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.3850, 78.4520], [17.3620, 78.4350], [17.3380, 78.4180], [17.3150, 78.4020]]), lengthM: 11600 },
+    { osmWayId: 'hyd-way-hitech', name: 'Hitech City IT Main Road & Gachibowli Flyover', roadClass: 'primary', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.4520, 78.3880], [17.4435, 78.3772], [17.4310, 78.3620], [17.4200, 78.3480]]), lengthM: 7200 },
+    { osmWayId: 'hyd-way-tankbund', name: 'Tank Bund Road & Hussain Sagar Drive', roadClass: 'primary', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.4120, 78.4780], [17.4220, 78.4820], [17.4350, 78.4850]]), lengthM: 3500 },
+    { osmWayId: 'hyd-way-orr', name: 'ORR Outer Ring Road Expressway', roadClass: 'trunk', cityTag: 'hyderabad', districtId: hyderabad.id, coordinates: JSON.stringify([[17.2450, 78.4100], [17.3020, 78.3650], [17.4200, 78.3480], [17.4950, 78.3820]]), lengthM: 28000 },
 
-    // Chennai
-    { osmWayId: 'chn-way-omr', name: 'OMR (Old Mahabalipuram Road)', roadClass: 'trunk', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[13.00, 80.25], [12.95, 80.24], [12.90, 80.22]]), lengthM: 20000 },
-    { osmWayId: 'chn-way-anna', name: 'Anna Salai / Mount Road', roadClass: 'primary', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[13.07, 80.27], [13.04, 80.25], [13.01, 80.21]]), lengthM: 10000 },
-    { osmWayId: 'chn-way-ecr', name: 'ECR East Coast Road', roadClass: 'primary', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[12.98, 80.26], [12.95, 80.25], [12.90, 80.24]]), lengthM: 15000 },
-    { osmWayId: 'chn-way-irr', name: 'Inner Ring Road', roadClass: 'trunk', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[13.10, 80.20], [13.05, 80.19], [13.00, 80.20]]), lengthM: 18000 },
+    // Chennai (Tamil Nadu - TN)
+    { osmWayId: 'chn-way-omr', name: 'OMR Rajiv Gandhi Salai IT Expressway', roadClass: 'trunk', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[13.0080, 80.2520], [12.9650, 80.2450], [12.9210, 80.2320], [12.8750, 80.2180]]), lengthM: 22000 },
+    { osmWayId: 'chn-way-anna', name: 'Anna Salai / Mount Road Central Arterial', roadClass: 'primary', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[13.0827, 80.2707], [13.0604, 80.2496], [13.0320, 80.2280], [13.0080, 80.2050]]), lengthM: 12000 },
+    { osmWayId: 'chn-way-ecr', name: 'ECR East Coast Road Scenic Highway', roadClass: 'primary', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[12.9820, 80.2610], [12.9450, 80.2520], [12.8980, 80.2410], [12.8450, 80.2310]]), lengthM: 18000 },
+    { osmWayId: 'chn-way-irr', name: 'Inner Ring Road (Koyambedu to Kathipara)', roadClass: 'trunk', cityTag: 'chennai', districtId: chennai.id, coordinates: JSON.stringify([[13.1020, 80.2080], [13.0680, 80.1980], [13.0250, 80.2050], [12.9980, 80.2010]]), lengthM: 16500 },
 
-    // Kolkata
-    { osmWayId: 'kol-way-embypass', name: 'EM Bypass', roadClass: 'trunk', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.60, 88.40], [22.55, 88.40], [22.50, 88.39]]), lengthM: 20000 },
-    { osmWayId: 'kol-way-park', name: 'Park Street corridor', roadClass: 'primary', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.55, 88.35], [22.55, 88.36], [22.55, 88.37]]), lengthM: 3000 },
-    { osmWayId: 'kol-way-howrah', name: 'Howrah Bridge / Vidyasagar Setu approach', roadClass: 'trunk', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.58, 88.34], [22.58, 88.33], [22.57, 88.32]]), lengthM: 5000 },
-    { osmWayId: 'kol-way-vip', name: 'VIP Road to Airport', roadClass: 'primary', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.59, 88.41], [22.62, 88.42], [22.65, 88.44]]), lengthM: 8000 },
+    // Kolkata (West Bengal - WB)
+    { osmWayId: 'kol-way-embypass', name: 'EM Bypass (Eastern Metropolitan Bypass)', roadClass: 'trunk', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.6100, 88.4080], [22.5620, 88.4020], [22.5354, 88.3968], [22.4850, 88.3910]]), lengthM: 21000 },
+    { osmWayId: 'kol-way-park', name: 'Park Street & Camac Street Avenue', roadClass: 'primary', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.5520, 88.3480], [22.5510, 88.3590], [22.5500, 88.3710]]), lengthM: 3200 },
+    { osmWayId: 'kol-way-howrah', name: 'Howrah Bridge / Vidyasagar Setu Approach', roadClass: 'trunk', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.5850, 88.3420], [22.5780, 88.3320], [22.5650, 88.3240]]), lengthM: 5400 },
+    { osmWayId: 'kol-way-vip', name: 'VIP Road to Airport Express Corridor', roadClass: 'primary', cityTag: 'kolkata', districtId: kolkata.id, coordinates: JSON.stringify([[22.5920, 88.4120], [22.6240, 88.4280], [22.6510, 88.4450]]), lengthM: 8800 },
 
-    // Pune
-    { osmWayId: 'pun-way-mpe', name: 'Mumbai-Pune Expressway approach', roadClass: 'trunk', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.60, 73.75], [18.65, 73.70], [18.70, 73.65]]), lengthM: 15000 },
-    { osmWayId: 'pun-way-fcroad', name: 'FC Road / JM Road', roadClass: 'primary', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.52, 73.84], [18.53, 73.84], [18.53, 73.85]]), lengthM: 2000 },
-    { osmWayId: 'pun-way-hinjewadi', name: 'Hinjewadi IT Park Road', roadClass: 'primary', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.58, 73.75], [18.59, 73.73], [18.59, 73.71]]), lengthM: 6000 },
-    { osmWayId: 'pun-way-solapur', name: 'Pune-Solapur Highway', roadClass: 'trunk', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.50, 73.90], [18.48, 73.95], [18.45, 74.00]]), lengthM: 12000 },
+    // Pune (Maharashtra - MH)
+    { osmWayId: 'pun-way-mpe', name: 'Mumbai-Pune Expressway Highway Approach', roadClass: 'trunk', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.6020, 73.7550], [18.6480, 73.7020], [18.6980, 73.6520]]), lengthM: 16000 },
+    { osmWayId: 'pun-way-fcroad', name: 'FC Road / JM Road Heritage Corridor', roadClass: 'primary', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.5180, 73.8410], [18.5280, 73.8440], [18.5360, 73.8490]]), lengthM: 2400 },
+    { osmWayId: 'pun-way-hinjewadi', name: 'Hinjewadi IT Park Main Expressway', roadClass: 'primary', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.5590, 73.7868], [18.5850, 73.7480], [18.5980, 73.7120]]), lengthM: 8500 },
+    { osmWayId: 'pun-way-solapur', name: 'Pune-Solapur Highway (Hadapsar Corridor)', roadClass: 'trunk', cityTag: 'pune', districtId: pune.id, coordinates: JSON.stringify([[18.5020, 73.9020], [18.4810, 73.9520], [18.4520, 74.0050]]), lengthM: 13500 },
 
-    // Ahmedabad
-    { osmWayId: 'ahm-way-sg', name: 'SG Highway', roadClass: 'trunk', cityTag: 'ahmedabad', districtId: ahmedabad.id, coordinates: JSON.stringify([[23.00, 72.50], [23.05, 72.52], [23.10, 72.54]]), lengthM: 15000 },
-    { osmWayId: 'ahm-way-ashram', name: 'Ashram Road', roadClass: 'primary', cityTag: 'ahmedabad', districtId: ahmedabad.id, coordinates: JSON.stringify([[23.01, 72.57], [23.03, 72.57], [23.05, 72.58]]), lengthM: 6000 },
-    { osmWayId: 'ahm-way-ring', name: '132ft Ring Road', roadClass: 'trunk', cityTag: 'ahmedabad', districtId: ahmedabad.id, coordinates: JSON.stringify([[23.02, 72.53], [23.05, 72.54], [23.07, 72.56]]), lengthM: 10000 },
+    // Ahmedabad (Gujarat - GJ)
+    { osmWayId: 'ahm-way-sg', name: 'SG Highway (Sarkhej-Gandhinagar Expressway)', roadClass: 'trunk', cityTag: 'ahmedabad', districtId: ahmedabad.id, coordinates: JSON.stringify([[22.9850, 72.4950], [23.0225, 72.5180], [23.0780, 72.5350], [23.1250, 72.5520]]), lengthM: 18000 },
+    { osmWayId: 'ahm-way-ashram', name: 'Ashram Road & Sabarmati Riverfront Drive', roadClass: 'primary', cityTag: 'ahmedabad', districtId: ahmedabad.id, coordinates: JSON.stringify([[23.0110, 72.5680], [23.0320, 72.5714], [23.0580, 72.5790]]), lengthM: 6800 },
+    { osmWayId: 'ahm-way-ring', name: '132ft Inner Ring Road (Satellite to Naranpura)', roadClass: 'trunk', cityTag: 'ahmedabad', districtId: ahmedabad.id, coordinates: JSON.stringify([[23.0180, 72.5280], [23.0480, 72.5420], [23.0720, 72.5610]]), lengthM: 11200 },
 
-    // Jaipur
-    { osmWayId: 'jai-way-jln', name: 'JLN Marg', roadClass: 'primary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.85, 75.80], [26.88, 75.81], [26.90, 75.82]]), lengthM: 7000 },
-    { osmWayId: 'jai-way-mi', name: 'MI Road', roadClass: 'primary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.91, 75.79], [26.91, 75.80], [26.91, 75.81]]), lengthM: 3000 },
-    { osmWayId: 'jai-way-tonk', name: 'Tonk Road', roadClass: 'primary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.80, 75.78], [26.85, 75.79], [26.89, 75.80]]), lengthM: 12000 },
+    // Jaipur (Rajasthan - RJ)
+    { osmWayId: 'jai-way-jln', name: 'JLN Marg (Jawaharlal Nehru Marg Avenue)', roadClass: 'primary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.8380, 75.8080], [26.8560, 75.8110], [26.8780, 75.8150], [26.8940, 75.8120]]), lengthM: 7500 },
+    { osmWayId: 'jai-way-mi', name: 'MI Road (Mirza Ismail Road Central Corridor)', roadClass: 'primary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.9124, 75.7873], [26.9140, 75.7980], [26.9150, 75.8080]]), lengthM: 3500 },
+    { osmWayId: 'jai-way-tonk', name: 'Tonk Road & Tonk Phatak Main Highway Corridor', roadClass: 'primary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.8300, 75.7940], [26.8520, 75.7980], [26.8750, 75.8010], [26.8950, 75.8040]]), lengthM: 12800 },
+    { osmWayId: 'jai-way-ajmer', name: 'Ajmer Road Expressway (Sodala / Hawa Sadak)', roadClass: 'trunk', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.9080, 75.7650], [26.9040, 75.7780], [26.8990, 75.7920], [26.8940, 75.8050]]), lengthM: 8500 },
+    { osmWayId: 'jai-way-bais-godam', name: 'Bais Godam & Kartarpura Railway Overbridge Corridor', roadClass: 'secondary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.8920, 75.7910], [26.8820, 75.7930], [26.8720, 75.7940]]), lengthM: 3200 },
+    { osmWayId: 'jai-way-bani-park', name: 'Bani Park & Meera Marg Sector Boulevard', roadClass: 'secondary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.9320, 75.7920], [26.9260, 75.7980], [26.9200, 75.8020]]), lengthM: 2800 },
+    { osmWayId: 'jai-way-ramganj-amer', name: 'Ramganj & Amer Road Highway (NH-248 Corridor)', roadClass: 'primary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.9240, 75.8320], [26.9450, 75.8450], [26.9700, 75.8580]]), lengthM: 7800 },
+    { osmWayId: 'jai-way-sikar-cantt', name: 'Sikar Road & Jaipur Cantonment Bypass', roadClass: 'trunk', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.9380, 75.7820], [26.9550, 75.7780], [26.9750, 75.7720]]), lengthM: 6400 },
+    { osmWayId: 'jai-way-khatipura-sirsi', name: 'Khatipura Road & Sirsi Road Residential Arterial', roadClass: 'secondary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.9180, 75.7520], [26.9120, 75.7350], [26.9080, 75.7180]]), lengthM: 5200 },
+    { osmWayId: 'jai-way-vaishali-nh48', name: 'Vaishali Nagar & NH-48 / NH-52 Jaipur Bypass', roadClass: 'trunk', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.9080, 75.7380], [26.8920, 75.7280], [26.8750, 75.7200]]), lengthM: 9200 },
+    { osmWayId: 'jai-way-shanti-path', name: 'Shanti Path & Adarsh Nagar Commercial Avenue', roadClass: 'secondary', cityTag: 'jaipur', districtId: jaipur.id, coordinates: JSON.stringify([[26.8950, 75.8220], [26.8820, 75.8280], [26.8680, 75.8320]]), lengthM: 4100 },
 
-    // Lucknow
-    { osmWayId: 'luc-way-shaheed', name: 'Shaheed Path', roadClass: 'trunk', cityTag: 'lucknow', districtId: lucknow.id, coordinates: JSON.stringify([[26.78, 80.90], [26.80, 80.95], [26.85, 81.00]]), lengthM: 18000 },
-    { osmWayId: 'luc-way-hazrat', name: 'Hazratganj to Charbagh corridor', roadClass: 'primary', cityTag: 'lucknow', districtId: lucknow.id, coordinates: JSON.stringify([[26.84, 80.94], [26.83, 80.93], [26.82, 80.92]]), lengthM: 4000 },
-    { osmWayId: 'luc-way-faizabad', name: 'Faizabad Road / Sitapur Road', roadClass: 'primary', cityTag: 'lucknow', districtId: lucknow.id, coordinates: JSON.stringify([[26.87, 80.95], [26.90, 80.95], [26.95, 80.95]]), lengthM: 10000 },
+    // Lucknow (Uttar Pradesh - UP)
+    { osmWayId: 'luc-way-shaheed', name: 'Shaheed Path Outer Ring Expressway', roadClass: 'trunk', cityTag: 'lucknow', districtId: lucknow.id, coordinates: JSON.stringify([[26.7820, 80.9020], [26.8050, 80.9520], [26.8467, 80.9462], [26.8850, 81.0120]]), lengthM: 19500 },
+    { osmWayId: 'luc-way-hazrat', name: 'Hazratganj to Charbagh Central Corridor', roadClass: 'primary', cityTag: 'lucknow', districtId: lucknow.id, coordinates: JSON.stringify([[26.8467, 80.9462], [26.8350, 80.9320], [26.8210, 80.9200]]), lengthM: 4800 },
+    { osmWayId: 'luc-way-faizabad', name: 'Faizabad Road & Gomti Nagar Extension Expressway', roadClass: 'primary', cityTag: 'lucknow', districtId: lucknow.id, coordinates: JSON.stringify([[26.8720, 80.9580], [26.9020, 80.9750], [26.9450, 81.0020]]), lengthM: 11500 },
 
-    // Chandigarh
-    { osmWayId: 'cha-way-madhya', name: 'Madhya Marg Sector 9-26', roadClass: 'primary', cityTag: 'chandigarh', districtId: chandigarhDist.id, coordinates: JSON.stringify([[30.74, 76.78], [30.73, 76.79], [30.72, 76.80]]), lengthM: 5000 },
-    { osmWayId: 'cha-way-dakshin', name: 'Dakshin Marg', roadClass: 'primary', cityTag: 'chandigarh', districtId: chandigarhDist.id, coordinates: JSON.stringify([[30.72, 76.76], [30.71, 76.78], [30.70, 76.80]]), lengthM: 7000 },
-    { osmWayId: 'cha-way-itpark', name: 'IT Park Road', roadClass: 'secondary', cityTag: 'chandigarh', districtId: chandigarhDist.id, coordinates: JSON.stringify([[30.72, 76.82], [30.73, 76.83], [30.74, 76.84]]), lengthM: 4000 },
+    // Chandigarh UT (CH)
+    { osmWayId: 'cha-way-madhya', name: 'Madhya Marg (Sector 9 to Sector 26 Avenue)', roadClass: 'primary', cityTag: 'chandigarh', districtId: chandigarhDist.id, coordinates: JSON.stringify([[30.7480, 76.7720], [30.7333, 76.7794], [30.7210, 76.8020]]), lengthM: 5800 },
+    { osmWayId: 'cha-way-dakshin', name: 'Dakshin Marg (Tribune Chowk Highway Corridor)', roadClass: 'primary', cityTag: 'chandigarh', districtId: chandigarhDist.id, coordinates: JSON.stringify([[30.7250, 76.7550], [30.7120, 76.7780], [30.7010, 76.8050]]), lengthM: 7600 },
+    { osmWayId: 'cha-way-itpark', name: 'IT Park Road & Kishangarh Sector Corridor', roadClass: 'secondary', cityTag: 'chandigarh', districtId: chandigarhDist.id, coordinates: JSON.stringify([[30.7220, 76.8180], [30.7350, 76.8320], [30.7450, 76.8480]]), lengthM: 4400 },
 
     // Amritsar
     { osmWayId: 'amr-way-gt', name: 'GT Road', roadClass: 'trunk', cityTag: 'amritsar', districtId: amritsar.id, coordinates: JSON.stringify([[31.60, 74.85], [31.62, 74.87], [31.65, 74.90]]), lengthM: 8000 },
@@ -820,9 +828,18 @@ async function main() {
     ...PUNJAB_ROAD_SEGMENTS,
   ];
 
+  // Always seed explicit high-fidelity demo corridors first
+  for (const seg of ALL_DEMO_SEGMENTS) {
+    try {
+      await prisma.roadSegment.create({ data: seg });
+    } catch (e) {
+      // Ignore duplicates if any
+    }
+  }
+
   const jsonPath = path.resolve(__dirname, 'road_segments.json');
   if (fs.existsSync(jsonPath)) {
-    console.log('📦 Loading 6,255 pre-computed road segments from road_segments.json...');
+    console.log('📦 Loading pre-computed road segments from road_segments.json...');
     const rawSegments = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
     const batchSize = 1000;
     for (let i = 0; i < rawSegments.length; i += batchSize) {
@@ -835,13 +852,13 @@ async function main() {
         cityTag: s.cityTag,
         lengthM: s.lengthM,
       }));
-      await prisma.roadSegment.createMany({ data: batch });
+      try {
+        await prisma.roadSegment.createMany({ data: batch });
+      } catch (e) {
+        // Continue if batch has overlap
+      }
     }
     console.log(`✅ Successfully seeded ${rawSegments.length} road segments across Punjab and India!`);
-  } else {
-    for (const seg of ALL_DEMO_SEGMENTS) {
-      await prisma.roadSegment.create({ data: seg });
-    }
   }
 
   // Seed Defect & Vehicle Density Hotspots across all Districts

@@ -75,6 +75,31 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       const busLayer = L.layerGroup().addTo(map);
       busLayerRef.current = busLayer;
 
+      const trafficLayer = L.layerGroup().addTo(map);
+
+      getIndiaTraffic().then(({ segments }) => {
+        segments.forEach((seg) => {
+          if (seg.coordinates && seg.coordinates.length > 0) {
+            const color = seg.level === 'SEVERE' ? '#ef4444' : seg.level === 'HEAVY' ? '#f97316' : seg.level === 'MODERATE' ? '#eab308' : '#22c55e';
+            const poly = L.polyline(seg.coordinates, {
+              color: color,
+              weight: 6,
+              opacity: 0.82,
+              lineCap: 'round',
+              lineJoin: 'round',
+            });
+            poly.bindTooltip(`
+              <div style="font-family:sans-serif;font-size:11px;padding:2px;">
+                <strong>${seg.name || 'Road Segment'}</strong><br/>
+                Traffic Congestion: <span style="color:${color};font-weight:bold;">${seg.level}</span><br/>
+                Speed: <strong>${seg.avgSpeedKmh} km/h</strong>
+              </div>
+            `);
+            poly.addTo(trafficLayer);
+          }
+        });
+      });
+
       mapInstanceRef.current = map;
     }
 

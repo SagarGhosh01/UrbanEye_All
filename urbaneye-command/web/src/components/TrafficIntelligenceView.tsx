@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import { TrafficRouteSegment, BottleneckAlert, TrafficIntelligenceStats, District, SegmentCongestionState, CongestionSource } from '../types';
 import { getTrafficRoutes, getTrafficStats, getActiveBottlenecks } from '../services/trafficService';
-import { getCongestionState, subscribeToCongestionUpdates } from '../services/congestionService';
+import { getCongestionState, getIndiaTraffic, subscribeToCongestionUpdates } from '../services/congestionService';
 import { RouteAnalysisModal } from './RouteAnalysisModal';
 import { useTheme } from '../contexts/ThemeContext';
 import {
@@ -68,24 +68,65 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
     async function fetchTelemetry(isInitial = false) {
       if (isInitial) setLoading(true);
       try {
-        const [rData, sData, bData] = await Promise.all([
+        const [rData, sData, bData, indiaCongestion] = await Promise.all([
           getTrafficRoutes(district?.id),
           getTrafficStats(district?.id),
           getActiveBottlenecks(district?.id),
+          getIndiaTraffic(),
         ]);
         if (!isMounted) return;
 
-        setRoutes(rData);
+        let combinedRoutes: TrafficRouteSegment[] = [...rData];
+        if (indiaCongestion && indiaCongestion.segments && indiaCongestion.segments.length > 0) {
+          setCongestionSource(indiaCongestion.dataSource);
+          const mappedFromIndia: TrafficRouteSegment[] = indiaCongestion.segments.map((seg) => {
+            const levelMap: Record<string, 'LOW' | 'MODERATE' | 'HEAVY' | 'SEVERE'> = {
+              FREE_FLOW: 'LOW',
+              MODERATE: 'MODERATE',
+              HEAVY: 'HEAVY',
+              SEVERE: 'SEVERE',
+            };
+            const level = levelMap[seg.level] || 'LOW';
+            return {
+              id: seg.segmentId,
+              name: seg.name || `${(seg.cityTag || 'urban').toUpperCase()} Corridor`,
+              startPoint: seg.name,
+              endPoint: seg.cityTag || 'City Corridor',
+              districtId: district?.id || 'DIST-INDIA',
+              lengthKm: Math.round(((seg.coordinates?.length || 2) * 0.8) * 10) / 10,
+              trafficLevel: level,
+              normalSpeedKmh: 60,
+              avgSpeedKmh: seg.avgSpeedKmh || 40,
+              estimatedDelayMin: seg.level === 'SEVERE' ? 14 : seg.level === 'HEAVY' ? 8 : seg.level === 'MODERATE' ? 3 : 0,
+              vehiclesPerMin: Math.round((seg.vehicleCountPerHour || 1200) / 60),
+              bottleneckStatus: seg.level === 'SEVERE' ? 'ACTIVE' : 'NORMAL',
+              junctionTag: seg.cityTag ? `${seg.cityTag.toUpperCase()} Sector` : 'Major Corridor',
+              coordinates: seg.coordinates || [],
+              vehicleClassification: { cars: 60, twoWheelers: 25, buses: 10, trucks: 5, other: 0 },
+              detectedByBuses: ['Bus Fleet #UE-Telemetry'],
+              lastUpdated: new Date().toISOString(),
+            };
+          });
+
+          const existingIds = new Set(rData.map((r) => r.id));
+          mappedFromIndia.forEach((r) => {
+            if (!existingIds.has(r.id)) {
+              combinedRoutes.push(r);
+            }
+          });
+        }
+
+        setRoutes(combinedRoutes);
         if (sData) setStats(sData);
         setBottlenecks(bData);
         setLastTick(new Date().toLocaleTimeString());
 
         setSelectedRoute((prev) => {
           if (prev) {
-            const found = rData.find((r) => r.id === prev.id);
+            const found = combinedRoutes.find((r) => r.id === prev.id);
             if (found) return found;
           }
-          return rData.length > 0 ? rData[0] : null;
+          return combinedRoutes.length > 0 ? combinedRoutes[0] : null;
         });
       } catch (err) {
         console.error('Failed to load traffic intelligence:', err);
@@ -212,69 +253,71 @@ export const TrafficIntelligenceView: React.FC<TrafficIntelligenceViewProps> = (
           route.coordinates.forEach((pt) => {
             if (Array.isArray(pt) && pt.length >= 2) {
               allPoints.push(pt as [number, number]);
-              if (mapMode === 'HEATMAP') {
-                 const intensity = route.trafficLevel === 'SEVERE' ? 1.0 : route.trafficLevel === 'HEAVY' ? 0.7 : route.trafficLevel === 'MODERATE' ? 0.4 : 0.1;
-                 heatPoints.push([pt[0], pt[1], intensity]);
-              }
+              const intensity = route.trafficLevel === 'SEVERE' ? 1.0 : route.trafficLevel === 'HEAVY' ? 0.75 : route.trafficLevel === 'MODERATE' ? 0.45 : 0.2;
+              heatPoints.push([pt[0], pt[1], intensity]);
             }
           });
         }
 
-        const polyline = L.polyline(route.coordinates, {
-          color: color,
-          weight: mapMode === 'HEATMAP' ? 20 : (isSelected ? 8 : 5),
-          opacity: mapMode === 'HEATMAP' ? 0.0 : (isSelected ? 0.98 : 0.78),
-        });
-
-        polyline.bindTooltip(`
-          <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
-            <strong>${route.name}</strong><br/>
-            Traffic Level: <span style="color:${color}; font-weight: bold;">${route.trafficLevel}</span><br/>
-            Speed: <strong>${route.avgSpeedKmh} km/h</strong> (Normal: ${route.normalSpeedKmh} km/h)<br/>
-            Flow: ${route.vehiclesPerMin} veh/min | Delay: +${route.estimatedDelayMin} min
-          </div>
-        `);
-
-        polyline.on('click', () => {
-          setSelectedRoute(route);
-          map.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 0.8 });
-        });
-
-        polyline.addTo(layerGroup);
-
-        // Render Active Bottleneck Pulse Marker (skip if Heatmap to keep it clean)
-        if (route.bottleneckStatus === 'ACTIVE' && mapMode !== 'HEATMAP') {
-          const center = getPolylineCenter(route.coordinates);
-          const icon = L.divIcon({
-            className: 'custom-bottleneck-marker',
-            html: `<div style="position: relative; display: flex; items-center: center; justify-content: center;">
-              <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #ef4444; opacity: 0.6; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-              <div style="width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2px solid #ffffff; color: white; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(220,38,38,0.5);">⚠</div>
-            </div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14],
-          });
-
-          const marker = L.marker(center, { icon });
-          marker.bindPopup(`
-            <div style="font-family: sans-serif; padding: 2px;">
-              <strong style="color: #dc2626;">⚠ ACTIVE BOTTLENECK</strong><br/>
-              <span>${route.name} (${route.junctionTag})</span><br/>
-              Speed: ${route.avgSpeedKmh} km/h (Normal: ${route.normalSpeedKmh} km/h)<br/>
-              <strong>Delay: +${route.estimatedDelayMin} min</strong>
-            </div>
-          `);
-          marker.on('click', () => {
-            setSelectedRoute(route);
-          });
-          marker.addTo(layerGroup);
-        }
+      // Render polylines, heatmap, and markers with ZERO hiding
+      const polyline = L.polyline(route.coordinates, {
+        color: color,
+        weight: isSelected ? 12 : (mapMode === 'HEATMAP' ? 8 : 6),
+        opacity: isSelected ? 0.98 : (mapMode === 'HEATMAP' ? 0.85 : 0.88),
+        lineCap: 'round',
+        lineJoin: 'round',
       });
 
-      if (mapMode === 'HEATMAP') {
-        // @ts-ignore
-        L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 14 }).addTo(heatGroup);
+      polyline.bindTooltip(`
+        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+          <strong>${route.name}</strong><br/>
+          Traffic Level: <span style="color:${color}; font-weight: bold;">${route.trafficLevel}</span><br/>
+          Speed: <strong>${route.avgSpeedKmh} km/h</strong> (Normal: ${route.normalSpeedKmh} km/h)<br/>
+          Flow: ${route.vehiclesPerMin} veh/min | Delay: +${route.estimatedDelayMin} min
+        </div>
+      `);
+
+      polyline.on('click', () => {
+        setSelectedRoute(route);
+        map.flyTo(getPolylineCenter(route.coordinates), 14, { duration: 0.8 });
+      });
+
+      polyline.addTo(layerGroup);
+
+      // Render Active Bottleneck Pulse Marker unconditionally (NO NEED HIDE)
+      if (route.bottleneckStatus === 'ACTIVE') {
+        const center = getPolylineCenter(route.coordinates);
+        const icon = L.divIcon({
+          className: 'custom-bottleneck-marker',
+          html: `<div style="position: relative; display: flex; items-center: center; justify-content: center;">
+            <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #ef4444; opacity: 0.6; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2px solid #ffffff; color: white; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(220,38,38,0.5);">⚠</div>
+          </div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+
+        const marker = L.marker(center, { icon });
+        marker.bindPopup(`
+          <div style="font-family: sans-serif; padding: 2px;">
+            <strong style="color: #dc2626;">⚠ ACTIVE BOTTLENECK</strong><br/>
+            <span>${route.name} (${route.junctionTag})</span><br/>
+            Speed: ${route.avgSpeedKmh} km/h (Normal: ${route.normalSpeedKmh} km/h)<br/>
+            <strong>Delay: +${route.estimatedDelayMin} min</strong>
+          </div>
+        `);
+        marker.on('click', () => {
+          setSelectedRoute(route);
+        });
+        marker.addTo(layerGroup);
       }
+    });
+
+    // Render spatial heatmap layer unconditionally (NO NEED HIDE)
+    if (heatPoints.length > 0) {
+      // @ts-ignore
+      L.heatLayer(heatPoints, { radius: 26, blur: 16, maxZoom: 15 }).addTo(heatGroup);
+    }
 
       if (allPoints.length > 0 && !selectedRoute && district?.id === 'INDIA') {
         // Automatically zoom out to India if it's the India view
